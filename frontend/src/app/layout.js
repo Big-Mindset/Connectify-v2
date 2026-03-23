@@ -1,6 +1,8 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-
+import { ContextProiver } from "@/lib/loading_hook";
+import {Toaster} from "react-hot-toast"
+import Script from "next/script";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -19,10 +21,17 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
+      <Script
+   src="https://kit.fontawesome.com/ecb364a250.js"
+   crossOrigin="anonymous"
+ />
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable}  ${geistMono.variable} h-dvh bg-[#111111]  w-full  antialiased`}
       >
+        <ContextProiver >
+      <Toaster />
         {children}
+        </ContextProiver>
       </body>
     </html>
   );

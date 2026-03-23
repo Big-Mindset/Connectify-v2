@@ -1,0 +1,284 @@
+
+
+import { chatStore } from "@/store/chat-store";
+import { Camera, LucideLaugh, Plus, Send, Trash, Upload } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion"
+import RenderFile from "./main-input-components/renderFile";
+import { sizeText } from "@/lib/formateSize";
+import { generateThumbnail } from "@/lib/generateThumbnail";
+import FileSizeExceeded from "./main-input-components/file-sizeExceeded";
+export default function MainInput({ userId }) {
+    const [openAttachments, setOpenAttachments] = useState(false)
+    const [inputText, setInputText] = useState("")
+    const [filePreview, setFilePreview] = useState([])
+    const [editFile, setEditFile] = useState(null)
+    const [totalSize, setTotalSize] = useState(0)
+    const [sizeExceeded, setSizeExceeded] = useState(false)
+    const [thumbnailsUrl, setThumbnailsUrl] = useState({})
+    let plusOptionsRef = useRef(null)
+    let plusRef = useRef(null)
+    let setChatInfo = chatStore(s => s.setChatInfo)
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (plusOptionsRef.current &&
+                !plusOptionsRef.current.contains(e.target) &&
+                plusRef.current &&
+                !plusRef.current.contains(e.target)
+            ) {
+                setOpenAttachments(false);
+            }
+        };
+        window.addEventListener("mousedown", handleClickOutside)
+        return () => {
+
+            window.removeEventListener("mousedown", handleClickOutside)
+        }
+    }, [])
+
+
+
+
+    const attaches = [
+        { name: "Upload a file", icon: <Upload size={19} />, type: "file" },
+        { name: "Camera", icon: <Camera size={19} /> },
+    ];
+
+    const handleSendMessage = () => {
+        if (inputText === "" && filePreview.length === 0) return
+        let new_message = {
+            id: crypto.randomUUID(),
+            content: inputText,
+            senderId: "user1",
+            receiver: "user2",
+            chatId: "chat1",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            status: {
+                id: crypto.randomUUID(),
+                readAt: new Date(),
+                deliveredAt: new Date(Date.now() - 5000),
+                status: "read",
+            },
+            replyToId: null,
+            media: filePreview
+
+        }
+        setChatInfo((data) => {
+            let res = { ...data, messages: [...data.messages, new_message] }
+            return res
+        })
+        setInputText("")
+        setFilePreview([])
+    }
+    const handleUploadFile = async (e) => {
+
+        setOpenAttachments(false)
+        let files = e.target.files
+
+        let size = 0
+        let validFiles = []
+
+
+        let maxSize = 100
+        let thumbnails = {}
+        for (let file of files) {
+            if (!file) return
+            let sizeInMb = (file.size / (1024 * 1024)).toFixed(2)
+
+            if ((sizeInMb > maxSize) || ((sizeInMb + size) > maxSize)) {
+                setSizeExceeded(true)
+                break
+            }
+            size += sizeInMb
+            let url = URL.createObjectURL(file)
+            if (file.type.startsWith("video")) {
+
+                let thumbnailUrl = await generateThumbnail(url)
+                thumbnails[url] = thumbnailUrl
+            }
+            let media = {
+                id: crypto.randomUUID(),
+                type: file.type,
+                filename: file.name,
+                size: file.size,
+                url: url,
+            }
+            validFiles.push(media)
+
+        }
+        setTotalSize(size)
+        setThumbnailsUrl(prev => ({ ...prev, ...thumbnails }))
+        setFilePreview(prev => [...prev, ...validFiles])
+    }
+    let handleRemoveFile = (fileId) => {
+        let filtered = filePreview.filter((file) => {
+            return file.id !== fileId
+        })
+        setFilePreview(filtered)
+    }
+    // let handleEditImage = (fileId)=>{   
+
+    // }
+    const handleUpdate_filename = () => {
+        setFilePreview(prev => {
+            return prev.map((file) => {
+                if (file.id === editFile.id) return editFile
+                return file
+            })
+        })
+        setEditFile(null)
+    }
+    let thumbnailUrl = thumbnailsUrl[editFile?.url]
+    return (
+        <>
+            <AnimatePresence>
+
+            {sizeExceeded && <FileSizeExceeded setSizeExceeded={setSizeExceeded} />
+            }
+            </AnimatePresence>
+
+            {(editFile || sizeExceeded) && <div className="fixed opacity-50 z-[99] inset-0 bg-gray-2"></div>}
+            <AnimatePresence>
+
+                {(thumbnailUrl || editFile) && <motion.div
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.2 }}
+                    exit={{ scale: 0.7, opacity: 0 }}
+                    className="fixed  z-[9999] p-7 border border-gray-6 top-1/2 left-1/2 w-full bg-gray-2 rounded-2xl  max-w-[450px] -translate-1/2 ">
+                    <h1 className="mb-3 font-bold text-xl"> Update File</h1>
+                    <div className="flex flex-col gap-3">
+                        <div className=" p-3  flex items-center justify-center overflow-hidden">
+                            <div className="flex items-center gap-7 w-full">
+
+                                <RenderFile thumbnailsUrl={thumbnailsUrl} data={{ type: editFile.type, size: editFile.size, url: editFile.url }} />
+                                {sizeText(editFile.size)}
+                            </div>
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                            <div className="">
+                                <label className="text-sm" htmlFor="filename">Filename</label>
+                                <input type="text" id="filename" onChange={(e) => setEditFile({ ...editFile, filename: e.target.value })} value={editFile.filename} className="p-2 mt-1 text-gray-300 text-sm focus:ring-2 outline-none focus:ring-indigo-400 duration-100 bg-gray-3/60  w-full rounded-lg ring-1 ring-gray-5 " />
+                            </div>
+
+                            <div className="grid mt-6  grid-cols-2 gap-2">
+                                <button onClick={() => { setEditFile(null) }} className="bg-gray-4 rounded-lg p-2 hover:bg-gray-5 duration-150 cursor-pointer">Cancel</button>
+                                <button onClick={handleUpdate_filename} className="bg-indigo-500  rounded-lg p-2 hover:bg-indigo-400 duration-150 cursor-pointer">Save</button>
+
+                            </div>
+                        </div>
+                    </div>
+                </motion.div>}
+            </AnimatePresence>
+            <div className="w-full shrink-0 p-4">
+                <div className={`  ${filePreview.length ? "rounded-lg" : "rounded-full"}  w-full flex flex-col gap-1 focus-within:border-indigo-400   border border-gray-7     bg-gray-2/80   `}>
+
+                    {filePreview.length > 0 &&
+                        <div
+
+
+                            className={`flex flex-col    origin-bottom overflow-hidden gap-2  p-2 `}>
+                            <div className="flex items-center p-2 duration-700   overflow-x-auto overflow-y-hidden gap-2" style={{ scrollbarWidth: 'thin', scrollbarColor: 'gray #1F2937', scrollBehavior: "smooth" }}>
+                                {filePreview.map((file) => {
+                                    return (
+                                        <div key={file.id} className="relative  h-[200px]  px-4 py-2 rounded-lg border border-gray-4 shrink-0 min-w-[180px]" >
+
+                                            <div className=" flex flex-col gap-1  h-full">
+                                                <div className="absolute top-0 -right-1 ">
+                                                    <div className="flex  items-center bg-gray-5 relative z-30 overflow-hidden   rounded-lg gap-1.5">
+                                                        <motion.div
+                                                            whileTap={{ y: 2 }}
+                                                            transition={{ duration: 0.1 }}
+                                                            onClick={() => setEditFile(file)} className="duration-150 hover:bg-gray-6 text-indigo-100  text-[0.9rem] cursor-pointer p-1.5 overflow-hidden">
+                                                            <i className="fa-solid fa-pen"></i>
+                                                        </motion.div>
+                                                        <div onClick={() => handleRemoveFile(file.id)} className=" text-red-300 hover:text-red-400 duration-150 hover:bg-gray-6   text-[0.7rem] cursor-pointer p-2">
+                                                            <Trash size={16} />
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="w-full relative bg-gray-3 flex-1  rounded-lg  flex  items-center justify-center overflow-hidden">
+
+
+                                                    <RenderFile thumbnailsUrl={thumbnailsUrl} data={{ type: file.type, size: file.size, url: file.url }} />
+                                                </div>
+                                                <div className="p-2 ">
+                                                    <p className="text-[0.8rem] text-gray-400">
+                                                        {file.filename.slice(0, 28)}{file.filename.length > 28 && "..."}
+
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+
+                        </div>
+                    }
+                    <div className=" p-1.5 pr-2">
+                        <div className="flex  h-full items-center gap-2 justify-between">
+                            <div className="flex  relative  items-center gap-1">
+
+                                <AnimatePresence>
+
+                                    {openAttachments &&
+                                        <motion.div
+                                            initial={{ scale: 0.5, opacity: 0 }}
+                                            animate={{ scale: 1, opacity: 1 }}
+                                            exit={{ scale: 0.5, opacity: 0 }}
+                                            transition={{ duration: 0.2 }}
+                                            ref={plusOptionsRef}
+                                            className={`absolute  origin-bottom-left w-[170px]  bg-gray-1 -translate-x-1/2   bottom-[150%] border border-gray-700 rounded-4xl left-20`}>
+                                            <div className="flex  p-3 flex-col gap-2">
+                                                {attaches.map((data) => {
+                                                    if (data.type === "file") {
+                                                        return <label htmlFor="upload-file" key={data.name} className="flex whitespace-nowrap cursor-pointer items-center text-gray-300 hover:bg-indigo-500/50 text-[0.8rem] rounded-4xl p-2 gap-2.5">
+                                                            <span>{data.icon}</span>
+                                                            <span>{data.name}</span>
+                                                            <input onChange={handleUploadFile} multiple={true} type="file" id="upload-file" className="hidden" />
+                                                        </label>
+                                                    } else {
+                                                        return <div id="upload-file" key={data.name} className="flex whitespace-nowrap cursor-pointer items-center text-gray-300 hover:bg-indigo-500/50 text-[0.8rem] rounded-4xl p-2 gap-2.5">
+                                                            <span>{data.icon}</span>
+                                                            <span>{data.name}</span>
+                                                        </div>
+
+                                                    }
+
+                                                })}
+                                            </div>
+                                        </motion.div>
+                                    }
+                                </AnimatePresence>
+
+                                <div ref={plusRef} onClick={() => setOpenAttachments(prev => !prev)} className="p-2 group cursor-pointer  hover:bg-gray-4 rounded-full transition-all duration-100 ">
+                                    <Plus size={22} />
+                                </div>
+                                <div className="p-2 group cursor-pointer  rounded-full hover:bg-gray-4  transition-all duration-100">
+                                    <LucideLaugh size={22} />
+                                </div>
+                            </div>
+                            <div className="flex-1">
+                                <input value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder="Type a message" type="text" className="w-full text-sm  caret-indigo-400 outline-none" />
+                            </div>
+                            {/* <div className="rounded-full bg-indigo-500/70 duration-150 ring-indigo-600 hover:ring p-2 cursor-pointer ">
+                        <Mic size={18} />
+                        </div> */}
+
+                            <div onClick={handleSendMessage} className="rounded-full bg-indigo-500/70 duration-150 ring-indigo-600 hover:ring p-2 cursor-pointer ">
+                                <Send size={18} />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </>
+    )
+}
+
+
+
+

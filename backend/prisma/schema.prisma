@@ -1,0 +1,229 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String    @id
+  name          String
+  email         String
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+  bio String?
+  username        String?
+  displayUsername String?
+  lastseen DateTime @default(now())
+  sender Request[] @relation(name: "senderId")
+  receiver Request[] @relation(name: "receiverId")
+  messageSender Message[]
+  chatParticipant ChatParticipant[]
+  groupParticipant GroupParticipants[]
+  groupMessageSender GroupMessages[]
+  @@unique([email])
+  @@map("user")
+  @@unique([username])
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+model Request{
+  id String @id
+  sender User @relation(references: [id] , fields: [senderId] , name: "senderId",onDelete: Cascade)
+  senderId String
+  receiver User @relation(references: [id] , fields: [receiverId] , name: "receiverId",onDelete: Cascade)
+  receiverId String
+  status RequestStatus @default(Pending)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([senderId , receiverId])
+  @@index([senderId , receiverId])
+  @@index([senderId])
+  @@index([receiverId])
+  @@map("request")
+}
+enum RequestStatus {
+  Pending
+  Accepted
+  Rejected
+}
+
+model Chat {
+  id String @id
+  lastMessageId String?
+  participants ChatParticipant[]
+  messages Message[]
+  lastMessage Message? @relation(fields: [lastMessageId] , references: [id],name: "lastMessage",onDelete: SetNull)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([lastMessageId])
+}
+
+model ChatParticipant {
+  id String @id
+  userId String
+  user User @relation(fields: [userId] , references: [id] , onDelete: Cascade)
+  chatId String
+  chat Chat @relation(fields: [chatId] , references: [id],onDelete: Cascade)
+  joinedAt DateTime @default(now())
+  @@unique([userId , chatId])
+  @@index([userId])
+  @@map("chat_participant")
+}
+
+
+model Message{
+  id String @id
+  senderId String
+  chatId String
+  lastMessage Chat? @relation("lastMessage")
+  content String?
+  replyToId String?
+  replyTo Message? @relation(references: [id] , fields: [replyToId],name: "replyToMessage",onDelete: SetNull)
+  replies Message[] @relation("replyToMessage")
+  sender User @relation(references: [id] , fields: [senderId])
+  chat Chat @relation(fields: [chatId] , references: [id],onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+  media Media[]
+  status Status?
+  @@index([chatId , senderId , createdAt])
+  @@index([content ,createdAt])
+  @@index([createdAt])
+} 
+
+model Status {
+  id String @id
+  readAt DateTime @default(now())
+  deliveredAt DateTime @default(now())
+  status status @default(PENDING)
+  messageId String @unique
+  message Message @relation(fields: [messageId],references: [id])
+}
+enum status {
+  SENT
+  DELIVERED
+  READ
+  PENDING
+}
+
+model Media{
+  id String @id
+  size Int?
+  filename String?
+  type String
+  url String
+  messageId String?
+  message Message? @relation(references: [id] ,fields: [messageId])
+  groupMessageId String?
+  groupMessage GroupMessages? @relation(references: [id],fields: [groupMessageId])
+ 
+  createdAt DateTime @default(now())
+  @@index([messageId])
+}
+
+model GroupChat {
+  id String @id
+  participants GroupParticipants[]
+  messages GroupMessages[]
+  name String
+  description String?
+  createdAt DateTime @default(now())
+  updatedat DateTime @updatedAt
+  image String?
+
+}
+model GroupParticipants {
+  id String @id
+  role Roles
+  userId String
+  groupId String
+  user User @relation(references: [id] , fields: [userId],onDelete: Cascade)
+  group GroupChat @relation(references: [id] , fields: [groupId],onDelete: Cascade)
+  joinedAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([groupId , userId])
+  @@index([userId])
+  @@index([groupId])
+}
+enum Roles {
+  ADMIN
+  MEMBER  
+}
+model GroupMessages {
+  id String @id
+  groupId String
+  senderId String
+  replyToId String?
+  group GroupChat @relation(fields: [groupId]  ,references: [id],onDelete: Cascade)
+  sender User @relation(references: [id] , fields: [senderId])
+  reply GroupMessages? @relation(references: [id]  , fields: [replyToId] , name: "groupMessages",onDelete: Cascade)
+  replies GroupMessages[] @relation("groupMessages")
+  content String
+  media Media[] 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  status status @default(PENDING)
+
+  @@index([groupId , senderId , createdAt])
+}
+

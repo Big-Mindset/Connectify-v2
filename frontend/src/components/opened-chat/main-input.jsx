@@ -6,18 +6,24 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion"
 import RenderFile from "./main-input-components/renderFile";
 import { sizeText } from "@/lib/formateSize";
+import dynamic from "next/dynamic";
 import { generateThumbnail } from "@/lib/generateThumbnail";
 import FileSizeExceeded from "./main-input-components/file-sizeExceeded";
+
+const EmojiPicker = dynamic(() => import("./Emoji-Picker"), { ssr: false })
 export default function MainInput({ userId }) {
     const [openAttachments, setOpenAttachments] = useState(false)
     const [inputText, setInputText] = useState("")
     const [filePreview, setFilePreview] = useState([])
     const [editFile, setEditFile] = useState(null)
     const [totalSize, setTotalSize] = useState(0)
+    const [openEmojiPicker, setOpenEmojiPicker] = useState(false)
     const [sizeExceeded, setSizeExceeded] = useState(false)
     const [thumbnailsUrl, setThumbnailsUrl] = useState({})
     let plusOptionsRef = useRef(null)
     let plusRef = useRef(null)
+    let editableRef = useRef(null)
+
     let setChatInfo = chatStore(s => s.setChatInfo)
     useEffect(() => {
         const handleClickOutside = (e) => {
@@ -129,13 +135,20 @@ export default function MainInput({ userId }) {
         })
         setEditFile(null)
     }
+
+
     let thumbnailUrl = thumbnailsUrl[editFile?.url]
+
+    const isEmoji = (char) => /\p{Emoji}/u.test(char);
+    const handleTyping = (e) => {
+        setInputText(e.target.value)
+    }
     return (
         <>
             <AnimatePresence>
 
-            {sizeExceeded && <FileSizeExceeded setSizeExceeded={setSizeExceeded} />
-            }
+                {sizeExceeded && <FileSizeExceeded setSizeExceeded={setSizeExceeded} />
+                }
             </AnimatePresence>
 
             {(editFile || sizeExceeded) && <div className="fixed opacity-50 z-[99] inset-0 bg-gray-2"></div>}
@@ -159,7 +172,7 @@ export default function MainInput({ userId }) {
                         <div className="flex flex-col gap-1.5">
                             <div className="">
                                 <label className="text-sm" htmlFor="filename">Filename</label>
-                                <input type="text" id="filename" onChange={(e) => setEditFile({ ...editFile, filename: e.target.value })} value={editFile.filename} className="p-2 mt-1 text-gray-300 text-sm focus:ring-2 outline-none focus:ring-indigo-400 duration-100 bg-gray-3/60  w-full rounded-lg ring-1 ring-gray-5 " />
+                                <input type="text" id="filename" onChange={(e) => setEditFile({ ...editFile, filename: e.target.value })} value={editFile.filename} className="p-2 mt-1 text-gray-300 text-sm focus:ring-2 outline-none focus:ring-indigo-400 bg-gray-3/60 duration-200  w-full rounded-lg ring-1 ring-gray-5 " />
                             </div>
 
                             <div className="grid mt-6  grid-cols-2 gap-2">
@@ -172,7 +185,7 @@ export default function MainInput({ userId }) {
                 </motion.div>}
             </AnimatePresence>
             <div className="w-full shrink-0 p-4">
-                <div className={`  ${filePreview.length ? "rounded-lg" : "rounded-full"}  w-full flex flex-col gap-1 focus-within:border-indigo-400   border border-gray-7     bg-gray-2/80   `}>
+                <div className={`  ${filePreview.length ? "rounded-lg" : "rounded-full"}  w-full flex flex-col gap-1 focus-within:ring-indigo-400/40 focus-within:ring-2  ring ring-gray-7     bg-gray-2/80   `}>
 
                     {filePreview.length > 0 &&
                         <div
@@ -185,8 +198,8 @@ export default function MainInput({ userId }) {
                                         <div key={file.id} className="relative  h-[200px]  px-4 py-2 rounded-lg border border-gray-4 shrink-0 min-w-[180px]" >
 
                                             <div className=" flex flex-col gap-1  h-full">
-                                                <div className="absolute top-0 -right-1 ">
-                                                    <div className="flex  items-center bg-gray-5 relative z-30 overflow-hidden   rounded-lg gap-1.5">
+                                                <div className="absolute z-30 top-0 -right-1 ">
+                                                    <div className="flex  items-center bg-gray-5  overflow-hidden   rounded-lg gap-1.5">
                                                         <motion.div
                                                             whileTap={{ y: 2 }}
                                                             transition={{ duration: 0.1 }}
@@ -218,7 +231,7 @@ export default function MainInput({ userId }) {
 
                         </div>
                     }
-                    <div className=" p-1.5 pr-2">
+                    <div className=" p-1.5 relative pr-2">
                         <div className="flex  h-full items-center gap-2 justify-between">
                             <div className="flex  relative  items-center gap-1">
 
@@ -231,7 +244,7 @@ export default function MainInput({ userId }) {
                                             exit={{ scale: 0.5, opacity: 0 }}
                                             transition={{ duration: 0.2 }}
                                             ref={plusOptionsRef}
-                                            className={`absolute  origin-bottom-left w-[170px]  bg-gray-1 -translate-x-1/2   bottom-[150%] border border-gray-700 rounded-4xl left-20`}>
+                                            className={`absolute z-[99999]  origin-bottom-left w-[170px]  bg-gray-1 -translate-x-1/2  bottom-[150%] border border-gray-700 rounded-4xl left-20`}>
                                             <div className="flex  p-3 flex-col gap-2">
                                                 {attaches.map((data) => {
                                                     if (data.type === "file") {
@@ -257,12 +270,20 @@ export default function MainInput({ userId }) {
                                 <div ref={plusRef} onClick={() => setOpenAttachments(prev => !prev)} className="p-2 group cursor-pointer  hover:bg-gray-4 rounded-full transition-all duration-100 ">
                                     <Plus size={22} />
                                 </div>
-                                <div className="p-2 group cursor-pointer  rounded-full hover:bg-gray-4  transition-all duration-100">
-                                    <LucideLaugh size={22} />
+                                <div  onClick={() => setOpenEmojiPicker(prev=>{
+                                   
+                                    if (prev) return 0
+                                    return 1
+                                })} className="p-2 group cursor-pointer  rounded-full hover:bg-gray-4  transition-all duration-100">
+                                    <i className="fa-solid fa-face-laugh-beam" ></i>
                                 </div>
                             </div>
                             <div className="flex-1">
-                                <input value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder="Type a message" type="text" className="w-full text-sm  caret-indigo-400 outline-none" />
+
+
+
+
+                                <input value={inputText} onChange={handleTyping} placeholder="Type a message" type="text" className="w-full  text-[0.95rem]   caret-indigo-400 outline-none" />
                             </div>
                             {/* <div className="rounded-full bg-indigo-500/70 duration-150 ring-indigo-600 hover:ring p-2 cursor-pointer ">
                         <Mic size={18} />
@@ -272,8 +293,15 @@ export default function MainInput({ userId }) {
                                 <Send size={18} />
                             </div>
                         </div>
+
+                        <div className={`${openEmojiPicker ? " scale-[1] opacity-100" : "scale-[0.2] opacity-0 "} absolute z-[500] duration-100 bottom-[110%] origin-bottom-left left-6`}>
+
+                            <EmojiPicker setOpenEmojiPicker={setOpenEmojiPicker} setInputText={setInputText} />
+                        </div>
+
                     </div>
                 </div>
+
             </div>
         </>
     )

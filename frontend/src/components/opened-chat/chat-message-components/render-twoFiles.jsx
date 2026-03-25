@@ -35,7 +35,7 @@ export default function RenderTwoFiles({ files, moreFiles, multipleFiles, delete
                     >
 
                         {(hoveredFile === file.id) &&
-                            <div className="flex items-center absolute overflow-hidden right-2 top-2 z-[99999] rounded-lg">
+                            <div className="flex items-center absolute overflow-hidden right-2 top-2 z-[1000]  rounded-lg">
                                 {
                                     deleteButton && <div
 

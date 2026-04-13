@@ -1,7 +1,4 @@
-import google from "@/app/assets/google.svg"
-import github from "@/app/assets/github.svg"
-import Image from "next/image"
-import Link from "next/link"
+
 import { useForm } from "react-hook-form"
 import { useState } from "react"
 import { useLoading } from "@/lib/loading_hook"

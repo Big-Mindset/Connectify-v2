@@ -1,8 +1,4 @@
 
-
-import google from "@/app/assets/google.svg"
-import github from "@/app/assets/github.svg"
-import Image from "next/image"
 import {zodResolver} from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { emailSchema, signIn } from "@/zod/authValidations"

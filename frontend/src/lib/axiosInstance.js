@@ -3,7 +3,7 @@
 import axios from "axios"
 import { redirect } from "next/navigation";
 export const Axios = axios.create({
-  baseURL: 'http://localhost:8000/graphiql',
+  baseURL: 'http://localhost:2525',
   withCredentials : true,
 });
 Axios.interceptors.response.use(undefined , async (error)=>{

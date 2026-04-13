@@ -2,6 +2,7 @@ import data from '@emoji-mart/data'
 import  Picker  from '@emoji-mart/react'
 export default function EmojiPicker({setInputText , setOpenEmojiPicker}) {
     const handleEmojiSelect = (emoji)=>{
+      console.log(emoji)
         setInputText(prev=>prev+=emoji.native)
     }
     return <div
@@ -10,9 +11,7 @@ export default function EmojiPicker({setInputText , setOpenEmojiPicker}) {
     className=''>
         <Picker
         onClickOutside={()=>{
-            console.log("hello")
         setOpenEmojiPicker(prev=>{
-            console.log(prev)
           if (prev === 1){
             return 2
           }

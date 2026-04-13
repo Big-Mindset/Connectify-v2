@@ -1,0 +1,21 @@
+
+import { auth } from "../lib/auth.js";
+
+import createError from "http-errors"
+export default async function protectRoute(req , res, next){
+    try {
+        let session = await auth.api.getSession({headers : req.headers })
+        let user = session.user
+        if (!session){
+            throw createError(401,{message : "You are unauthorized" ,})
+        }
+        req.user = {
+            name : user.name,
+            id : user.id
+        }
+   
+        next()
+    } catch (error) {
+        next(error)   
+    }
+}

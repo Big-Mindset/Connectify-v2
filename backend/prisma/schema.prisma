@@ -14,28 +14,66 @@ datasource db {
 }
 
 model User {
-  id            String    @id
-  name          String
-  email         String
-  emailVerified Boolean   @default(false)
-  image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  sessions      Session[]
-  accounts      Account[]
-  bio String?
-  username        String?
+  id              String   @id
+  name            String
+  email           String
+  emailVerified   Boolean  @default(false)
+  image           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  bio             String?
+  username        String
   displayUsername String?
-  lastseen DateTime @default(now())
-  sender Request[] @relation(name: "senderId")
-  receiver Request[] @relation(name: "receiverId")
-  messageSender Message[]
-  chatParticipant ChatParticipant[]
-  groupParticipant GroupParticipants[]
-  groupMessageSender GroupMessages[]
+  lastseen        DateTime @default(now())
+
+  notifications Notification[]
+  status Status[]
+  reactorId reaction[]
+  sessions           Session[]
+  accounts           Account[]
+  friendship1        Friendship[]        @relation("friendship1")
+  friendship2        Friendship[]        @relation("friendship2")
+  blocker            Block[]             @relation("blocker")
+  blocked            Block[]             @relation("blocked")
+  sender             Request[]           @relation(name: "senderId")
+  receiver           Request[]           @relation(name: "receiverId")
+  messageSender      Message[]
+  chatParticipant    ChatParticipant[]
+
+
   @@unique([email])
-  @@map("user")
   @@unique([username])
+  @@map("user")
+}
+
+model Block {
+  id        String   @id @default(uuid())
+  blockedId String
+  blockerId String
+  blocker   User     @relation("blocker", references: [id], fields: [blockerId])
+  blocked   User     @relation("blocked", references: [id], fields: [blockedId])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([blockerId, blockedId])
+  @@index([blockerId, createdAt])
+}
+
+model Friendship {
+  id      String @id @default(uuid())
+  user1Id String
+  user2Id String
+
+  user1     User     @relation("friendship1", references: [id], fields: [user1Id], onDelete: Cascade)
+  user2     User     @relation("friendship2", references: [id], fields: [user2Id], onDelete: Cascade)
+  chat      Chat?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([user1Id, user2Id])
+  @@index([user1Id, createdAt(sort: Desc)])
+  @@index([user2Id, createdAt(sort: Desc)])
+  @@map("friendship")
 }
 
 model Session {
@@ -86,21 +124,22 @@ model Verification {
   @@map("verification")
 }
 
-model Request{
-  id String @id
-  sender User @relation(references: [id] , fields: [senderId] , name: "senderId",onDelete: Cascade)
-  senderId String
-  receiver User @relation(references: [id] , fields: [receiverId] , name: "receiverId",onDelete: Cascade)
+model Request {
+  id         String        @id @default(uuid())
+  sender     User          @relation(references: [id], fields: [senderId], name: "senderId", onDelete: Cascade)
+  senderId   String
+  receiver   User          @relation(references: [id], fields: [receiverId], name: "receiverId", onDelete: Cascade)
   receiverId String
-  status RequestStatus @default(Pending)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  @@unique([senderId , receiverId])
-  @@index([senderId , receiverId])
-  @@index([senderId])
-  @@index([receiverId])
+  status     RequestStatus @default(Pending)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  @@unique([senderId, receiverId])
+  @@index([senderId, status])
+  @@index([receiverId, status])
   @@map("request")
 }
+
 enum RequestStatus {
   Pending
   Accepted
@@ -108,57 +147,121 @@ enum RequestStatus {
 }
 
 model Chat {
-  id String @id
+  id            String            @id @default(uuid())
   lastMessageId String?
-  participants ChatParticipant[]
-  messages Message[]
-  lastMessage Message? @relation(fields: [lastMessageId] , references: [id],name: "lastMessage",onDelete: SetNull)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  name String?
+  description String?
+  pfp Media?  @relation(name:"group-pfp")
+  isGroup Boolean @default(false)
+  media Media[] @relation(name:"message-media")
+  disappearMessagesDuration DateTime?
+  participants  ChatParticipant[]
+  messages      Message[]
+  lastMessage   Message?          @relation(fields: [lastMessageId], references: [id], name: "lastMessage", onDelete: SetNull)
+  friendshipId  String            @unique
+  FriendShip    Friendship        @relation(fields: [friendshipId], references: [id])
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
   @@unique([lastMessageId])
+  @@index([friendshipId])
 }
 
+
+
+enum Roles {
+  ADMIN
+  MEMBER
+  OWNER
+}
+
+
+
 model ChatParticipant {
-  id String @id
-  userId String
-  user User @relation(fields: [userId] , references: [id] , onDelete: Cascade)
-  chatId String
-  chat Chat @relation(fields: [chatId] , references: [id],onDelete: Cascade)
-  joinedAt DateTime @default(now())
-  @@unique([userId , chatId])
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chatId    String
+  chat      Chat      @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  muted     Boolean   @default(false)
+  mutedTil  DateTime?
+  role Roles?
+  clearChatAt DateTime?
+  @@unique([userId, chatId])
+  @@index([clearChatAt])
+ @@index([chatId , userId])
   @@index([userId])
   @@map("chat_participant")
 }
 
-
-model Message{
-  id String @id
-  senderId String
-  chatId String
-  lastMessage Chat? @relation("lastMessage")
-  content String?
+model Message {
+  id          String @id @default(uuid())
+  senderId    String
+  chatId      String
+  lastMessage Chat?  @relation("lastMessage")
+  enceyptedContent String?
+  search_index String[]
+  firstLetters_index String[]
+  reactions reaction[]
   replyToId String?
-  replyTo Message? @relation(references: [id] , fields: [replyToId],name: "replyToMessage",onDelete: SetNull)
-  replies Message[] @relation("replyToMessage")
-  sender User @relation(references: [id] , fields: [senderId])
-  chat Chat @relation(fields: [chatId] , references: [id],onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now())
-  media Media[]
-  status Status?
-  @@index([chatId , senderId , createdAt])
-  @@index([content ,createdAt])
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @default(now())
+  forwarded Boolean @default(false)
+  expiredAt DateTime?
+  replyTo   Message?  @relation(references: [id], fields: [replyToId], name: "replyToMessage", onDelete: SetNull)
+  sender    User      @relation(references: [id], fields: [senderId])
+  chat      Chat      @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  replies   Message[] @relation("replyToMessage")
+  media     Media[]
+  message_security message_securityKeys?
+  status    Status[]
+  @@index([chatId, senderId, createdAt])
+  @@index([senderId])
   @@index([createdAt])
-} 
+  @@index([search_index],type:Gin)
+  @@index([firstLetters_index])
+}
+
+
+
+model reaction {
+  id String @id @default(uuid())
+  emojiCode String
+  senderId String
+  sender User @relation(references: [id],fields: [senderId])
+  messageId String
+  message Message @relation(fields: [messageId],references: [id])
+  name String
+}
+
+
+model message_securityKeys {
+  id String @id @default(uuid())
+  vi_v1               String
+  authTag_v1       String
+  vi_v2              String
+  authTag_v2       String
+  encryptedDek     String 
+  messageId String @unique
+  message Message @relation(fields: [messageId],references: [id],onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
 
 model Status {
-  id String @id
-  readAt DateTime @default(now())
-  deliveredAt DateTime @default(now())
-  status status @default(PENDING)
-  messageId String @unique
-  message Message @relation(fields: [messageId],references: [id])
+  id          String   @id @default(uuid())
+  readAt      DateTime?
+  deliveredAt DateTime?
+  userId String?
+  user User? @relation(fields: [userId],references: [id])
+  status      status   @default(PENDING)
+  messageId   String   @unique
+  message     Message  @relation(fields: [messageId], references: [id],onDelete: Cascade)
+  @@index([readAt])
+  @@index([deliveredAt])
 }
+
 enum status {
   SENT
   DELIVERED
@@ -166,64 +269,100 @@ enum status {
   PENDING
 }
 
-model Media{
-  id String @id
-  size Int?
-  filename String?
-  type String
-  url String
-  messageId String?
-  message Message? @relation(references: [id] ,fields: [messageId])
+model Media {
+  id             String         @id @default(uuid())
+  media_objectKey String
+  type           String
+  messageId      String?
+  chatPfpId String? @unique
+  chatPfp Chat? @relation(name:"group-pfp",fields: [chatPfpId] , references: [id])
+  chatId String? 
+  chat Chat? @relation(name: "message-media",fields: [chatId],references: [id])
+  message        Message?       @relation(references: [id], fields: [messageId],onDelete: Cascade)
   groupMessageId String?
-  groupMessage GroupMessages? @relation(references: [id],fields: [groupMessageId])
- 
-  createdAt DateTime @default(now())
+  createdAt      DateTime       @default(now())
+
   @@index([messageId])
 }
 
-model GroupChat {
-  id String @id
-  participants GroupParticipants[]
-  messages GroupMessages[]
-  name String
-  description String?
-  createdAt DateTime @default(now())
-  updatedat DateTime @updatedAt
-  image String?
 
-}
-model GroupParticipants {
-  id String @id
-  role Roles
+
+
+// TODO -  DO THESE OPERATIONS LATER
+model Notification {
+  id String @id @default(uuid())
   userId String
-  groupId String
-  user User @relation(references: [id] , fields: [userId],onDelete: Cascade)
-  group GroupChat @relation(references: [id] , fields: [groupId],onDelete: Cascade)
-  joinedAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  @@index([groupId , userId])
-  @@index([userId])
-  @@index([groupId])
-}
-enum Roles {
-  ADMIN
-  MEMBER  
-}
-model GroupMessages {
-  id String @id
-  groupId String
-  senderId String
-  replyToId String?
-  group GroupChat @relation(fields: [groupId]  ,references: [id],onDelete: Cascade)
-  sender User @relation(references: [id] , fields: [senderId])
-  reply GroupMessages? @relation(references: [id]  , fields: [replyToId] , name: "groupMessages",onDelete: Cascade)
-  replies GroupMessages[] @relation("groupMessages")
+  user User @relation(fields: [userId] , references: [id])
   content String
-  media Media[] 
+  type noficationType
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  status status @default(PENDING)
 
-  @@index([groupId , senderId , createdAt])
 }
 
+
+
+
+enum noficationType {
+  FRIEND_REQUEST
+  Message
+  INVITE
+  Accepted
+}
+
+
+
+
+
+
+
+
+
+
+// model GroupChat {
+//   id           String              @id @default(uuid())
+//   participants ChatParticipant[]
+//   // messages     Message[] @relation("group-message")
+//   name         String
+//   description  String?
+//   createdAt    DateTime            @default(now())
+//   updatedat    DateTime            @updatedAt
+//   image        Media? 
+// }
+
+// model GroupParticipants {
+//   id        String    @id @default(uuid())
+//   role      Roles
+//   userId    String
+//   groupId   String
+//   user      User      @relation(references: [id], fields: [userId], onDelete: Cascade)
+//   group     GroupChat @relation(references: [id], fields: [groupId], onDelete: Cascade)
+//   joinedAt  DateTime  @default(now())
+//   updatedAt DateTime  @updatedAt
+//   muted     Boolean   @default(false)
+//   mutedTil  DateTime?
+
+//   @@index([groupId, userId])
+//   @@index([userId])
+//   @@index([groupId])
+// }
+
+
+
+// model GroupMessages {
+//   id        String          @id @default(uuid())
+//   groupId   String
+//   senderId  String
+//   replyToId String?
+//   group     GroupChat       @relation(fields: [groupId], references: [id], onDelete: Cascade)
+//   sender    User            @relation(references: [id], fields: [senderId])
+//   reply     GroupMessages?  @relation(references: [id], fields: [replyToId], name: "groupMessages", onDelete: Cascade)
+//   replies   GroupMessages[] @relation("groupMessages")
+//   content   String
+//   media     Media[]
+//   createdAt DateTime        @default(now())
+//   updatedAt DateTime        @updatedAt
+//   status    status          @default(PENDING)
+
+//   @@index([groupId, senderId, createdAt])
+// }

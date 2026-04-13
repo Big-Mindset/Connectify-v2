@@ -1,7 +1,7 @@
 
 
-import google from "@/app/assets/google.svg"
-import github from "@/app/assets/github.svg"
+import google from "@/assets/google.svg"
+import github from "@/assets/github.svg"
 import { authClient } from "@/lib/auth-client"
 import Image from "next/image"
 

@@ -6,14 +6,14 @@ import "dotenv/config"
 import { verificationEmailTemplate } from "./verifications/emailVerification.js";
 import { SendEmail } from "./verifications/sendEmail.js";
 import { passwordResetEmailTemplate } from "./verifications/passwordResetTempelate.js";
-console.log(process.env.GOOGLE_CLIENT_ID)
+
 
 export const auth = betterAuth({
     database: prismaAdapter(prisma,{
         provider: "postgresql",
-    }), 
-    baseUrl : "http://localhost:8000",
-    
+    }),
+    baseURL : "http://localhost:2525",
+    trustedOrigins : ["http://localhost:3000"],
     emailAndPassword : {
         enabled : true,
         autoSignIn : true,
@@ -41,7 +41,7 @@ export const auth = betterAuth({
             clientSecret : process.env.GITHUB_CLIENT_SECRET
         }
     },
-    appName : "Whatsapp",
+    appName : "Connectify",
     emailVerification : {
         sendOnSignUp : true,
         sendOnSignIn : true,
@@ -80,8 +80,8 @@ export const auth = betterAuth({
                     return false
                 }
                 return true
-            }
+            },
+            
         })
     ],
-    baseURL : "http://localhost:3000"
 });

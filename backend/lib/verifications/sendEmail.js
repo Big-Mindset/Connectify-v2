@@ -20,7 +20,6 @@ try{
     .setReplyTo(sentFrom)
     .setSubject(data.subject)
     .setHtml(data.html)
-    console.log("running")
     await mailerSend.email.send(emailParams);
 }catch(error){
     console.log(error)

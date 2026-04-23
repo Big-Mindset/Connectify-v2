@@ -1,6 +1,5 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import {username} from "better-auth/plugins"
 import {prisma} from "../prismaClient.js"
 import "dotenv/config"
 import { verificationEmailTemplate } from "./verifications/emailVerification.js";
@@ -22,6 +21,7 @@ export const auth = betterAuth({
         minPasswordLength : 6,
         maxPasswordLength : 50,
         sendResetPassword  : ({user ,token , url})=>{
+            console.log(user , url ,token)
               SendEmail({
                     recipient : user.name,
                     to : user.email,
@@ -46,9 +46,8 @@ export const auth = betterAuth({
         sendOnSignUp : true,
         sendOnSignIn : true,
         expiresIn : 60*20,
-            // send email verification mail
             sendVerificationEmail : ({user ,token , url})=>{
-          
+                console.log(user , url)
                 SendEmail({
                     recipient : user.name,
                     to : user.email,
@@ -68,20 +67,30 @@ export const auth = betterAuth({
             strategy : "compact"
         }
     },
-    plugins : [
-        username({
-            usernameValidator : async (username)=>{
-               let doesExist =  await prisma.user.findUnique({
-                    where : {
-                        username : username
-                    }
-                })
-                if (doesExist.id){
-                    return false
-                }
-                return true
-            },
+    user : {
+        additionalFields : {
+            username : {
+                type : "string",
+                required : true,
+                unique : true,
+                index : true
+            }
+        }
+    }
+    // plugins : [
+    //     username({
+    //         usernameValidator : async (username)=>{
+    //            let doesExist =  await prisma.user.findUnique({
+    //                 where : {
+    //                     username : username
+    //                 }
+    //             })
+    //             if (doesExist.id){
+    //                 return false
+    //             }
+    //             return true
+    //         },
             
-        })
-    ],
+    //     })
+    // ],
 });

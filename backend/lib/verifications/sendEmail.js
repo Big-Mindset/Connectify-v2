@@ -6,6 +6,7 @@ const mailerSend = new MailerSend({
 });
 
 export const SendEmail = async (data)=>{
+
 try{
     
     const sentFrom = new Sender("MS_0nqCFg@test-vz9dlem76vq4kj50.mlsender.net", "Connectify");

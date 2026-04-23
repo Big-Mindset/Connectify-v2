@@ -11,7 +11,8 @@ const nextConfig = {
   },
   images : {
     domains : ["i.pinimg.com"]
-  }
+  },
+  allowedDevOrigins : []
 };
 
 export default nextConfig;

@@ -5,7 +5,7 @@ export let signIn = z.object({
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
     "Invalid email format"
   ),
-    password : z.string().min(5 , {message : "must be greater or equal to 5 characters"})
+    password : z.string().min(5 , {message : "must be greater or equal to 5 characters"}),
 })
 export let signUp = z.object({
     email : z.string().trim().min(1,{message : "Enter email"}).regex(
@@ -13,7 +13,9 @@ export let signUp = z.object({
     "Invalid email format"
   ),
     password : z.string().min(5 , {message : "must be greater or equal to 5 characters"}),
-    name : z.string().min(1,{message : "name is required"}).max(50,{message : "Exceeded max characters of 50"})
+    name : z.string().min(1,{message : "name is required"}).max(50,{message : "Exceeded max characters of 50"}),
+    username : z.string().min(3,{message : "username must be greater than 3 characters"}).regex(/^[a-zA-Z0-9_.]+$/,{message : "please use letters, numbers, underscores_ and periods."})
+
 })
 
 export let emailSchema = z.object({

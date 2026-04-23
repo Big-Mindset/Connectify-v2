@@ -1,3 +1,4 @@
+import { Axios } from "@/lib/axiosInstance"
 import { create } from "zustand"
 // const messages = [
 //   {
@@ -115,38 +116,72 @@ export const chatStore = create((set, get) => ({
         id: null,
         name: null
     },
+    chats: [],
+    chatMembersIds : new Map(),
+    setChatMembersIds : (chatMembersIds)=>set({chatMembersIds}),
+    setChats: (func) => {
+        set((prev) => ({ chats: func(prev.chats) }))
+    },
+    filteredChats: [],
+    setFilteredChats: (func) => {
+        set((prev) => ({ filteredChats: func(prev.filteredChats) }))
+    },
     setReplyingTo: (data) => {
         set({ replyingTo: data })
     },
-    chatInfo: {
-        id: "chat1",
-        participants: [
-            {
-                id : "participant-1",
-                userId : "user2",
-
-               user : {
-                   name : "Alex",
-                   lastseen : new Date()
-                }
-            },
-            {       
-                id : "participant-1",
-            
-                userId : "user1",
-               user : {
-                name : "Wadood",
-
-            }
-        }
-        ],
-        messages: [],
-        lastMessage: null
-
-    },
-    setChatInfo: (func) => {
-        set((prev)=>({
-            chatInfo : func(prev.chatInfo)
+    selectedChat: null,
+    setSelectedChat: (func) => {
+        set((prev) => ({
+            selectedChat: func(prev.selectedChat)
         }))
-    }
+    },
+    inviteComp: false,
+    setInviteComp: (inviteComp) => set({ inviteComp }),
+    getChats: async (userId) => {
+        try {
+            let res = await Axios.get("/chat/chats")
+            if (res.status === 200) {
+                let AllChats = res.data.allFriends
+                let updatedData = AllChats.map(({chat})=>{
+
+                   let chatMembersIds =  get().chatMembersIds
+                   chatMembersIds.set(chat.id , chat.participants.map(({user}) => user.id))
+                    if (chat.isGroup) {
+                        return chat
+                    } else {
+                        let { user } = chat.participants.find(({user}) => user.id !== userId)
+                        let data = {
+                            id: chat.id,
+                            user: {
+                                
+                                image: user.image,
+                                name: user.name,
+                                userId: user.id,
+                                bio: user.bio,
+                            },
+                            lastMessage: chat.lastMessage,
+                            unread_messageCount : chat._count.messages
+                        }
+                        return data
+                    }
+                })
+                set({ chats: updatedData })
+            }
+        } catch (error) {
+            console.log(error.message)
+        }
+    },
+    getChatById : async (chatId)=>{
+        try {
+           let res = await Axios.get(`/chat/${chatId}`)
+           console.log(res)
+           if (res.status === 200){
+                let chat_messages  = res.data.chatMessages
+                return chat_messages
+           }
+        } catch (error) {
+            console.log(error?.response.data?.message)
+        }
+    },
+    
 }))

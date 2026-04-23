@@ -32,7 +32,7 @@ export default function Login() {
         }
     },[loginMethod])
     return (
-        <div className="h-full flex justify-center items-center">
+        <div className="h-full w-full flex justify-center items-center">
             {loginMethod === "sign-in" ? 
             <SignIn setLoginMethod={setLoginMethod} setEmail={setEmail} /> 
             : loginMethod === "sign-up" ?  

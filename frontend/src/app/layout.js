@@ -2,7 +2,11 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ContextProiver } from "@/lib/loading_hook";
 import {Toaster} from "react-hot-toast"
+import ConnectSocket from "@/components/connect-socket";
 import Script from "next/script";
+import { Sidebar } from "@/components/sidebar";
+import { Axios } from "@/lib/axiosInstance";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -19,6 +23,9 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }) {
+
+    
+   
   return (
     <html lang="en">
       <Script
@@ -30,7 +37,11 @@ export default function RootLayout({ children }) {
       >
         <ContextProiver >
       <Toaster />
+      <ConnectSocket />
+      <div className="flex h-full">
+
         {children}
+      </div>
         </ContextProiver>
       </body>
     </html>

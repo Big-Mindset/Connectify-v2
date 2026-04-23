@@ -1,6 +1,6 @@
 "use client"
 
-import { BellOff, Blocks, Camera, ChevronDown, DoorClosed, EllipsisVerticalIcon, Flag, PhoneCall, Search, Text, Timer, Trash, Trash2, UserX } from "lucide-react";
+import { BellOff,  Camera, ChevronDown, DoorClosed, EllipsisVerticalIcon, Flag, PhoneCall, Search, Text, Timer, Trash, Trash2, UserX } from "lucide-react";
 import Avatar from "../Avatar";
 import { useEffect, useRef, useState } from "react";
 import OptionButton from "../option-button";
@@ -9,6 +9,7 @@ import DisappearingMessages from "./navbar-components/disappearing-messages";
 import { chatStore } from "@/store/chat-store";
 import { formateTime } from "@/lib/formateTime";
 import { AnimatePresence , motion } from "framer-motion";
+import { socketStore } from "@/store/socket";
 
 export default function Navbar({receiverInfo}) {
     const [calltype, setCallType] = useState(false)
@@ -17,6 +18,7 @@ export default function Navbar({receiverInfo}) {
     const [muteNotifications, setOpenMuteNotifications] = useState(false)
     const [disappearingMessageComp, setDisappearingMessageComp] = useState(false)
     const chatSettingRef = useRef(null)
+    const audioCall = socketStore(s=>s.audioCall)
     useEffect(() => {
         let handleCallMenu = (e) => {
             if (callRef.current && !callRef.current.contains(e.target)) {
@@ -47,6 +49,10 @@ export default function Navbar({receiverInfo}) {
         }
     }
     let online = false
+    let handleAudioCall = async ()=>{
+   
+        audioCall(["FF17kgjOehECrwnXtVe8j1sRWxY5FR8V"])
+    }
     return (
         <>
             <div className="relative shrink-0 z-50 bg-gray-1 border-b border-gray-6 ">
@@ -64,7 +70,7 @@ export default function Navbar({receiverInfo}) {
 
                                 <div className="border flex    cursor-pointer rounded-full   overflow-hidden duration-200  border-indigo-400">
 
-                                    <div className="px-3.5 text-sm py-0.5 gap-1.5 duration-150 flex items-center hover:bg-indigo-600">
+                                    <div onClick={()=>handleAudioCall()} className="px-3.5 text-sm py-0.5 gap-1.5 duration-150 flex items-center hover:bg-indigo-600">
                                         <span>Audio Call</span>
                                         <PhoneCall size={15} />
                                     </div>
@@ -76,7 +82,7 @@ export default function Navbar({receiverInfo}) {
                                 </div>
                                 <div className={`absolute duration-200 ${calltype ? "-bottom-10 opacity-100" : "-bottom-0 scale-0 opacity-0"}  right-0 left-0 `}>
 
-                                    <div className="px-3.5 rounded-lg bg-indigo-500/50 cursor-pointer gap-2 text-sm py-2  duration-150 flex items-center justify-between hover:bg-indigo-600">
+                                    <div  className="px-3.5 rounded-lg bg-indigo-500/50 cursor-pointer gap-2 text-sm py-2  duration-150 flex items-center justify-between hover:bg-indigo-600">
                                         <span>Video Call</span>
                                         <Camera size={15} />
                                     </div>

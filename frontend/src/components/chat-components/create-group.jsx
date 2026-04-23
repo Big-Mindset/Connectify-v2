@@ -23,12 +23,6 @@ export default function CreateGroup({ createGroup, setCreateGroup }) {
                         <div className="">
 
                             <h1 className="font-bold text-xl">Create Group</h1>
-                            <div className="space-y-1.5 w-full">
-
-                                <hr className="border border-indigo-400" />
-                                <hr className="border border-indigo-400 " />
-                            </div>
-
                         </div>
                         <div onClick={() => setCreateGroup(false)} className="rounded-full cursor-pointer duration-100  hover:bg-gray-5 p-1">
 
@@ -62,8 +56,8 @@ export default function CreateGroup({ createGroup, setCreateGroup }) {
                         </div>
                     ) :
                         (
-                            <div className="space-y-3 mt-5">
-                                <h1 className="font-bold ">Add Users</h1>
+                            <div className="space-y-2 mt-5">
+                                <h1 className="font-medium ">Add Users</h1>
                                 <div>
                                     <input type="text" placeholder="Search Users" className="w-full outline-none  placeholder:text-sm rounded-lg p-2 focus:ring-indigo-400  bg-black/40 duration-300 ring-gray-2  ring-2" />
                                 </div>
@@ -71,8 +65,8 @@ export default function CreateGroup({ createGroup, setCreateGroup }) {
                                     <GroupUser setSelected={setSelected} selected={selected} />
                                 </div>
                                 <div className="grid mt-5 grid-cols-2 gap-2.5">
-                                    <button onClick={() => setCreateGroup(false)} className="p-2 ring ring-indigo-400 hover:ring-indigo-500 duration-200 cursor-pointer hover:text-indigo-100 rounded-lg text-indigo-500">Cancel</button>
-                                    <button onClick={() => setUsersAdded(true)} className="p-2 ring ring-indigo-500 bg-indigo-600  hover:bg-indigo-700 duration-200 cursor-pointer hover:text-indigo-50 rounded-lg ">Continue</button>
+                                    <button onClick={() => setCreateGroup(false)} className="p-2 bg-gray-600/40 hover:bg-gray-600/60 duration-200 cursor-pointer  rounded-lg ">Cancel</button>
+                                    <button onClick={() => setUsersAdded(true)} className="p-2   bg-indigo-600  hover:bg-indigo-700 duration-200 cursor-pointer hover:text-indigo-50 rounded-lg ">Continue</button>
                                 </div>
 
 

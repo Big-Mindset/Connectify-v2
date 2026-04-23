@@ -1,17 +1,17 @@
 
 
 import { chatStore } from "@/store/chat-store";
-import { Camera, LucideLaugh, Plus, Send, Trash, Upload } from "lucide-react";
+import { Camera, Plus, Send, Trash, Upload } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion"
-import RenderFile from "./main-input-components/renderFile";
 import { sizeText } from "@/lib/formateSize";
 import dynamic from "next/dynamic";
 import { generateThumbnail } from "@/lib/generateThumbnail";
-import FileSizeExceeded from "./main-input-components/file-sizeExceeded";
-
+import { chatMessageStore } from "@/store/chatMessage-store";
+let RenderFile = dynamic(()=>import("./main-input-components/renderFile"))
+let FileSizeExceeded = dynamic(()=>import( "./main-input-components/file-sizeExceeded"))
 const EmojiPicker = dynamic(() => import("./Emoji-Picker"), { ssr: false })
-export default function MainInput({ userId }) {
+export default function MainInput({ user , chatId }) {
     const [openAttachments, setOpenAttachments] = useState(false)
     const [inputText, setInputText] = useState("")
     const [filePreview, setFilePreview] = useState([])
@@ -23,8 +23,8 @@ export default function MainInput({ userId }) {
     let plusOptionsRef = useRef(null)
     let plusRef = useRef(null)
     let editableRef = useRef(null)
-
-    let setChatInfo = chatStore(s => s.setChatInfo)
+    let setSelectedChat = chatStore(s => s.setSelectedChat)
+    let sendMessage = chatMessageStore(s=>s.sendMessage)
     useEffect(() => {
         const handleClickOutside = (e) => {
             if (plusOptionsRef.current &&
@@ -52,28 +52,28 @@ export default function MainInput({ userId }) {
 
     const handleSendMessage = () => {
         if (inputText === "" && filePreview.length === 0) return
-        let new_message = {
+       let messageData =  {
             id: crypto.randomUUID(),
             content: inputText,
-            senderId: "user1",
-            receiver: "user2",
-            chatId: "chat1",
+            senderId: user.id,
+            sender : {
+                name : user.name,
+                image : user.image || null
+            },
+            chatId: chatId,
             createdAt: new Date(),
             updatedAt: new Date(),
             status: {
                 id: crypto.randomUUID(),
-                readAt: new Date(),
-                deliveredAt: new Date(Date.now() - 5000),
-                status: "read",
+                readAt: null,
+                deliveredAt: null,
+                status: "sent",
             },
-            replyToId: null,
+            replyTo: null,
             media: filePreview
 
         }
-        setChatInfo((data) => {
-            let res = { ...data, messages: [...data.messages, new_message] }
-            return res
-        })
+        sendMessage(messageData)
         setInputText("")
         setFilePreview([])
     }
@@ -139,7 +139,7 @@ export default function MainInput({ userId }) {
 
     let thumbnailUrl = thumbnailsUrl[editFile?.url]
 
-    const isEmoji = (char) => /\p{Emoji}/u.test(char);
+    // const isEmoji = (char) => /\p{Emoji}/u.test(char);
     const handleTyping = (e) => {
         setInputText(e.target.value)
     }

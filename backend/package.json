@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "nodemon ./bin/www"
+    "dev": "nodemon app.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1024.0",
@@ -23,6 +23,11 @@
     "jade": "~1.11.0",
     "mailersend": "^2.7.0",
     "morgan": "~1.9.1",
-    "prisma": "^7.6.0"
+    "peer": "^1.0.2",
+    "peerjs": "^1.5.5",
+    "prisma": "^7.6.0",
+    "redis": "^5.12.1",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3"
   }
 }

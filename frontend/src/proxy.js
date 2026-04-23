@@ -13,6 +13,7 @@ export default function proxy(request) {
   if (session && path !== "/"){
     return NextResponse.redirect(new URL("/",request.url))
   }
+  console.log("next....")
   return NextResponse.next()
 }
  

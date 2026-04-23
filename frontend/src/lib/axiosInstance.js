@@ -6,8 +6,13 @@ export const Axios = axios.create({
   baseURL: 'http://localhost:2525',
   withCredentials : true,
 });
-Axios.interceptors.response.use(undefined , async (error)=>{
-    if (error.response.statusCode === 401){
-        redirect("/login")
+Axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      redirect("/login");
     }
-} )
+
+    return Promise.reject(error); // 🔥 VERY IMPORTANT
+  }
+);

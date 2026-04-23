@@ -2,7 +2,7 @@
 import { authClient } from "@/lib/auth-client"
 import { Loader2, Mail } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 
 export default function VerifyEmail() {
@@ -12,20 +12,31 @@ export default function VerifyEmail() {
     let params = useSearchParams()
     let token = params.get("token")
     let router = useRouter()
-    let session = authClient.useSession.get()
+    let session = authClient.useSession()
     useEffect(() => {
+        
+        console.log("useEffect no :1")
+        console.log(session)
         if (session.data){
             router.push("/")
-        }else{
+        }else if (!session.isPending && !session.data){
+            console.log("running")
             verifyEmail()
+            
+        }
 
            
-        }
+        
         return ()=>{
-            clearInterval(timeout.current)
+            if (timeout.current){
+                clearInterval(timeout.current)
+                timeout.current = null
+            }
         }
-    }, [session])
-    let verifyEmail = async ()=>{
+    }, [session.data])
+    let verifyEmail = useCallback( async ()=>{
+        console.log("the func is running")
+        if (!token) router.push("/login")
          await authClient.verifyEmail({
             query : {
                 token
@@ -33,8 +44,8 @@ export default function VerifyEmail() {
          },{
             onError : (ctx)=>{
                setError(ctx.error.message)
-               if (timeout){
-                clearInterval(timeout)
+               if (timeout.current){
+                clearInterval(timeout.current)
                }
                 timeout.current = setInterval(()=>{
                     console.log("timeInterval")
@@ -53,12 +64,12 @@ export default function VerifyEmail() {
              router.push("/")
             }
          })
-    }
-    useEffect(()=>{
-        if (!time){
-            router.push("/")
-        }
-    },[time])
+    },[token])
+    // useEffect(()=>{
+    //     if (!time){
+    //         router.push("/")
+    //     }
+    // },[time])
     return (
     <div className="flex justify-center items-center h-dvh">
 

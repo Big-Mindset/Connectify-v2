@@ -1,7 +1,12 @@
+"use client"
 
-export default async function Chat(){
+import Chats from "@/components/chats";
+import { navigationStore } from "@/store/navigation-store";
 
-    return <div className="flex h-dvh justify-center text-4xl items-center ">
-        Welcome to Connectify
+export default function Chat(){
+      let {selectedPage} =  navigationStore()
+
+    return <div className=" ">
+
     </div>
 }

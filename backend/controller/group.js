@@ -303,9 +303,9 @@ export const kickUser = async (req, res, next) => {
 }
 
 export const inviteUser = async (req, res, next) => {
-    let { userId, chatId, } = req.body
+    let { userIds, chatId, } = req.body
     try {
-        if (!userId || !chatId) {
+        if (!userIds.length || !chatId) {
             throw createError(400, { message: "required fields are missing to invite user" })
         }
         let user = await prisma.chatParticipant.findUnique({
@@ -320,15 +320,14 @@ export const inviteUser = async (req, res, next) => {
         if (user.role === "MEMBER") {
             throw createError(400, { message: "Member can't invite users" })
         }
-        let new_participants = await prisma.chatParticipant.create({
-            data: {
+        let new_participants = await prisma.chatParticipant.createMany({
+            data: userIds.map((id)=>({
                 chatId,
-                userId
-            },
-            omit: {
-                chatId: true
-            }
+                userId : id
+            })),
+            skipDuplicates : true,
         })
+        
         res.status(200).json({ new_participants })
     } catch (error) {
         next(error)

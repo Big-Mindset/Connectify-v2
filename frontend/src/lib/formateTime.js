@@ -6,6 +6,7 @@ let within24Hours = (datetime)=>{
 }
 export const formateTime = (datetime)=>{
     if (!datetime) return null
+    datetime= new Date(datetime)
  let time = datetime.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
 
 if (within24Hours(datetime)){

@@ -1,10 +1,25 @@
-import { CheckCheck, MoreVerticalIcon } from "lucide-react";
+
+
+import { CheckCheck, MoreVerticalIcon, PinIcon } from "lucide-react";
 import ChatSettings from "./chat-settings";
 import Avatar from "../Avatar";
+import { chatStore } from "@/store/chat-store";
+import { socketStore } from "@/store/socket";
 
-export default function ChatUser({setChatSettings }) {
+export default function ChatUser({setChatSettings , chat  }) {
+    let getChatById = chatStore(s=>s.getChatById)
+    let setSelectedChat = chatStore(s=>s.setSelectedChat)
+    let socket = socketStore(s=>s.socket)
+    const handleGetChat = async ()=>{
+        let chatData = await getChatById(chat.id)
+        socket.emit("join-chat",chat.id)
+        setSelectedChat(()=>{
+            return {...chatData , user : chat.user}
+        })
+    }
+
     return (
-            <div className="relative overflow-hidden flex px-2.5 ring-2 hover:ring-indigo-500 group cursor-pointer ring-gray-2 py-2 bg-[#00000094] rounded-lg items-center gap-2">
+            <div onClick={handleGetChat} className="relative  overflow-hidden flex px-2.5 ring-2 hover:ring-indigo-500 group cursor-pointer ring-gray-2 py-2 bg-[#00000094] rounded-lg items-center gap-2">
                 <div onClick={() => setChatSettings(prev=>!prev)} className="backdrop-blur-2xl invisible group-hover:visible   absolute -right-5 top-0 p-1.5 duration-100 group-hover:right-0 rounded-full  ">
                     <MoreVerticalIcon size={12} className="text-purple-100" />
                 </div>
@@ -12,21 +27,29 @@ export default function ChatUser({setChatSettings }) {
                 {/* <div className="absolute -top-1 right-0 rotate-45 p-1  bg-[#141414] rounded-full">
                     <PinIcon size={15} />
                     </div> */}
-                <Avatar size={"size-12"} />
+                <Avatar size={"size-10"} image={chat?.image || chat?.user?.image} />
                 <div className="flex flex-col w-full">
                     <div className="flex  items-center justify-between">
-                        <p className="font-bold">Wadood</p>
-                        <p className="text-gray-12 text-sm">12:30 PM</p>
+                        <p className="font-medium text-md">{chat?.name || chat?.user.name}</p>
+                        {chat.lastMessage &&
+                        <p className="text-gray-12 text-[0.7rem]">{chat.lastMessage.createdAt}</p>}
                     </div>
+                    {chat.lastMessage ? 
                     <div className="flex items-center justify-between">
-                        <p className="text-sm text-gray-100">Hey whatsapp!!</p>
+                        <p className="text-[0.8rem] text-gray-300">{chat.lastMessage.content}</p>
                         <div className="flex items-center gap-2">
                             <CheckCheck size={19} className="text-blue-300" />
 
                         </div>
 
                     </div>
+                   : (chat?.user?.bio || chat?.description) && <div>{chat.user.bio || chat.description}</div> }
                 </div>
+                {chat.unread_messageCount > 0 &&
+                <div className="text-sm px-1.5 text-indigo-50 absolute  right-2  rounded-full bg-indigo-400">
+                        {chat.unread_messageCount}
+                </div>
+                }
             </div>
     )
 }

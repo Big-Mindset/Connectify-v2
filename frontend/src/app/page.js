@@ -1,35 +1,36 @@
 "use client"
 
 import Chats from "@/components/chats";
-import ChatWindow from "@/components/chat-window";
+import dynamic from "next/dynamic";
+let ChatWindow = dynamic(() => import("@/components/chat-window"))
+import { navigationStore } from "@/store/navigation-store";
+import { chatStore } from "@/store/chat-store";
 import { Sidebar } from "@/components/sidebar";
-import { authClient } from "@/lib/auth-client";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import FriendsTab from "@/components/friends-tab";
 
 export default function Home() {
-  let { isPending, data } = authClient.useSession()
 
-  let router = useRouter()
-  useEffect(() => {
-    console.log(data)
-    if (!data && isPending) {
-      router.push("/login")
-    }
-  }, [isPending, data])
+  let { selectedPage } = navigationStore()
+  let selectedChat = chatStore(s => s.selectedChat)
   return (
-    <div className="flex text-white justify-center relative h-full ">
-      {/* <div className="w-full flex ">
-        <Sidebar />
+
+    <div className="flex text-white flex-1 justify-center relative h-full  ">
+
+      <Sidebar />
+      <div className="w-full flex ">
         <div className="grid flex-1 grid-cols-1  lg:grid-cols-[minmax(200px,400px)_minmax(500px,100%)]">
-          <div className=" ">
-            <Chats />
-          </div>
+          <Chats />
+
           <div className="hidden relative lg:block">
-            <ChatWindow />
+            {selectedPage === "friends" ? <FriendsTab /> :
+              selectedChat?.id &&
+              <ChatWindow chatId={selectedChat.id} />
+
+            }
           </div>
         </div>
-      </div> */}
+      </div>
+
 
     </div>
   );

@@ -23,7 +23,6 @@ model User {
   updatedAt       DateTime @updatedAt
   bio             String?
   username        String
-  displayUsername String?
   lastseen        DateTime @default(now())
 
   notifications Notification[]
@@ -43,6 +42,7 @@ model User {
 
   @@unique([email])
   @@unique([username])
+  @@index([username])
   @@map("user")
 }
 
@@ -151,7 +151,7 @@ model Chat {
   lastMessageId String?
   name String?
   description String?
-  pfp Media?  @relation(name:"group-pfp")
+  image Media?  @relation(name:"group-pfp")
   isGroup Boolean @default(false)
   media Media[] @relation(name:"message-media")
   disappearMessagesDuration DateTime?
@@ -162,8 +162,10 @@ model Chat {
   FriendShip    Friendship        @relation(fields: [friendshipId], references: [id])
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
-
+  pinnedAt DateTime?
   @@unique([lastMessageId])
+  @@index([lastMessageId])
+  @@index([pinnedAt , createdAt(sort : Desc)])
   @@index([friendshipId])
 }
 
@@ -284,6 +286,7 @@ model Media {
 
   @@index([messageId])
 }
+
 
 
 

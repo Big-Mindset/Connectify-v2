@@ -27,7 +27,6 @@ export default function SignIn({setLoginMethod , setEmail}){
               ...data
           },{
             onError : (ctx)=>{
-                console.log(ctx)
                 if (ctx.error.code === "EMAIL_NOT_VERIFIED"){
                     toast.error(ctx.error.message)
                 
@@ -46,29 +45,24 @@ export default function SignIn({setLoginMethod , setEmail}){
 
             }
           })
-          console.log("here")
           setLoading(null)
           
           
            
         }
-    return <div className=" bg-gradient-to-b  from-[#2A2A2A] to-[#191919] shadow-[0.5px_-1px_5px_0.5px_gray]  rounded-lg p-2.5">
-        <h1 className="text-center mt-1.5 font-bold text-2xl text-gray-300"> Login</h1>
-        <div className="flex gap-1 flex-col w-[80px] text-white mx-auto">
-
-            <hr className="border " />
-            <hr className="border " />
-        </div>
+    return <div className=" bg-gradient-to-b  from-[#2A2A2A] to-[#191919] border border-gray-5  rounded-lg p-5">
+        <h1 className="text-center mt-1.5 font-bold text-2xl text-gray-300">Welcome back</h1>
+    
         <div className="mt-3.5 p-2 text-center">
             <span className="text-gray-300">Don't have an Account?</span><span onClick={()=>setLoginMethod("sign-up")} className="hover:underline cursor-pointer text-blue-200"> Sign up</span>
         </div>
         {error &&<div className="text-red-300 text-center">{error}</div>}
-        <form onSubmit={handleSubmit(handleSignIn)} className="mt-1 w-[400px] flex flex-col gap-2.5 p-2">
-            <div className=" space-y-2 overflow-hidden rounded-md ">
-                <label htmlFor="email" className="text-sm text-gray-400 font-bold">Email/Username</label>
+        <form onSubmit={handleSubmit(handleSignIn)} className="mt-1 w-[400px] flex flex-col text-gray-200 gap-2.5 p-2">
+            <div className=" space-y-2 overflow-hidden rounded-md">
+                <label htmlFor="email" className="text-sm text-gray-400 font-bold">Email</label>
                 <div>
 
-                <input {...register("email")} type="email" placeholder="Enter your email or Username" id="email" className="w-full hover:bg-[#181818] focus:bg-[#181818] placeholder:text-sm bg-[#1b1b1b] duration-200  rounded-lg p-2 focus:border-border-accent border outline-none" />
+                <input {...register("email")} type="email"  id="email" className="w-full  hover:bg-[#181818] focus:bg-[#181818] placeholder:text-sm bg-[#1b1b1b] duration-200  rounded-lg p-2 focus:border-indigo-500 border-2 border-gray-6 outline-none" />
                 <p className="text-sm text-red-300">{errors?.email?.message}</p>
                 </div>
                 
@@ -80,12 +74,12 @@ export default function SignIn({setLoginMethod , setEmail}){
                 </div>
                 <div>
 
-                <input {...register("password")} type="password" id="password" placeholder="Enter your password" className="w-full placeholder:text-sm focus:bg-[#181818] hover:bg-[#181818] bg-[#1b1b1b] duration-200  rounded-lg p-2 focus:border-border-accent border outline-none" />
+                <input {...register("password")} type="password" id="password"  className="w-full  hover:bg-[#181818] focus:bg-[#181818] placeholder:text-sm bg-[#1b1b1b] duration-200  rounded-lg p-2 focus:border-indigo-500 border-2 border-gray-6 outline-none" />
                 <p className="text-sm text-red-300">{errors?.password?.message}</p>
                 </div>
             </div>
             <div className="mt-2">
-                <button disabled={loading === "sign-in"} className="bg-blue-500   hover:bg-violet-600/90 ease-in focus:scale-[0.95] cursor-pointer duration-200 text-indigo-100  w-full p-2 rounded-lg ">{loading === "sign-in" ? <Loader2 className="mx-auto animate-spin  text-gray-200" /> : "Sign In"}</button>
+                <button disabled={loading === "sign-in"} className="bg-violet-500   hover:bg-violet-600/90 ease-in focus:scale-[0.95] cursor-pointer duration-200 text-indigo-100  w-full p-2 rounded-lg ">{loading === "sign-in" ? <Loader2 className="mx-auto animate-spin  text-gray-200" /> : "Sign In"}</button>
             </div>
         </form>
         <div className="relative w-[90%] mx-auto my-6">
@@ -95,7 +89,7 @@ export default function SignIn({setLoginMethod , setEmail}){
                 <div className="h-[1px] w-[45%] bg-gradient-to-r from-gray-400 to-gray-500"></div>
             </div>
 
-            <p className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2  px-3 text-gray-600">OR</p>
+            <p className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2  px-3 text-gray-300">OR</p>
         </div>
 
       <OauthButtons />

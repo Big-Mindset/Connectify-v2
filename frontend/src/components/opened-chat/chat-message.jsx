@@ -15,16 +15,13 @@ import FileShowcaseCard from "./chat-message-components/render-otherFiles"
 import MediaShowcase from "./chat-message-components/media-showcase"
 import { chatMessageStore } from "@/store/chatMessage-store"
 
-function ChatMessage({ optionsRef, setMoreOptions, moreOptions, message, plusRef }) {
+function ChatMessage({ optionsRef, setMoreOptions, moreOptions, message, plusRef , key }) {
 
     const [reacted, setReacted] = useState(false)
     const [messageHover, setMessageHover] = useState(false)
-    const participants = chatStore(state => state.chatInfo.participants);
     const selectedMedia = chatMessageStore((s)=>s.selectedMedia)
 
-    let senderInfo = useMemo(() => {
-        return participants.find((participant) => participant.userId === message.senderId)
-    }, [])
+   
     let twoFiles = message.media.filter(m => {
         if (m.type.startsWith("video") || m.type.startsWith("image")) return true
         return false
@@ -42,14 +39,16 @@ function ChatMessage({ optionsRef, setMoreOptions, moreOptions, message, plusRef
             return message.id
         })
     }
+    
+    console.log(message)
     return (
-        <div className="relative" >
+        <div key={key} className="relative" >
             <div
                 onMouseEnter={() => setMessageHover(true)}
                 onMouseLeave={() => setMessageHover(false)}
-                className={`py-2 px-3.5 flex flex-col   relative group rounded-r-lg duration-150 ${moreOptions === message.id ? "bg-gray-5" : "hover:bg-gray-5"}  max-w-[97%] w-full cursor-pointer `}>
+                className={`py-2 px-3.5 flex flex-col flex-col-reverse  relative group rounded-r-lg duration-150 ${moreOptions === message.id ? "bg-gray-5" : "hover:bg-gray-5"}  max-w-[97%] w-full cursor-pointer `}>
                 {
-                    message?.replyToId !== null &&
+                    message?.replyTo !== null &&
 
                     <div className="ml-4 relative duration-200 group/reply1 hover:border-indigo-200 w-10 h-3 border-l-2 border-t-2 border-gray-500 rounded-tl-lg">
 
@@ -78,13 +77,13 @@ function ChatMessage({ optionsRef, setMoreOptions, moreOptions, message, plusRef
 
                     <div className="relative">
 
-                        <Avatar size={"size-10"} image={GirlImage} />
+                        <Avatar size={"size-10"} image={message?.sender?.image || GirlImage} />
                     </div>
 
                     <div className="w-full">
                         <div className="flex items-baseline  gap-2 w-full">
                             <h1 className="font-semibold text-sm truncate min-w-0">
-                                {senderInfo?.user?.name}
+                                {message?.sender?.name}
                             </h1>
 
                             <div className="flex items-center gap-1 text-gray-300 text-xs whitespace-nowrap">
@@ -115,7 +114,7 @@ function ChatMessage({ optionsRef, setMoreOptions, moreOptions, message, plusRef
                         {selectedMedia &&
                         <MediaShowcase  media={twoFiles}  />
                         }
-                        <div className=" text-gray-200 ml-1  text-[0.95em]">
+                        <div className=" text-gray-200  text-[0.95em]">
                             {message.content}
                         </div>
 

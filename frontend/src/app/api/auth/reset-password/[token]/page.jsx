@@ -12,6 +12,7 @@ import { authClient } from "@/lib/auth-client"
 
 export default function ResetPassword() {
     const {token} = useParams()
+    console.log(token)
     const [error, setError] = useState("")
     const [showPassword, setShowPassword] = useState({
         password: false,

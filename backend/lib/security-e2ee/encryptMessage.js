@@ -9,14 +9,15 @@ export class secure_message {
     encryptMessage(content) {
 
         const dek_key = crypto.randomBytes(32)
-        const iv = crypto.randomBytes(16)
+        const iv = crypto.randomBytes(12)
 
         const cipher = createCipheriv("aes-256-gcm", dek_key, iv)
         let encrypteContent;
         let ngrams;
         if (content) {
-
-            encrypteContent = cipher.update(content, "utf8", "hex") + cipher.final("hex")
+            let encryptedBuffer = Buffer.concat([cipher.update(content , "utf8") , cipher.final()])
+            
+            encrypteContent = encryptedBuffer.toString("hex")
             ngrams = this.content_ngrams(content , true , true)
    
         }
@@ -42,41 +43,34 @@ export class secure_message {
         let decryptedDek = this.decryptDekKey({
             vi_v2: keys.vi_v2,
             authTag_v2: keys.authTag_v2,
-            ecnryptedDek: keys.encryptedDek
+            encryptedDek: keys.encryptedDek
 
         })
-        let decipher = createDecipheriv("aes-256-gcm", decryptedDek, keys.vi_v1)
+        let decipher = createDecipheriv("aes-256-gcm", decryptedDek, Buffer.from(keys.vi_v1 , "hex"))
         decipher.setAuthTag(Buffer.from(keys.authTag_v1, "hex"))
-        let decryptedContent = decipher.update(encryptedContent, "hex", "utf-8") + decipher.final("utf8")
+      
+        let decryptedContent = Buffer.concat([
+            decipher.update(Buffer.from(encryptedContent , "hex")) , 
+            decipher.final()
+        ]).toString("utf8")
         return decryptedContent
 
     }
     decryptDekKey(keys) {
-        let decipher = createDecipheriv("aes-256-gcm", this.kek_key, keys.vi_v2)      
+        let decipher = createDecipheriv("aes-256-gcm", this.kek_key, Buffer.from(keys.vi_v2 , "hex"))      
         decipher.setAuthTag(Buffer.from(keys.authTag_v2, "hex"))
-        let decryptedDek = decipher.update(keys.ecnryptedDek, "hex", "utf-8") + decipher.final("utf8")
+        let decryptedDek = Buffer.concat([decipher.update(Buffer.from(keys.encryptedDek , "hex")) ,decipher.final()] ) 
         return decryptedDek
     }
-    // encryptMedia(data){
-    //     //  const dek_key = crypto.randomBytes(32)
-    //     // const iv = crypto.randomBytes(16)
-    //     // const cipher = createCipheriv("aes-256-gcm",dek_key,iv)
-    //     // let encryptedMedia = cipher.update(JSON.stringify(data) , "utf8" , "hex") + cipher.final("hex")
-    //     // let encryptedKeys = this.encryptDekWithKek(dek_key)
-    //     // return {
-    //     //     encryptedMedia,
-    //     //     ...encryptedKeys,
-
-    //     // }
-    // }
+  
     encryptDekWithKek(dek_key) {
 
-        const iv = crypto.randomBytes(16)
+        const iv = crypto.randomBytes(12)
         const cipher = createCipheriv("aes-256-gcm", this.kek_key, iv)
-        const encryptedDek = cipher.update(dek_key, "utf8", "hex") + cipher.final("hex")
+        const encryptedDek = Buffer.concat([cipher.update(dek_key) , cipher.final()])  
         let authTag = cipher.getAuthTag()
         return {
-            authTag_v2: authTag.toString("hex"), vi_v2: iv.toString("hex"), encryptedDek
+            authTag_v2: authTag.toString("hex"), vi_v2: iv.toString("hex"), encryptedDek : encryptedDek.toString("hex")
         }
     }
     content_ngrams(content , gin , binaryTree) {

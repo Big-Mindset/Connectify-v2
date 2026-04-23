@@ -1,26 +1,55 @@
+
 import { prisma } from "../prismaClient.js"
 import createError from "http-errors"
 export let send_friendrequest = async (req, res, next) => {
 
     let senderId = req.user.id
-    let receiverId = req.body.receiverId
-    let request = await prisma.request.findFirst({
-        where: {
-            OR: [
-                { receiverId, senderId },
-                { receiverId, senderId }
-            ]
-        },
-        select: {
-            id: true,
-            status: true
-        }
-    })
-    if (request && request.id) {
-        if (request.status === "Accepted") throw createError(409, { message: "The user is already your friend" })
-        throw createError(409, { message: "can't send multiple request to one user" })
+    let username = req.body.username
+    if (username === req.user.username) {
+        return res.status(400).json({ message: "Please enter a correct username" })
+
     }
     try {
+        let user = await prisma.user.findUnique({
+            where: {
+                username
+            },
+            select: {
+                id: true
+            }
+        })
+        if (!user?.id) {
+            return res.status(404).json({ message: "User doesn't exist with this username" })
+        }
+        let receiverId = user.id
+        let request = await prisma.request.findFirst({
+            where: {
+                OR: [
+                    { receiverId, senderId },
+                    { receiverId, senderId }
+                ]
+            },
+            select: {
+                id: true,
+                status: true
+            }
+        })
+        if (request && request.id) {
+            if (request.status === "Accepted") throw createError(409, { message: "The user is already your friend" })
+            if (request.status === "Rejected") {
+                await prisma.request.update({
+                    where: {
+                        id: request.id
+                    },
+                    data: {
+                        status: "Pending"
+                    }
+                })
+                return res.status(201).json({ message: "freind request sent to " + req.user.name })
+
+            }
+            throw createError(409, { message: "can't send multiple request to one user" })
+        }
         if (senderId === receiverId) {
             throw createError(400, "Invalild request")
         }
@@ -38,7 +67,7 @@ export let send_friendrequest = async (req, res, next) => {
         if (!requestId.id) {
             throw createError(500, { message: "Internal server Error" })
         }
-        return res.status(201).json({ message: "freind request sent to" + req.user.name })
+        return res.status(201).json({ message: "freind request sent to " + req.user.name })
     } catch (error) {
         next(error)
     }
@@ -118,7 +147,8 @@ export let accept_friendrequest = async (req, res, next) => {
 
 export let reject_friendrequest = async (req, res, next) => {
 
-    let requestId = req.body.requestId
+    let requestId = req.query.requestId
+    console.log(req.query)
 
     try {
         let request = await prisma.request.findUnique({
@@ -156,20 +186,58 @@ export let reject_friendrequest = async (req, res, next) => {
 
 }
 
+
+export const cancel_request = async (req , res , next)=>{
+    let requestId = req.query.id
+    try {
+        let reqeust = await prisma.request.findUnique({
+            where : {
+                id : requestId
+            },
+            select : {
+               status : true 
+            }
+        })
+        if (reqeust.status !== "Pending"){
+            return res.status(400).json({message : "Error canceling request"})
+        }
+        return res.status(200).json({message : "Request canceled"})
+    } catch (error) {
+        next(error)
+    }
+}
+
+
 export let get_friendrequest = async (req, res, next) => {
     let user = req.user
     try {
 
         let friendRequests = await prisma.request.findMany({
             where: {
-                receiverId: user.id,
+                OR: [
+                    { receiverId: user.id },
+                    { senderId: user.id }
+                ],
                 status: "Pending"
             },
             select: {
+                id: true,
                 sender: {
+                    select: {
+                        id: true,
+                        image: true,
+                        name: true,
+                        username: true
+                    },
+
+                },
+                receiver: {
                     select: {
                         image: true,
                         name: true,
+                        id: true,
+                        username: true
+
                     }
                 }
             },
@@ -178,6 +246,7 @@ export let get_friendrequest = async (req, res, next) => {
             },
             take: 20
         })
+
         return res.status(200).json({ friendRequests })
 
     } catch (error) {
@@ -218,21 +287,3 @@ export let getMore_friendrequests = async (req, res, next) => {
 }
 
 
-export const getUser = async (req ,res , next)=>{
-    let username = req.params
-    try {
-        let user = await prisma.user.findUnique({
-            where : {
-                username
-            },
-            select : {
-                id : true,
-                displayUsername : true,
-                image : true
-            }
-        })
-        res.status(200).json({user})
-    } catch (error) {
-        next(error)
-    }
-}

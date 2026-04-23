@@ -6,6 +6,7 @@ import { GetObjectCommand, PutObjectCommand, S3 } from "@aws-sdk/client-s3"
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 import { s3 } from "../lib/s3-client.js"
 let secureMessage = new secure_message(Buffer.from(process.env.KEK_KEY, "hex"))
+
 export const createMessage = async (req, res, next) => {
     config()
     const messageData = req.body
@@ -33,38 +34,9 @@ export const createMessage = async (req, res, next) => {
                     }
                 },
             },
-            select: {
-                id: true,
-                createdAt: true,
-                updatedAt: true,
-                enceyptedContent: true,
-                reactions: true,
-                replyTo: {
-                    select: {
-                        enceyptedContent: true,
-                        sender: {
-                            select: {
-                                image: true,
-                                name: true
-                            }
-                        },
-                        createdAt: true,
-                        updatedAt: true,
-                        expiredAt: true,
-                        id: true
-                    }
-                },
-                expiredAt: true,
-                forwarded: true,
-                status: true,
-                senderId: true,
-                _count: {
-                    select: {
-                        replies: true,
-                    }
-                },
-
-            }
+           select : {
+            id : true
+           }
 
         })
         let response = message

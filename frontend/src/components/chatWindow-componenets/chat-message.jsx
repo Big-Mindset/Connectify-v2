@@ -16,6 +16,7 @@ let RenderTwoFiles = dynamic(() => import("./chat-message-components/render-twoF
 let FileShowcaseCard = dynamic(() => import("./chat-message-components/render-otherFiles"))
 import { EditMessage } from "./chat-message-components/edit-message"
 import { messageSettingsStore } from "@/store/messageSettings-store"
+import EmojiPicker from "./Emoji-Picker"
 
 function ChatMessage({ optionsRef, message, plusRef, key }) {
 
@@ -31,6 +32,10 @@ function ChatMessage({ optionsRef, message, plusRef, key }) {
     const deleteMessage = messageSettingsStore(s=>s.deleteMessage)
     const MessageRef = useRef(null)
     const setDeleteMessage = messageSettingsStore(s=>s.setDeleteMessage)
+    const reactMessage = messageSettingsStore(s=>s.reactMessage)
+    const setReactMessage = messageSettingsStore(s=>s.setReactMessage)
+    const inputRef = messageSettingsStore(s=>s.inputRef)
+    const handleReaction = messageSettingsStore(s=>s.handleReaction)
     let twoFiles = message.media.filter(m => {
         if (m.type.startsWith("video") || m.type.startsWith("image")) return true
         return false
@@ -57,6 +62,8 @@ function ChatMessage({ optionsRef, message, plusRef, key }) {
             setProgress(overallProgress/values.length)
         }
     }, [messagesProgress?.[message.id]])
+
+
     useEffect(()=>{
         if (!deleteMessage?.id || deleteMessage.id !== message.id) return
        setDeleteMessage({...deleteMessage,messageRef : MessageRef})
@@ -64,15 +71,33 @@ function ChatMessage({ optionsRef, message, plusRef, key }) {
     let sender = participants.get(message.senderId)
     let replyToSender;
     if (message.replyTo !== null) {
-
         replyToSender = participants.get(message.replyTo.senderId)
     }
+    
     return (
         <div ref={MessageRef} key={key} className="relative" >
+            {message.id === reactMessage?.id &&
+             <div ref={(e)=>{
+               
+                let rect1 = e?.getBoundingClientRect()
+                let rect2 = inputRef?.current?.getBoundingClientRect()
+                if (rect1 && rect2){
+                      if (!reactMessage?.top) {
+                          if (rect1?.bottom > rect2?.bottom){
+                              setReactMessage({...reactMessage , top : true})
+                              console.log(reactMessage)
+                            }
+                        }
+                }
+             }} className={`absolute  ${reactMessage?.left ? `left-20 ${reactMessage?.top ? "bottom-10" : ""}` : `${reactMessage?.top && "bottom-full"} right-40 ` }  z-[60000]`}>
+
+        <EmojiPicker reaction={true} emojiButtonRadius={100} perLine={17} emojiSize={30} previewPosition={"none"} />
+       </div>
+       }
             <div
                 onMouseEnter={() => setMessageHover(true)}
                 onMouseLeave={() => setMessageHover(false)}
-                className={`py-2 px-3.5 flex flex-col overflow-hidden ${replyMessage?.id === message.id ? "bg-blue-800/30 before:content-[''] before:w-0.5 before:bg-blue-600 before:bottom-0 before:top-0 before:absolute relative before:left-0 " : (openMessageOptionId === message.id || editMessage?.id === message.id) ? "bg-gray-5" : "hover:bg-gray-5"}  relative group rounded-r-sm duration-150  max-w-[97%] w-full cursor-pointer `}>
+                className={`py-2 px-3.5 flex flex-col overflow-hidden ${replyMessage?.id === message.id ? "bg-blue-800/30 before:content-[''] before:w-0.5 before:bg-blue-600 before:bottom-0 before:top-0 before:absolute relative before:left-0 " : (openMessageOptionId === message.id || editMessage?.id === message.id || reactMessage?.id === message.id) ? "bg-gray-5" : "hover:bg-gray-5"}  relative group rounded-r-sm duration-150  max-w-[97%] w-full cursor-pointer `}>
                 {
                     message?.replyTo !== null &&
 
@@ -96,7 +121,7 @@ function ChatMessage({ optionsRef, message, plusRef, key }) {
                 }
 
                 <div   className={`flex   w-full gap-4`}>
-                    {(messageHover || message.id === openMessageOptionId) &&
+                    {(messageHover || message.id === openMessageOptionId || reactMessage?.id === message.id) &&
                         <MessageSettings handleMoreOptions={handleMoreOptions} plusRef={plusRef} message={message} />
                     }
 
@@ -168,12 +193,21 @@ function ChatMessage({ optionsRef, message, plusRef, key }) {
 
 
                 </div>
-                {reacted &&
+                {message.reactions.length > 0 &&
+                <div className="flex gap-1 items-center">
+
                     <div className="flex items-center gap-1 ml-13 mt ">
-                        <div className="px-1 border bg-indigo-400/20 border-indigo-500 rounded-lg ">
-                            😂
+                        {message.reactions.map((reaction)=>{
+                            
+                            return  <div key={reaction.id} className="px-1 border bg-indigo-400/20 border-indigo-500 rounded-lg ">
+                            {reaction.emoji}
                         </div>
+                        })}
                     </div>
+                    <div onClick={()=>handleReaction(message , true)} className="px-1.5 py-0.5 hover:bg-gray-8 rounded-lg bg-gray-7">
+                          <i className="fa-solid fa-face-smile"></i>
+                    </div>
+                        </div>
                 }
 
             </div>

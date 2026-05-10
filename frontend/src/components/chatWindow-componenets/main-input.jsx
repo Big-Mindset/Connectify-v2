@@ -35,6 +35,8 @@ export default function MainInput({ chatId }) {
     let setInputRef = messageSettingsStore(s=>s.setInputRef)
     let replyMessage = messageSettingsStore(s => s.replyMessage)
     let setReplyMessage = messageSettingsStore(s => s.setReplyMessage)
+    let reactMessage = messageSettingsStore(s => s.reactMessage)
+    let setReactMessage = messageSettingsStore(s => s.setReactMessage)
      let inputRef = useRef(null)
 
 
@@ -66,7 +68,7 @@ export default function MainInput({ chatId }) {
         setSenderData(sender)
         textInputRef.current.focus()
     }, [replyMessage])
-    
+   
 
 
 
@@ -350,7 +352,7 @@ export default function MainInput({ chatId }) {
 
                         <div className={`${openEmojiPicker ? " scale-[1] opacity-100" : "scale-[0.2] opacity-0 "} absolute z-[500] duration-100 bottom-[110%] origin-bottom-left left-6`}>
 
-                            <EmojiPicker setOpenEmojiPicker={setOpenEmojiPicker} setInputText={setInputText} />
+                            <EmojiPicker setOpenEmojiPicker={setOpenEmojiPicker} perLine={10} previewPosition={"bottom"} setInputText={setInputText} />
                         </div>
 
                     </div>

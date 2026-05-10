@@ -7,6 +7,8 @@ export let messageSettingsStore = create((set, get) => ({
     editMessage: {},
     openMessageOptionId: null,
     replyMessage: null,
+    reactMessage : null,
+    setReactMessage : (reactMessage)=>set({reactMessage}),
     setReplyMessage: (replyMessage) => set({ replyMessage }),
     setOpenMessageOptionId: (func) => {
         set((prev) => {
@@ -21,20 +23,26 @@ export let messageSettingsStore = create((set, get) => ({
 
      handleEditMessage : (message) => {
         let editMessasge = get().editMessage
-        let setEditMessage = get().setEditMessage
         if (editMessasge?.id === message?.id) return
-        setEditMessage({ id: message.id, senderId: message.senderId, content: message.content || "" ,  media : !!message.media.length })
+        set({editMessage : { id: message.id, senderId: message.senderId, content: message.content || "" ,  media : !!message.media.length} })
     },
      handleReplyMessage : (message) => {
          let replyMessage = get().replyMessage
-         let setReplyMessage = get().setReplyMessage
          if (replyMessage?.id === message.id) return
-        setReplyMessage({ id: message.id, senderId: message.senderId , content : message.content || ""})
+        set({replyMessage : { id: message.id, senderId: message.senderId , content : message.content || ""}})
     },
     handleDeleteMessage : (message)=>{
         let deleteMessage = get().deleteMessage
-        let setDeleteMessage = get().setDeleteMessage
         if (deleteMessage?.id === message?.id) return
-        setDeleteMessage({ id: message.id, senderId: message.senderId, content: message.content || "" })
+        set( { deleteMessage : { id: message.id, senderId: message.senderId, content: message.content || ""} })
+    },
+    handleReaction : (message , left)=>{
+        let reactMessage = get().reactMessage
+        console.log(reactMessage)
+        if (message.id === reactMessage?.id) {
+            set({reactMessage : null })
+            return
+        }
+        set({reactMessage : {id: message.id, senderId: message.senderId , left : left  } })
     }
 }))

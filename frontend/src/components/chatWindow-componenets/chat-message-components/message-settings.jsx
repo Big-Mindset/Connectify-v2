@@ -10,7 +10,7 @@ export default function MessageSettings({ handleMoreOptions, plusRef, message })
     let openMessageOptionId = messageSettingsStore(s => s.openMessageOptionId)
     let handleEditMessage = messageSettingsStore(s=>s.handleEditMessage)
     let handleReplyMessage = messageSettingsStore(s=>s.handleReplyMessage)
-  
+    let handleReaction = messageSettingsStore(s=>s.handleReaction)
 
    
     
@@ -32,7 +32,7 @@ export default function MessageSettings({ handleMoreOptions, plusRef, message })
                 </div>
             </div>
             <div className="flex  items-center gap-0.5">
-                <div className="group/reaction relative hover:bg-gray-3 p-0.5 whitespace-nowrap rounded-lg  hover:text-white text-gray-12 duration-150 hover:scale-[1.08]">
+                <div onClick={()=>handleReaction(message , false)} className="group/reaction relative hover:bg-gray-3 p-0.5 whitespace-nowrap rounded-lg  hover:text-white text-gray-12 duration-150 hover:scale-[1.08]">
                     <HoverText text={"Add Reaction"} groups={"group-hover/reaction:visible group-hover/reaction:opacity-100"} />
 
                     <i className="fa-solid fa-face-grin-wide"></i>

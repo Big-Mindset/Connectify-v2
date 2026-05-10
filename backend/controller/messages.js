@@ -331,7 +331,7 @@ export const updateMessage = async (req, res, next) => {
         if (message.senderId !== req.user.id) {
             throw createError(400, { message: "you don't have permission to edit this message" })
         }
-        let messageId;
+        let data;
         if (message.content){
 
             let { encrypteContent, keys } = secureMessage.encryptMessage(message.content)
@@ -356,11 +356,12 @@ export const updateMessage = async (req, res, next) => {
                 }
             },
             select : {
-                id : true
+                id : true,
+                updatedAt : true
             }
         })
         if (!updatedMessage.id) throw createError(500, { message: "error updating message try again" })
-        messageId = updatedMessage.id
+        data = {messageId : updatedMessage.id , updatedAt : updatedMessage.updatedAt}
         }else{
                 let updatedMessage = await prisma.message.update({
             where: {
@@ -376,12 +377,14 @@ export const updateMessage = async (req, res, next) => {
                 
             },
             select : {
-                id : true
+                id : true,
+                updatedAt : true
             }
         })
-        messageId = updatedMessage.id
+                data = {messageId : updatedMessage.id , updatedAt : updatedMessage.updatedAt}
+
             }
-        res.status(200).json({messageId})
+        res.status(200).json(data)
     } catch (error) {
         next(error)
     }
@@ -417,18 +420,23 @@ export const deleteMessage = async (req, res, next) => {
 
 export const createReactions = async (req, res, next) => {
     let data = req.body
+    console.log(data)
     try {
 
 
         let reaction = await prisma.reaction.create({
             data: {
+                id : data.id,
                 senderId: req.user.id,
                 messageId: data.messageId,
-                emojiCode: data.emojiCode,
+                emoji: data.emoji,
                 name: data.name,
+            },
+            select : {
+                id : true
             }
         })
-        res.status(201).json({ reaction })
+        res.status(201).json({ reactionId : reaction.id })
     } catch (error) {
         next(error)
     }

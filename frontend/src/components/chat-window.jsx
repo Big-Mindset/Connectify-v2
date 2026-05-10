@@ -11,6 +11,7 @@ import { mediaStore } from "@/store/media-store";
 import ConfirmMessageDeletion from "./chatWindow-componenets/confirm-messageDeletion";
 import { messageSettingsStore } from "@/store/messageSettings-store";
 import { AnimatePresence } from "framer-motion";
+import EmojiPicker from "./chatWindow-componenets/Emoji-Picker";
 let ChatMessage = dynamic(() => import("./chatWindow-componenets/chat-message"))
 export default function ChatWindow({ chatId }) {
     const setOpenMessageOptionId = messageSettingsStore(s=>s.setOpenMessageOptionId)
@@ -25,6 +26,8 @@ export default function ChatWindow({ chatId }) {
     const MessagesContainerRef = useRef(null)
     const editingMessage = messageSettingsStore(s=>s.editingMessage)
     const deleteMessage = messageSettingsStore(s=>s.deleteMessage)
+ const reactMessage = messageSettingsStore(s=>s.reactMessage)
+ const setReactMessage = messageSettingsStore(s=>s.setReactMessage)
     useEffect(() => {
         const handleopenMessageOptionId = (e) => {
             if (optionsRef.current && !optionsRef.current.contains(e.target) && plusRef.current && !plusRef.current.contains(e.target)) {
@@ -50,10 +53,15 @@ export default function ChatWindow({ chatId }) {
     }, [])
     return <div className="flex flex-col  bg-gray-3 h-dvh overflow-hidden  relative">
 
-
+           {(reactMessage?.id) && <div onClick={()=>setReactMessage(null)} className="fixed inset-0 bg-gray-200 z-[2000] opacity-0">
+            </div>}
         {user &&
             <Navbar receiverInfo={user} />
         }
+  
+      
+       
+
         <div className="flex-1 flex flex-col-reverse overflow-hidden">
 
             {selectedMedia &&

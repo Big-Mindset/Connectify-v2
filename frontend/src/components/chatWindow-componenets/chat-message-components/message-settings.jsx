@@ -1,9 +1,19 @@
 
+
+import { messageSettingsStore } from "@/store/messageSettings-store"
 import HoverText from "../hover-text"
 
 
 
-export default function MessageSettings({handleMoreOptions , plusRef , message , moreOptions}) {
+export default function MessageSettings({ handleMoreOptions, plusRef, message }) {
+
+    let openMessageOptionId = messageSettingsStore(s => s.openMessageOptionId)
+    let handleEditMessage = messageSettingsStore(s=>s.handleEditMessage)
+    let handleReplyMessage = messageSettingsStore(s=>s.handleReplyMessage)
+  
+
+   
+    
     return <div className={`absolute   right-0 top-0 bg-gray-4 p-1 rounded-lg`}>
         <div className="flex items-center gap-2">
 
@@ -28,18 +38,18 @@ export default function MessageSettings({handleMoreOptions , plusRef , message ,
                     <i className="fa-solid fa-face-grin-wide"></i>
                 </div>
 
-                <div className="group/edit hover:bg-gray-3 p-0.5 rounded-lg  hover:text-white text-gray-12 duration-150 hover:scale-[1.08]">
+                <div onClick={()=>handleEditMessage(message)} className="group/edit  hover:bg-gray-3 p-0.5 rounded-lg  hover:text-white text-gray-12 duration-150 hover:scale-[1.08]">
                     <HoverText text={"Edit"} groups={"group-hover/edit:visible group-hover/edit:opacity-100"} />
 
                     <i className="fa-solid fa-pen"></i>
                 </div>
-                <div className="group/reply hover:bg-gray-3 p-0.5 rounded-lg  hover:text-white text-gray-12 duration-150 hover:scale-[1.08]">
+                <div onClick={()=>handleReplyMessage(message)} className="group/reply hover:bg-gray-3 p-0.5 rounded-lg  hover:text-white text-gray-12 duration-150 hover:scale-[1.08]">
                     <HoverText text={"Reply"} groups={"group-hover/reply:visible group-hover/reply:opacity-100"} />
 
                     <i className="fa-solid fa-reply"></i>
                 </div>
                 <div ref={(val) => {
-                    if (message.id === moreOptions) {
+                    if (message.id === openMessageOptionId) {
                         plusRef.current = val
                     }
                 }} onClick={handleMoreOptions} className="relative group/more hover:bg-gray-3 p-0.5 rounded-lg  hover:text-white text-gray-12 duration-150 hover:scale-[1.08]">

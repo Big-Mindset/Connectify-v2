@@ -7,13 +7,32 @@ import { navigationStore } from "@/store/navigation-store";
 import { chatStore } from "@/store/chat-store";
 import { Sidebar } from "@/components/sidebar";
 import FriendsTab from "@/components/friends-tab";
+import { useEffect } from "react";
+import { authClient } from "@/lib/auth-client";
+import { router } from "better-auth/api";
+import { useRouter } from "next/navigation";
+import { userStore } from "@/store/user-store";
 
 export default function Home() {
+  let session = authClient.useSession()
+  let router = useRouter()
+  const setSession = userStore(s => s.setSession)
+  useEffect(() => {
+    if (!session?.data && !session.isPending) {
+      router.push("/login")
+    }
+    setSession(session.data)
 
+  }, [session.isPending])
   let { selectedPage } = navigationStore()
   let selectedChat = chatStore(s => s.selectedChat)
-  return (
-
+  if (session.isPending && !session?.data) {
+    return (<div className="size-full bg-red-200">
+      Loading Session
+    </div>)
+  }
+  if (session?.data){
+    return (
     <div className="flex text-white flex-1 justify-center relative h-full  ">
 
       <Sidebar />
@@ -30,8 +49,8 @@ export default function Home() {
           </div>
         </div>
       </div>
-
-
     </div>
+
   );
+  }
 }

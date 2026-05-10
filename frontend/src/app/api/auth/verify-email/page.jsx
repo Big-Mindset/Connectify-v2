@@ -15,12 +15,10 @@ export default function VerifyEmail() {
     let session = authClient.useSession()
     useEffect(() => {
         
-        console.log("useEffect no :1")
-        console.log(session)
         if (session.data){
             router.push("/")
         }else if (!session.isPending && !session.data){
-            console.log("running")
+  
             verifyEmail()
             
         }
@@ -35,7 +33,6 @@ export default function VerifyEmail() {
         }
     }, [session.data])
     let verifyEmail = useCallback( async ()=>{
-        console.log("the func is running")
         if (!token) router.push("/login")
          await authClient.verifyEmail({
             query : {
@@ -48,7 +45,6 @@ export default function VerifyEmail() {
                 clearInterval(timeout.current)
                }
                 timeout.current = setInterval(()=>{
-                    console.log("timeInterval")
                    setTime((prev)=>{
                     if (prev === 1){
                         clearInterval(timeout.current)

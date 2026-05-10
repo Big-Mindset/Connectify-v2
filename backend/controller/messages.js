@@ -5,6 +5,9 @@ import createError from "http-errors"
 import { GetObjectCommand, PutObjectCommand, S3 } from "@aws-sdk/client-s3"
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 import { s3 } from "../lib/s3-client.js"
+import multer from "multer"
+import cloudinary from "../lib/cloudinary.js"
+import { uploadToCloudinary } from "../lib/uploadToCloudinary.js"
 let secureMessage = new secure_message(Buffer.from(process.env.KEK_KEY, "hex"))
 
 export const createMessage = async (req, res, next) => {
@@ -60,7 +63,6 @@ export const createMessage = async (req, res, next) => {
 export const searchMessages = async (req, res, next) => {
     try {
         let { query, chatId, order, Ids, forwarded } = req.query
-        console.log(query, chatId)
 
         if (query.trim().length === 0 || typeof query !== "string") {
             throw createError(400, { message: "invalid search input" })
@@ -107,12 +109,7 @@ export const searchMessages = async (req, res, next) => {
                     replyTo: {
                         select: {
                             enceyptedContent: true,
-                            sender: {
-                                select: {
-                                    image: true,
-                                    name: true
-                                }
-                            },
+                            senderId : true,
                             createdAt: true,
                             updatedAt: true,
                             expiredAt: true,
@@ -188,7 +185,6 @@ export const searchMessages = async (req, res, next) => {
           return {...rest,content}
         })
         chat.messages = decryptedMessages
-        console.log(decryptedMessages)
         res.status(200).json({ messages })
     } catch (error) {
         next(error)
@@ -335,33 +331,69 @@ export const updateMessage = async (req, res, next) => {
         if (message.senderId !== req.user.id) {
             throw createError(400, { message: "you don't have permission to edit this message" })
         }
-        let { encrypteContent, keys } = secureMessage.encryptMessage(message.content)
+        let messageId;
+        if (message.content){
 
-        let updatedMessage = await prisma.message.update({
+            let { encrypteContent, keys } = secureMessage.encryptMessage(message.content)
+            let {n_grams , n_grams_singleLetters} = secureMessage.content_ngrams(message.content , true, true)
+            let updatedMessage = await prisma.message.update({
             where: {
                 id: message.id,
             },
             data: {
                 message_security: {
-                    update: keys
+                    upsert : {
+                        update : keys,
+                        create : keys
+                    }
                 },
                 enceyptedContent: encrypteContent,
-
+                firstLetters_index : {
+                     set : n_grams_singleLetters
+                },
+                search_index : {
+                    set : n_grams
+                }
             },
-            include: {
-                message_security: true
+            select : {
+                id : true
             }
         })
         if (!updatedMessage.id) throw createError(500, { message: "error updating message try again" })
-        res.status(200).json({ updatedMessage })
+        messageId = updatedMessage.id
+        }else{
+                let updatedMessage = await prisma.message.update({
+            where: {
+                id: message.id,
+            },
+            data: {
+                message_security: {
+                    delete: true
+                },
+                enceyptedContent: "",
+                search_index : [],
+                firstLetters_index : [],
+                
+            },
+            select : {
+                id : true
+            }
+        })
+        messageId = updatedMessage.id
+            }
+        res.status(200).json({messageId})
     } catch (error) {
         next(error)
     }
 }
 
 export const deleteMessage = async (req, res, next) => {
-    let messageId = req.params.id
-    console.log(messageId)
+    console.log(req.body)
+    let {messageId , senderId} = req.body
+    console.log(messageId , senderId)
+    if (senderId !== req.user.id){
+        res.status(400).json({message : "you don't have permission to delete this message"})
+    }
     try {
         let deletedmessage = await prisma.message.delete({
             where: {
@@ -501,3 +533,20 @@ export let clearMessages = async (req, res, next) => {
 //         next(null)
 //     }
 // }   
+
+// export const uploadImages = async (req , res , next)=>{
+//         let files = req.files
+//         if (files.length === 0) return res.status(400).json({message : "please provide files to upload"})
+        
+//             try {
+                
+//                 let uploadedFiles = await Promise.all(
+//                     files.map((file)=>
+//                         uploadToCloudinary(file.buffer)
+//                 )
+//             )
+//             return res.status(200).json(uploadedFiles.map(file=>({secure_url : file.secure_url , public_Id : file.public_id})))
+//         } catch (error) {
+//             next(error)
+//         }
+// }

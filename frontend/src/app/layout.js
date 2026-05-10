@@ -27,12 +27,12 @@ export default function RootLayout({ children }) {
     
    
   return (
-    <html lang="en">
+    <html suppressHydrationWarning lang="en">
       <Script
    src="https://kit.fontawesome.com/ecb364a250.js"
    crossOrigin="anonymous"
  />
-      <body
+      <body 
         className={`${geistSans.variable}  ${geistMono.variable} h-dvh bg-[#111111]  w-full  antialiased`}
       >
         <ContextProiver >

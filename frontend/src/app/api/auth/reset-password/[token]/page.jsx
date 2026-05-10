@@ -12,7 +12,6 @@ import { authClient } from "@/lib/auth-client"
 
 export default function ResetPassword() {
     const {token} = useParams()
-    console.log(token)
     const [error, setError] = useState("")
     const [showPassword, setShowPassword] = useState({
         password: false,
@@ -44,7 +43,6 @@ export default function ResetPassword() {
 
 
     }
-    console.log(errors)
     return <div className="flex justify-center items-center h-full">
 
         <div className=" bg-gradient-to-b   mx-auto  from-[#2A2A2A] to-[#191919] shadow-[0.5px_-1px_5px_0.5px_gray]  rounded-lg p-2.5">

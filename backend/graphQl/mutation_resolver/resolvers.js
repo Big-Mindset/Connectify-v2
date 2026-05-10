@@ -48,11 +48,7 @@ export let create_message = async (_ , args , ctx ,info)=>{
 }
 
 export let create_group = async (parent , args , ctx , info)=>{
-    console.log(args.participants.map((user)=>({
-                      role : user.role,
-                      userId : user.userId,
 
-                })))
     validate_user(ctx.user)
     let prisma = ctx.prisma
     let createGroup =  await prisma.groupChat.create({
@@ -73,5 +69,4 @@ export let create_group = async (parent , args , ctx , info)=>{
             }
         }
     })
-    console.log(createGroup)
 }

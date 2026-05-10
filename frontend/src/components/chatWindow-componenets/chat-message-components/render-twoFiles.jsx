@@ -1,12 +1,12 @@
 
-import { Download, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { useState } from "react";
 import RenderVideo from "./render-video";
 import RenderImage from "./render-image";
-import { chatMessageStore } from "@/store/chatMessage-store";
+import { mediaStore } from "@/store/media-store";
 
 export default function RenderTwoFiles({ files, moreFiles, multipleFiles, deleteButton }) {
-     const setSelectedMedia = chatMessageStore((s)=>s.setSelectedMedia)
+     const setSelectedMedia = mediaStore((s)=>s.setSelectedMedia)
     const totalfiles = files.length
     const [hoveredFile, setHoveredFile] = useState("")
     const outerClass =
@@ -20,12 +20,13 @@ export default function RenderTwoFiles({ files, moreFiles, multipleFiles, delete
     const handleOpenFile = ( idx, file)=>{
        
         if (files.length === 1 && file.type.startsWith("video")) return
-        setSelectedMedia({...file , idx : idx})
+        
+        setSelectedMedia(()=>({files , idx  , selectedFileId : file.id }))
     }
     return <div className={outerClass}>
 
 
-        <div className={`grid  gap-1  rounded-lg  ${totalfiles === 1 ? " grid-cols-1" : totalfiles === 2 ? "grid-cols-2 " : totalfiles >= 3 && "grid-cols-2 grid-rows-2"}  rounded-lg    w-full h-full  overflow-hidden`}>
+        <div className={`grid  gap-1   rounded-lg  ${totalfiles === 1 ? " grid-cols-1" : totalfiles === 2 ? "grid-cols-2 " : totalfiles >= 3 && "grid-cols-2 grid-rows-2"}  rounded-lg    w-full h-full  overflow-hidden`}>
 
 
             {files.map((file, i) => {
@@ -66,7 +67,7 @@ export default function RenderTwoFiles({ files, moreFiles, multipleFiles, delete
                             </div>
                         </>
                         }
-                        <div onClick={()=>handleOpenFile(i,file)} className="bg-red-300">
+                        {/* <div onClick={()=>handleOpenFile(i,file)} className="bg-gray-300"> */}
 
                         {
                             file.type.startsWith("image") ?
@@ -75,7 +76,7 @@ export default function RenderTwoFiles({ files, moreFiles, multipleFiles, delete
                             <RenderVideo hoveredFile={hoveredFile} multipleVideoes={multipleFiles} video={file} />
                             
                         }
-                        </div>
+                        {/* </div> */}
 
 
                     </div>

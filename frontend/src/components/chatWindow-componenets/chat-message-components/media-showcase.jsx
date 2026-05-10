@@ -1,9 +1,9 @@
 import Avatar from "@/components/Avatar"
 import { chatMessageStore } from "@/store/chatMessage-store"
+import { mediaStore } from "@/store/media-store"
 import Image from "next/image"
 
-export default function MediaShowcase({ media }) {
-    const setSelectedMedia = chatMessageStore((s) => s.setSelectedMedia)
+export default function MediaShowcase({ mediaData }) {
 
     return <div className="bg-gray-2 opacity-[0.95] fixed z-[99] inset-0 ">
         {/* <div onClick={() => setSelectedMedia(null)} className="fixed  inset-0 z-20 ">
@@ -11,10 +11,10 @@ export default function MediaShowcase({ media }) {
         </div> */}
         <div className="fixed inset-0  z-[99900] ">
             <Header />
-            <Main media={media} />
+            <Main media={mediaData} />
             {
-                media.length > 1 &&
-                <ImagesSelector media={media} />
+                mediaData.files.length > 1 &&
+                <ImagesSelector media={mediaData} />
             }
         </div>
     </div>
@@ -25,7 +25,7 @@ export default function MediaShowcase({ media }) {
 
 
 const Header = () => {
-    const setSelectedMedia = chatMessageStore((s) => s.setSelectedMedia)
+    const setSelectedMedia = mediaStore((s) => s.setSelectedMedia)
     return <div className="m-10 px-10">
         <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 ">
@@ -45,7 +45,7 @@ const Header = () => {
                     <Option icon={<i className="fa-solid fa-ellipsis"></i>} tooltipText={"More"} />
 
                 </div>
-                <div onClick={() => setSelectedMedia(null)} className="flex items-center  border border-gray-5 gap-2 rounded-lg bg-gray-4">
+                <div onClick={() => setSelectedMedia(()=>null)} className="flex items-center  border border-gray-5 gap-2 rounded-lg bg-gray-4">
 
                     <Option p={"px-3 py-2"} icon={<i className="fa-solid fa-x "  ></i>} />
 
@@ -57,34 +57,37 @@ const Header = () => {
     </div>
 }
 const Main = ({ media }) => {
-    let setSelectedMedia = chatMessageStore((s) => s.setSelectedMedia)
-    let selectedMedia = chatMessageStore((s) => s.selectedMedia)
+    let setSelectedMedia = mediaStore((s) => s.setSelectedMedia)
+    let selectedMedia = media.files[media.idx]
     let newMedia;
-    let handleImageChange = (side) => {
+    let handleImageChange = (side ) => {
 
-        let index = selectedMedia.idx
+        let index = media.idx
         if (side === "backward") {
             if (index === 0) {
-                index = media.length - 1
+                index = media.files.length - 1
             } else {
                 index -= 1
             }
-            let back = media[index]
+            let back = media.files[index]
 
             newMedia = back
 
         } else {
-            if (index === media.length - 1) {
+            if (index === media.files.length - 1) {
                 index = 0
             } else {
                 index += 1
             }
-            let forward = media[index]
+            let forward = media.files[index]
 
             newMedia = forward
         }
-        setSelectedMedia({ ...newMedia, idx: index })
+        setSelectedMedia((prev)=>{
+            return {...prev , idx : index , selectedFileId : prev.files[idx].id}
+         })
     }
+   
     return <div className="flex  m-20 items-center justify-center  gap-24">
         {
             media.length > 1 &&
@@ -112,12 +115,17 @@ const Main = ({ media }) => {
     </div>
 }
 const ImagesSelector = ({ media }) => {
-    const setSelectedMedia = chatMessageStore((s) => s.setSelectedMedia)
-    const selectedMedia = chatMessageStore((s) => s.selectedMedia)
+    const setSelectedMedia = mediaStore((s) => s.setSelectedMedia)
+    let handleSelectFile = (fileId , idx)=>{
+         setSelectedMedia((prev)=>{
+           return {...prev , idx , selectedFileId : fileId}
+         })
+   }
+   console.log(media)
     return <div className="flex items-center  justify-center  gap-0.5">
-        {media.map((file, i) => {
+        {media.files.map((file, i) => {
 
-            return <div onClick={() => setSelectedMedia({ ...file, idx: i })} key={file.id} className={`size-12 relative ${file.id === selectedMedia.id ? "opacity-100" : "opacity-60 hover:opacity-75"} rounded-md  overflow-hidden `}>
+            return <div onClick={()=>handleSelectFile(file.id,i)} key={file.id} className={`size-12 relative ${file.id === media?.selectedFileId ? "opacity-100" : "opacity-60 hover:opacity-75"} rounded-md  overflow-hidden `}>
 
                 {file.type.startsWith("video") ? <video src={file.url} /> :
                     <Image src={file.url} alt={file.filename || "image"} fill className="  rounded-md overflow-hidden object-center" />

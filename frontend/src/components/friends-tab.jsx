@@ -9,15 +9,15 @@ import FriendRequest from "./friendsTab-components/friend-request";
 import { Axios } from "@/lib/axiosInstance";
 import { authClient } from "@/lib/auth-client";
 import toast from "react-hot-toast";
+import { userStore } from "@/store/user-store";
 
 export default function FriendsTab() {
     const [allFriends, setAllFriends] = useState([])
-    const [onlineUsers, setOnlineUsers] = useState(new Set())
     const [pendingRequest, setPendingRequest] = useState([])
     const [selectedCategory, setSelectedCategory] = useState("online")
     const setInviteComp = chatStore(s => s.setInviteComp)
-    let session = authClient.useSession()
-    let userId = session.data.user.id
+    let session = userStore(s=>s.session)
+    let userId = session?.user?.id
     useEffect(() => {
         let getAllFriends = async () => {
             if (allFriends?.length > 0) return

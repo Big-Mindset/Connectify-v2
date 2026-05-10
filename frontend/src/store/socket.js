@@ -3,6 +3,7 @@ import { Peer } from "peerjs"
 import { create } from "zustand"
 import { io } from "socket.io-client"
 import { getPeerId } from "@/app/action/getPeerId"
+import { chatStore } from "./chat-store"
 export let socketStore = create((set, get) => ({
 
     socket: null,
@@ -15,13 +16,30 @@ export let socketStore = create((set, get) => ({
             return
         }
         let sok = io("http://localhost:2525", {
-            autoConnect: true,
             auth: {
                 userId,
             }
         })
+        let setParticipants = chatStore.getState().setParticipants
+        let participants = chatStore.getState().participants
         sok.on("connect", () => {
-            // get().Peer(userId)
+            sok.on("online-user",(id)=>{
+                let user = participants.get(id)
+                setParticipants(id , {...user , isOnline : true})
+            })
+            sok.on("offline-user",(id)=>{
+                let user = participants.get(id)
+
+                setParticipants(id , {...user , isOnline : false})
+            })
+            
+
+            let setMessages = chatStore.getState().setMessages
+            sok.on("send-message",(message)=>{
+                setMessages((msgs)=>{
+                    return [...msgs , message]
+                })
+            })
         })
         set({ socket: sok })
     },

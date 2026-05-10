@@ -1,69 +1,10 @@
 import { prisma } from "../prismaClient.js"
 import { client } from "./redis.js"
 import "dotenv/config"
-import {  secure_message } from "./security-e2ee/encryptMessage.js"
+import { SocketQueries } from "./queries_class.js"
 
-let secureMessage = new secure_message(Buffer.from(process.env.KEK_KEY, "hex"))
 
-class MessageClass  {
-    constructor(){
-
-    }
-    async createMessage  (messageData){
-       let content = messageData.content
-       console.log(messageData)
-       let media = messageData.media
-       console.log(media)
-       if (!content.trim() && !media) {
-           return null
-       }
-       let { encrypteContent, keys, firstLetters_search, letters_search } = secureMessage.encryptMessage(content)
-       try {
-           let message = await prisma.message.create({
-               data: {
-                id : messageData.id,
-                   message_security: {
-                       create: keys
-                   },
-                   enceyptedContent: encrypteContent,
-                   chatId: messageData.chatId,
-                   replyToId: messageData.replyToId,
-                   senderId: messageData.senderId,
-                   search_index: letters_search,
-                   firstLetters_index: firstLetters_search,
-                   status: {
-                       create: {
-                        id : messageData.status.id,
-                           status: "SENT",
-                       }
-                   },
-               },
-            
-   
-           })
-           console.log("message created")
-           console.log(message)
-           let response = message
-   
-           if (media?.length > 0) {
-               let createdMedia = await prisma.media.create({
-                   data: {
-                       media_objectKey: media.objectKey,
-                       type: media.type,
-                       messageId: message.id,
-                   }
-               })
-               response.media = createdMedia
-           }
-        //    console.log()
-           return response
-       } catch (error) {
-        console.log(error.message)
-           return null
-       }
-   }
-}
-export class SocketConnection extends MessageClass {
+export class SocketConnection extends SocketQueries {
     constructor(io) {
         super(io)
         this.io = io
@@ -73,29 +14,57 @@ export class SocketConnection extends MessageClass {
         socket.join(userId)
         await client.SADD("online_users", userId)
         await client.SADD(`user:${userId}:sockets`, socket.id)
+        let friendIds = await this.getFriendIds(userId)
 
-    }
-    async handleDisconnection(socket ) {
-        let userId = socket.handshake.auth.userId
-        await client.sRem(`user:${userId}:sockets`, socket.id)
-        let remainingSockets = await client.sCard(`user:${userId}:sockets`)
-        if (remainingSockets === 0) {
+        let active_members = await client.SMISMEMBER("online_users", friendIds)
+        let activeFriends = friendIds.filter((_, idx) => active_members[idx] === 1)
+        for (let id of activeFriends) {
 
-            await client.sRem("online_users", userId)
+            socket.to(id).emit("online-user", userId)
         }
     }
-    async handleSendMessage(socket , message , participantIds){
-        console.log("inside of a functions")
-        let create_message =  await this.createMessage(message)
-
-        let activeSocketsInChat = await this.io.in(message.chatId).fetchSockets()
-    let activeUserIds = new Set(activeSocketsInChat.map((socket)=>socket.handshake.auth.userId))
-    
-    let inActiveIds = participantIds.filter((id)=>!activeUserIds.has(id))
-    }
-    async RegisterPeerConnection(socket , peerId){
+    async handleDisconnection(socket) {
         let userId = socket.handshake.auth.userId
-         await client.SADD(`user:${userId}:peers` , peerId)
-    await client.set(`user:${peerId}` , userId)
+        await client.SREM(`user:${userId}:sockets`, socket.id)
+        let remainingSockets = await client.SCARD(`user:${userId}:sockets`)
+
+        if (remainingSockets === 0) {
+            await client.SREM("online_users", userId)
+            let friendIds = await this.getFriendIds(userId)
+
+            let active_members = await client.SMISMEMBER("online_users", friendIds)
+            let activeFriends = friendIds.filter((_, idx) => active_members[idx] === 1)
+            for (let id of activeFriends) {
+
+                socket.to(id).emit("offline-user", userId)
+            }
+        }
+    }
+    async handleSendMessage(socket, message, participantIds) {
+        try {
+            console.log(message)
+            let meessageId = await this.createMessage(message)
+            console.log(meessageId)
+            if (meessageId){
+                message.status.status = "sent"
+                console.log("message-sent....")
+                socket.emit("message-sent",message.id)
+                
+                let activeSocketsInChat = await this.io.in(message.chatId).fetchSockets()
+                let activeUserIds = new Set(activeSocketsInChat.map((socket) => socket.handshake.auth.userId))
+                let inActiveIds = participantIds.filter((id) => !activeUserIds.has(id))
+                console.log("sending to others....")
+                
+                socket.to(message.chatId).emit("send-message",message)
+            }
+            
+        } catch (error) {
+                console.log(error)     
+        }
+    }
+    async RegisterPeerConnection(socket, peerId) {
+        let userId = socket.handshake.auth.userId
+        await client.SADD(`user:${userId}:peers`, peerId)
+        await client.set(`user:${peerId}`, userId)
     }
 }

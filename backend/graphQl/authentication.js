@@ -22,11 +22,9 @@ export let authQueryFields = {
     getSession : {
             type : AuthSessionType,
             resolve : async (__,_,ctx)=>{
-                console.log(ctx)
                 let session = await auth.api.getSession({
                     headers : ctx.req.headers
                 })
-                console.log(session)
                 if (!session) return null
                 return {
                    user :  session.user,

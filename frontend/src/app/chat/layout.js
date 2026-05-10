@@ -8,7 +8,6 @@ import { useEffect } from "react";
 
 export default function RootLayout({ children }) {
       let {selectedPage} =  navigationStore()
-  console.log(selectedPage)
   return (
        <div className="flex text-white justify-center relative h-full ">
          <div className="w-full flex ">

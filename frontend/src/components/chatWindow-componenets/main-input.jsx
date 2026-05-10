@@ -1,17 +1,19 @@
 
 
 import { chatStore } from "@/store/chat-store";
-import { Camera, Plus, Send, Trash, Upload } from "lucide-react";
+import { Camera, Plus, Send, Trash, Upload, X, XIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion"
 import { sizeText } from "@/lib/formateSize";
 import dynamic from "next/dynamic";
 import { generateThumbnail } from "@/lib/generateThumbnail";
+import { userStore } from "@/store/user-store";
+import { messageSettingsStore } from "@/store/messageSettings-store";
 import { chatMessageStore } from "@/store/chatMessage-store";
-let RenderFile = dynamic(()=>import("./main-input-components/renderFile"))
-let FileSizeExceeded = dynamic(()=>import( "./main-input-components/file-sizeExceeded"))
+let RenderFile = dynamic(() => import("./main-input-components/renderFile"))
+let FileSizeExceeded = dynamic(() => import("./main-input-components/file-sizeExceeded"))
 const EmojiPicker = dynamic(() => import("./Emoji-Picker"), { ssr: false })
-export default function MainInput({ user , chatId }) {
+export default function MainInput({ chatId }) {
     const [openAttachments, setOpenAttachments] = useState(false)
     const [inputText, setInputText] = useState("")
     const [filePreview, setFilePreview] = useState([])
@@ -20,11 +22,22 @@ export default function MainInput({ user , chatId }) {
     const [openEmojiPicker, setOpenEmojiPicker] = useState(false)
     const [sizeExceeded, setSizeExceeded] = useState(false)
     const [thumbnailsUrl, setThumbnailsUrl] = useState({})
+    const participants = chatStore(s => s.participants)
+
+    const [senderData, setSenderData] = useState(null)
+    const selectedMessage = messageSettingsStore(s => s.selectedMessage)
+    let session = userStore(s => s.session)
     let plusOptionsRef = useRef(null)
     let plusRef = useRef(null)
-    let editableRef = useRef(null)
-    let setSelectedChat = chatStore(s => s.setSelectedChat)
-    let sendMessage = chatMessageStore(s=>s.sendMessage)
+    let textInputRef = useRef(null)
+    
+    let sendMessage = chatMessageStore(s => s.sendMessage)
+    let setInputRef = messageSettingsStore(s=>s.setInputRef)
+    let replyMessage = messageSettingsStore(s => s.replyMessage)
+    let setReplyMessage = messageSettingsStore(s => s.setReplyMessage)
+     let inputRef = useRef(null)
+
+
     useEffect(() => {
         const handleClickOutside = (e) => {
             if (plusOptionsRef.current &&
@@ -35,48 +48,66 @@ export default function MainInput({ user , chatId }) {
                 setOpenAttachments(false);
             }
         };
+
+
         window.addEventListener("mousedown", handleClickOutside)
         return () => {
 
             window.removeEventListener("mousedown", handleClickOutside)
         }
     }, [])
+   useEffect(()=>{
+       if (inputRef.current){
+        setInputRef(inputRef)
+       }
+   },[inputRef])
+    useEffect(() => {
+        let sender = participants.get(replyMessage?.senderId)
+        setSenderData(sender)
+        textInputRef.current.focus()
+    }, [replyMessage])
+    
 
 
 
 
+
+
+    let user = session?.user
     const attaches = [
         { name: "Upload a file", icon: <Upload size={19} />, type: "file" },
         { name: "Camera", icon: <Camera size={19} /> },
     ];
 
-    const handleSendMessage = () => {
+    const handleSendMessage = async () => {
+
         if (inputText === "" && filePreview.length === 0) return
-       let messageData =  {
+        let createdAt = new Date()
+        let messageData = {
             id: crypto.randomUUID(),
             content: inputText,
             senderId: user.id,
-            sender : {
-                name : user.name,
-                image : user.image || null
-            },
+            senderId: user.id,
             chatId: chatId,
-            createdAt: new Date(),
-            updatedAt: new Date(),
+            createdAt: createdAt,
+            updatedAt: createdAt,
             status: {
                 id: crypto.randomUUID(),
                 readAt: null,
                 deliveredAt: null,
-                status: "sent",
+                status: "pending",
             },
-            replyTo: null,
+            replyTo: replyMessage,
             media: filePreview
-
         }
-        sendMessage(messageData)
+
+
+        sendMessage(messageData, filePreview)
         setInputText("")
         setFilePreview([])
+        setReplyMessage(null)
     }
+
     const handleUploadFile = async (e) => {
 
         setOpenAttachments(false)
@@ -109,6 +140,7 @@ export default function MainInput({ user , chatId }) {
                 filename: file.name,
                 size: file.size,
                 url: url,
+                file: file
             }
             validFiles.push(media)
 
@@ -117,19 +149,19 @@ export default function MainInput({ user , chatId }) {
         setThumbnailsUrl(prev => ({ ...prev, ...thumbnails }))
         setFilePreview(prev => [...prev, ...validFiles])
     }
+
     let handleRemoveFile = (fileId) => {
         let filtered = filePreview.filter((file) => {
             return file.id !== fileId
         })
         setFilePreview(filtered)
     }
-    // let handleEditImage = (fileId)=>{   
 
-    // }
     const handleUpdate_filename = () => {
         setFilePreview(prev => {
             return prev.map((file) => {
                 if (file.id === editFile.id) return editFile
+
                 return file
             })
         })
@@ -139,10 +171,20 @@ export default function MainInput({ user , chatId }) {
 
     let thumbnailUrl = thumbnailsUrl[editFile?.url]
 
-    // const isEmoji = (char) => /\p{Emoji}/u.test(char);
     const handleTyping = (e) => {
         setInputText(e.target.value)
     }
+
+    let handleKeyDown = (e) => {
+        if (e.key === "Enter") {
+            handleSendMessage()
+        }
+
+    }
+
+   let handleCancelReply = ()=>{
+    setReplyMessage(null)
+   }
     return (
         <>
             <AnimatePresence>
@@ -184,13 +226,24 @@ export default function MainInput({ user , chatId }) {
                     </div>
                 </motion.div>}
             </AnimatePresence>
-            <div className="w-full shrink-0 p-4">
-                <div className={`  ${filePreview.length ? "rounded-lg" : "rounded-full"}  w-full flex flex-col gap-1 focus-within:ring-indigo-400/40 focus-within:ring-2  ring ring-gray-7     bg-gray-2/80   `}>
+            <div ref={inputRef} className="w-full  shrink-0 p-4">
+                <div className={`  ${(filePreview.length || replyMessage?.id) ? "rounded-lg" : "rounded-full"}  w-full flex flex-col gap-1  focus-within:ring-indigo-400/40 focus-within:ring-2   ring ring-gray-7    bg-gray-2/80   `}>
+                    {replyMessage?.id &&
+                        <div className=" pl-3 py-2 flex items-center justify-between text-[0.8rem] border-b border-gray-6 items-baseline bg-gray-4">
+                            <div className="flex gap-1">
 
+                                <p className="text-gray-300">Reply to</p>
+                                {senderData &&
+                                    <p className="text-gray-300 font-bold">{senderData.name}</p>
+                                }
+                            </div>
+                            <div onClick={handleCancelReply} className="p-1 mr-1 rounded-full bg-gray-6 cursor-pointer  hover:bg-gray-4 border border-gray-7  ">
+                                <X className="size-3.5" />
+                            </div>
+                        </div>
+                    }
                     {filePreview.length > 0 &&
                         <div
-
-
                             className={`flex flex-col    origin-bottom overflow-hidden gap-2  p-2 `}>
                             <div className="flex items-center p-2 duration-700   overflow-x-auto overflow-y-hidden gap-2" style={{ scrollbarWidth: 'thin', scrollbarColor: 'gray #1F2937', scrollBehavior: "smooth" }}>
                                 {filePreview.map((file) => {
@@ -270,8 +323,8 @@ export default function MainInput({ user , chatId }) {
                                 <div ref={plusRef} onClick={() => setOpenAttachments(prev => !prev)} className="p-2 group cursor-pointer  hover:bg-gray-4 rounded-full transition-all duration-100 ">
                                     <Plus size={22} />
                                 </div>
-                                <div  onClick={() => setOpenEmojiPicker(prev=>{
-                                   
+                                <div onClick={() => setOpenEmojiPicker(prev => {
+
                                     if (prev) return 0
                                     return 1
                                 })} className="p-2 group cursor-pointer  rounded-full hover:bg-gray-4  transition-all duration-100">
@@ -279,11 +332,11 @@ export default function MainInput({ user , chatId }) {
                                 </div>
                             </div>
                             <div className="flex-1">
+                                <input onKeyDown={handleKeyDown} value={inputText} ref={textInputRef} onChange={handleTyping} placeholder="Type a message" type="text" className="w-full  text-[0.95rem]   caret-indigo-400 outline-none" />
 
 
 
 
-                                <input value={inputText} onChange={handleTyping} placeholder="Type a message" type="text" className="w-full  text-[0.95rem]   caret-indigo-400 outline-none" />
                             </div>
                             {/* <div className="rounded-full bg-indigo-500/70 duration-150 ring-indigo-600 hover:ring p-2 cursor-pointer ">
                         <Mic size={18} />
@@ -292,6 +345,7 @@ export default function MainInput({ user , chatId }) {
                             <div onClick={handleSendMessage} className="rounded-full bg-indigo-500/70 duration-150 ring-indigo-600 hover:ring p-2 cursor-pointer ">
                                 <Send size={18} />
                             </div>
+
                         </div>
 
                         <div className={`${openEmojiPicker ? " scale-[1] opacity-100" : "scale-[0.2] opacity-0 "} absolute z-[500] duration-100 bottom-[110%] origin-bottom-left left-6`}>

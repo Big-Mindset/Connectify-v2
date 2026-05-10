@@ -148,7 +148,6 @@ export let accept_friendrequest = async (req, res, next) => {
 export let reject_friendrequest = async (req, res, next) => {
 
     let requestId = req.query.requestId
-    console.log(req.query)
 
     try {
         let request = await prisma.request.findUnique({

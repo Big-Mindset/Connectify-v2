@@ -1,5 +1,7 @@
 import { Axios } from "@/lib/axiosInstance"
 import { create } from "zustand"
+import { userStore } from "./user-store"
+import { socketStore } from "./socket"
 // const messages = [
 //   {
 //     id: "m1",
@@ -117,8 +119,12 @@ export const chatStore = create((set, get) => ({
         name: null
     },
     chats: [],
-    chatMembersIds : new Map(),
-    setChatMembersIds : (chatMembersIds)=>set({chatMembersIds}),
+    participants: new Map(),
+    setParticipants: (userId, data) => set(state => ({
+        participants: new Map(state.participants).set(userId, data)
+    })),
+    chatMembersIds: new Map(),
+    setChatMembersIds: (chatMembersIds) => set({ chatMembersIds }),
     setChats: (func) => {
         set((prev) => ({ chats: func(prev.chats) }))
     },
@@ -130,37 +136,40 @@ export const chatStore = create((set, get) => ({
         set({ replyingTo: data })
     },
     selectedChat: null,
-    setSelectedChat: (func) => {
-        set((prev) => ({
-            selectedChat: func(prev.selectedChat)
-        }))
+    setSelectedChat: (chatId) => {
+        set({selectedChat : chatId})
     },
     inviteComp: false,
     setInviteComp: (inviteComp) => set({ inviteComp }),
+    messages: [],
+    setMessages: (func) => {
+        set(prev => ({
+            messages: func(prev.messages)
+        }))
+    },
     getChats: async (userId) => {
         try {
             let res = await Axios.get("/chat/chats")
             if (res.status === 200) {
                 let AllChats = res.data.allFriends
-                let updatedData = AllChats.map(({chat})=>{
+                let updatedData = AllChats.map((chat) => {
+                    let chatMembersIds = get().chatMembersIds
+                    let participants = get().participants
+                    chatMembersIds.set(chat.id, chat.participants.map(({ user }) => user.id))
 
-                   let chatMembersIds =  get().chatMembersIds
-                   chatMembersIds.set(chat.id , chat.participants.map(({user}) => user.id))
+                    chat.participants.forEach(({ user }) => {
+                        participants.set(user.id, { name: user.name, username: user.username, image: user.image, isOnline: chat.isOnline, lastseen: user.lastseen })
+                    });
                     if (chat.isGroup) {
                         return chat
                     } else {
-                        let { user } = chat.participants.find(({user}) => user.id !== userId)
+                        let { user } = chat.participants.find(({ user }) => user.id !== userId)
+
                         let data = {
                             id: chat.id,
-                            user: {
-                                
-                                image: user.image,
-                                name: user.name,
-                                userId: user.id,
-                                bio: user.bio,
-                            },
+                            userId: user.id,
                             lastMessage: chat.lastMessage,
-                            unread_messageCount : chat._count.messages
+                            unread_messageCount: chat._count.messages
                         }
                         return data
                     }
@@ -171,17 +180,21 @@ export const chatStore = create((set, get) => ({
             console.log(error.message)
         }
     },
-    getChatById : async (chatId)=>{
+    getChatById: async (chatId , userId) => {
         try {
-           let res = await Axios.get(`/chat/${chatId}`)
-           console.log(res)
-           if (res.status === 200){
-                let chat_messages  = res.data.chatMessages
-                return chat_messages
-           }
+            let socket = socketStore.getState().socket
+            let res = await Axios.get(`/chat/${chatId}`)
+            if (res.status === 200) {
+                let {messages , id} = res.data.chat
+              
+                socket.emit("join-chat", chatId)
+                set({selectedChat :{id : id , userId : userId} })
+                set({messages :messages.reverse() })
+               
+            }
         } catch (error) {
-            console.log(error?.response.data?.message)
+            console.log(error?.message || error?.response?.data?.message)
         }
     },
-    
+
 }))

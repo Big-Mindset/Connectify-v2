@@ -6,7 +6,6 @@ import { useEffect, useRef, useState } from "react";
 import OptionButton from "../option-button";
 import MuteNotifications from "./navbar-components/mute-notifications";
 import DisappearingMessages from "./navbar-components/disappearing-messages";
-import { chatStore } from "@/store/chat-store";
 import { formateTime } from "@/lib/formateTime";
 import { AnimatePresence , motion } from "framer-motion";
 import { socketStore } from "@/store/socket";
@@ -48,7 +47,7 @@ export default function Navbar({receiverInfo}) {
             setDisappearingMessageComp(true)
         }
     }
-    let online = false
+    let online = true
     let handleAudioCall = async ()=>{
    
         audioCall(["FF17kgjOehECrwnXtVe8j1sRWxY5FR8V"])
@@ -59,10 +58,10 @@ export default function Navbar({receiverInfo}) {
                 <div className="py-2 px-5">
                     <div className="flex justify-between items-center">
                         <div className="flex items-center gap-2">
-                            <Avatar size={"size-12"} />
+                            <Avatar image={receiverInfo.image}  size={"size-12"} />
                             <div className="">
                                 <p className="font-bold text-[0.96rem]">{receiverInfo?.name}</p>
-                                <p className=" text-[0.8rem] text-gray-300 text-sm">{online ? "online" : formateTime(receiverInfo?.lastseen)}</p>
+                                <p className=" text-[0.8rem] text-gray-300 text-sm ">{receiverInfo.isOnline ? <span className="text-[0.7rem] uppercase font-bold tracking-wider">online</span> : formateTime(receiverInfo?.lastseen)}</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-1.5">

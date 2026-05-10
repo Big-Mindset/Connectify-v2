@@ -21,7 +21,6 @@ export const auth = betterAuth({
         minPasswordLength : 6,
         maxPasswordLength : 50,
         sendResetPassword  : ({user ,token , url})=>{
-            console.log(user , url ,token)
               SendEmail({
                     recipient : user.name,
                     to : user.email,
@@ -47,7 +46,6 @@ export const auth = betterAuth({
         sendOnSignIn : true,
         expiresIn : 60*20,
             sendVerificationEmail : ({user ,token , url})=>{
-                console.log(user , url)
                 SendEmail({
                     recipient : user.name,
                     to : user.email,
@@ -74,6 +72,9 @@ export const auth = betterAuth({
                 required : true,
                 unique : true,
                 index : true
+            },
+            bio : {
+                type : "string",
             }
         }
     }

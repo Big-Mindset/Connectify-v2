@@ -16,6 +16,8 @@ import { client } from "./lib/redis.js";
 import userRouter from "./routes/user.js";
 import { prisma } from "./prismaClient.js";
 import { SocketConnection } from "./lib/socket-class.js";
+import { instrument } from "@socket.io/admin-ui";
+import multer from "multer";
 var app = express();
 let server = createServer(app)
 app.use(cors({
@@ -26,7 +28,8 @@ let io  = new Server(server,{
   cors : {
      credentials: true,
   methods: ["POST", "GET", "DELETE", "PUT"],
-  origin: "http://localhost:3000",
+  origin: ["http://localhost:3000","https://admin.socket.io"],
+  
   }
 })
 
@@ -53,18 +56,21 @@ app.use("/message",messageRouter)
 app.use("/group",groupRouter)
 app.use("/user",userRouter)
 
+    
 
 let Socket = new SocketConnection(io)
+instrument(io,{
+auth :false
+})
 io.on("connection",async (socket)=>{
   Socket.handleConnection(socket)
-  socket.on("register-peer-socket",async (peerId)=>{
-    Socket.RegisterPeerConnection(socket, peerId)
-  })
+  // socket.on("register-peer-socket",async (peerId)=>{
+  //   Socket.RegisterPeerConnection(socket, peerId)
+  // })
   socket.on("join-chat",async (chatId)=>{
     socket.join(chatId)
   })
   socket.on("send-message", async (message , participantIds)=>{
-    console.log("sending message....")
     Socket.handleSendMessage(socket , message , participantIds)
     
     

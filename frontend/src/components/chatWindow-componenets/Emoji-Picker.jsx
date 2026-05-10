@@ -2,7 +2,6 @@ import data from '@emoji-mart/data'
 import  Picker  from '@emoji-mart/react'
 export default function EmojiPicker({setInputText , setOpenEmojiPicker}) {
     const handleEmojiSelect = (emoji)=>{
-      console.log(emoji)
         setInputText(prev=>prev+=emoji.native)
     }
     return <div

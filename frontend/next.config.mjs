@@ -10,7 +10,7 @@ const nextConfig = {
     ];
   },
   images : {
-    domains : ["i.pinimg.com"]
+    domains : ["i.pinimg.com" , "res.cloudinary.com"]
   },
   allowedDevOrigins : []
 };

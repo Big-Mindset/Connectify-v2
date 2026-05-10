@@ -7,7 +7,7 @@ import dynamic from "next/dynamic";
 import ChatMenu from "./chat-components/chat-menu";
 import { AnimatePresence } from "framer-motion";
 import { chatStore } from "@/store/chat-store";
-import { authClient } from "@/lib/auth-client";
+import { userStore } from "@/store/user-store";
 const CreateGroup = dynamic(() => import("./chat-components/create-group"))
 const ChatSettings = dynamic(() => import("./chat-components/chat-settings"))
 const ChatUser = dynamic(() => import("./chat-components/chat-user"))
@@ -20,18 +20,23 @@ export default function Chats() {
     const [openMenu, setOpenMenu] = useState(false)
     const childRef = useRef(null)
     const chatMenuRef = useRef(null)
-
-
+    
+    
     const setInviteComp = chatStore(s => s.setInviteComp)
     const inviteComp = chatStore(s => s.inviteComp)
     const getChats = chatStore(s => s.getChats)
     const chats = chatStore(s => s.chats)
     const filteredChats = chatStore(s => s.filteredChats)
     const setFilteredChats = chatStore(s => s.setFilteredChats)
+    const session = userStore(s=>s.session)
+    let user = session?.user
+    useEffect(()=>{
+        if (user?.id){
 
+            getChats(user?.id)
+        }
 
-    const { data } = authClient.useSession()
-    let user = data?.user
+    },[user])
 
     useEffect(() => {
         let handleCloseSettings = (e) => {
@@ -41,12 +46,19 @@ export default function Chats() {
             if (chatMenuRef.current && !chatMenuRef.current.contains(e.target)) {
                 setOpenMenu(false)
             }
-
+            
         }
-        getChats(user?.id)
+        
         window.addEventListener("mousedown", handleCloseSettings)
         return () => { window.removeEventListener("mousedown", handleCloseSettings) }
     }, [])
+
+    useEffect(() => {
+        filterMessages()
+
+    }, [selectedChat, chats])
+
+
     const filterMessages = () => {
 
         if (selectedChat === "All") {
@@ -70,10 +82,6 @@ export default function Chats() {
             setFilteredChats(() => filtered)
         }
     }
-    useEffect(() => {
-        filterMessages()
-
-    }, [selectedChat, chats])
 
 
     const handleSearch = async (evt) => {
@@ -105,7 +113,7 @@ export default function Chats() {
                 <p className="text-2xl bg-gradient-to-r from-blue-600 font-bold to-violet-300 text-transparent bg-clip-text  ">CONNECTIFY<span className="size-2 rounded-full  "></span></p>
 
                 <div className="flex items-center gap-2">
-                    <button onClick={() => setInviteComp(true)} className="px-2.5 py-1 flex items-center gap-1 duration-150 cursor-pointer border border-indigo-700/50 hover:bg-indigo-700  hover:border-indigo-700 bg-indigo-700/90  rounded-lg">
+                    <button onClick={() => setInviteComp(true)} className="px-2.5 py-1 text-sm flex items-center gap-1 duration-150 cursor-pointer border border-indigo-700/50 hover:bg-indigo-700  hover:border-indigo-700 bg-indigo-700/90  rounded-lg">
                         <p>Add Friend</p>
                     </button>
                     <div className="relative">
@@ -123,6 +131,7 @@ export default function Chats() {
                 <input onChange={handleSearch} onFocus={() => setHover(false)} onBlur={() => setHover(true)} type="text" placeholder="Start searching here" className="p-2 w-full placeholder:text-[0.9rem]  outline-none" />
                 <Search className="size-5" />
             </div>
+    
 
             <div className="all-chats-section p-1">
                 <span className="text-xl font-bold">Chats</span>
@@ -148,12 +157,13 @@ export default function Chats() {
                         </AnimatePresence>
                         <div className="flex flex-col gap-2">
                             {filteredChats.map((chat) => {
-                                return <ChatUser userId={user?.id} key={chat.id} chat={chat} childRef={childRef} setChatSettings={setChatSettings} />
+                                return <ChatUser  key={chat.id} chat={chat} childRef={childRef} setChatSettings={setChatSettings} />
                             })}
+                        </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        
     </div>
 }

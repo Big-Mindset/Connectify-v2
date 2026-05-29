@@ -1,10 +1,10 @@
 "use client"
 
 import Avatar from "../Avatar"
-import { CheckCheck } from "lucide-react"
+import { Check, CheckCheck } from "lucide-react"
 import MoreOptions from "./more-options"
 import { AnimatePresence } from "framer-motion"
-import { memo, useEffect, useRef, useState } from "react"
+import { memo, useEffect, useMemo, useRef, useState } from "react"
 import GirlImage from "@/assets/download.jpg"
 import { chatStore } from "@/store/chat-store"
 import { formateTime } from "@/lib/formateTime"
@@ -17,25 +17,29 @@ let FileShowcaseCard = dynamic(() => import("./chat-message-components/render-ot
 import { EditMessage } from "./chat-message-components/edit-message"
 import { messageSettingsStore } from "@/store/messageSettings-store"
 import EmojiPicker from "./Emoji-Picker"
+import { userStore } from "@/store/user-store"
+import { chatMessageStore } from "@/store/chatMessage-store"
+import { messageStatus } from "@/lib/calculateStatus"
 
 function ChatMessage({ optionsRef, message, plusRef, key }) {
 
-    const [reacted, setReacted] = useState(false)
     const [messageHover, setMessageHover] = useState(false)
     const participants = chatStore(s => s.participants)
     const [progress, setProgress] = useState()
-    const messagesProgress = messageSettingsStore(s => s.messagesProgress)
+    const messagesProgress = chatMessageStore(s => s.messagesProgress)
     const editMessage = messageSettingsStore(s => s.editMessage)
     const replyMessage = messageSettingsStore(s => s.replyMessage)
     const setOpenMessageOptionId = messageSettingsStore(s => s.setOpenMessageOptionId)
     const openMessageOptionId = messageSettingsStore(s => s.openMessageOptionId)
-    const deleteMessage = messageSettingsStore(s=>s.deleteMessage)
+    const deleteMessage = messageSettingsStore(s => s.deleteMessage)
     const MessageRef = useRef(null)
-    const setDeleteMessage = messageSettingsStore(s=>s.setDeleteMessage)
-    const reactMessage = messageSettingsStore(s=>s.reactMessage)
-    const setReactMessage = messageSettingsStore(s=>s.setReactMessage)
-    const inputRef = messageSettingsStore(s=>s.inputRef)
-    const handleReaction = messageSettingsStore(s=>s.handleReaction)
+    const setDeleteMessage = messageSettingsStore(s => s.setDeleteMessage)
+    const reactMessage = messageSettingsStore(s => s.reactMessage)
+    const setReactMessage = messageSettingsStore(s => s.setReactMessage)
+    const inputRef = messageSettingsStore(s => s.inputRef)
+    const handleReaction = messageSettingsStore(s => s.handleReaction)
+    const handleReactionFunc = messageSettingsStore(s => s.handleReactionFunc)
+    const session = userStore(s=>s.session)
     let twoFiles = message.media.filter(m => {
         if (m.type.startsWith("video") || m.type.startsWith("image")) return true
         return false
@@ -59,41 +63,44 @@ function ChatMessage({ optionsRef, message, plusRef, key }) {
         if (values) {
 
             let overallProgress = values.reduce((a, b) => a + b, 0)
-            setProgress(overallProgress/values.length)
+            setProgress(overallProgress / values.length)
         }
     }, [messagesProgress?.[message.id]])
 
 
-    useEffect(()=>{
+    useEffect(() => {
         if (!deleteMessage?.id || deleteMessage.id !== message.id) return
-       setDeleteMessage({...deleteMessage,messageRef : MessageRef})
-    },[deleteMessage?.id])
+        setDeleteMessage({ ...deleteMessage, messageRef: MessageRef })
+    }, [deleteMessage?.id])
     let sender = participants.get(message.senderId)
     let replyToSender;
     if (message.replyTo !== null) {
         replyToSender = participants.get(message.replyTo.senderId)
     }
+
+    let currentUserId = session?.user?.id
     
+    let status = messageStatus(message.status)
     return (
         <div ref={MessageRef} key={key} className="relative" >
             {message.id === reactMessage?.id &&
-             <div ref={(e)=>{
-               
-                let rect1 = e?.getBoundingClientRect()
-                let rect2 = inputRef?.current?.getBoundingClientRect()
-                if (rect1 && rect2){
-                      if (!reactMessage?.top) {
-                          if (rect1?.bottom > rect2?.bottom){
-                              setReactMessage({...reactMessage , top : true})
-                              console.log(reactMessage)
+                <div ref={(e) => {
+
+                    let rect1 = e?.getBoundingClientRect()
+                    let rect2 = inputRef?.current?.getBoundingClientRect()
+                    if (rect1 && rect2) {
+                        if (!reactMessage?.top) {
+                            if (rect1?.bottom > rect2?.bottom) {
+                                setReactMessage({ ...reactMessage, top: true })
+                           
                             }
                         }
-                }
-             }} className={`absolute  ${reactMessage?.left ? `left-20 ${reactMessage?.top ? "bottom-10" : ""}` : `${reactMessage?.top && "bottom-full"} right-40 ` }  z-[60000]`}>
+                    }
+                }} className={`absolute  ${reactMessage?.left ? `left-20 ${reactMessage?.top ? "bottom-10" : ""}` : `${reactMessage?.top && "bottom-full"} right-40 `}  z-[60000]`}>
 
-        <EmojiPicker reaction={true} emojiButtonRadius={100} perLine={17} emojiSize={30} previewPosition={"none"} />
-       </div>
-       }
+                    <EmojiPicker reactions={message.reactions}  perLine={12} emojiSize={28} previewPosition={"none"} />
+                </div>
+            }
             <div
                 onMouseEnter={() => setMessageHover(true)}
                 onMouseLeave={() => setMessageHover(false)}
@@ -120,7 +127,7 @@ function ChatMessage({ optionsRef, message, plusRef, key }) {
                     </div>
                 }
 
-                <div   className={`flex   w-full gap-4`}>
+                <div className={`flex   w-full gap-4`}>
                     {(messageHover || message.id === openMessageOptionId || reactMessage?.id === message.id) &&
                         <MessageSettings handleMoreOptions={handleMoreOptions} plusRef={plusRef} message={message} />
                     }
@@ -139,7 +146,11 @@ function ChatMessage({ optionsRef, message, plusRef, key }) {
 
                             <div className="flex items-center gap-1 text-gray-300 text-xs whitespace-nowrap">
                                 <span>{formateTime(message.createdAt)}</span>
-                                <CheckCheck size={14} className=" text-gray-400" />
+                               {message.senderId === session.user.id &&(
+
+                                   status === "sent" ? <Check  size={14} className=" text-gray-400"  /> : status === "delivered" ? <CheckCheck size={14} className=" text-gray-400" /> : status === "read" && <CheckCheck size={14} className=" text-green-400" />   
+                                )
+                               }
                             </div>
                         </div>
                         {message.media.length > 0 &&
@@ -161,7 +172,7 @@ function ChatMessage({ optionsRef, message, plusRef, key }) {
                                         <div>
                                             {twoFiles.length > 0 &&
 
-                                                <RenderTwoFiles files={twoFiles.slice(0, 4)} multipleFiles={twoFiles.length > 1} deleteButton={message.media.length > 1} moreFiles={twoFiles.length - 4} />
+                                                <RenderTwoFiles files={twoFiles} multipleFiles={twoFiles.length > 1} deleteButton={message.media.length > 1} moreFiles={twoFiles.length - 4} />
 
                                             }
 
@@ -180,35 +191,49 @@ function ChatMessage({ optionsRef, message, plusRef, key }) {
                             </div>
                         }
                         {(editMessage?.id === message.id) ? <EditMessage /> :
-                            <div className={` ${message.status.status === "pending" ? "text-gray-400 font-semibold" : "text-gray-300 "}   text-[0.95em]`}>
+                            <div className={` ${message?.status === "PENDING" ? "text-gray-300/60  font-semibold" : "text-gray-300/90 "}   text-[0.95em]`}>
                                 {message.content}
-                                {message.createdAt !== message.updatedAt && 
-                                <span className="text-[0.75rem] text-gray-400 ml-1">(edited)</span>
+                                {message.createdAt !== message.updatedAt &&
+                                    <span className="text-[0.75rem] text-gray-400 ml-1">(edited)</span>
                                 }
                             </div>
                         }
-                        
+
 
                     </div>
 
 
                 </div>
-                {message.reactions.length > 0 &&
-                <div className="flex gap-1 items-center">
-
-                    <div className="flex items-center gap-1 ml-13 mt ">
-                        {message.reactions.map((reaction)=>{
-                            
-                            return  <div key={reaction.id} className="px-1 border bg-indigo-400/20 border-indigo-500 rounded-lg ">
-                            {reaction.emoji}
-                        </div>
+                {message.reactions.length > 0 && (
+                    <div className="flex items-center gap-1 ml-14 mt-1 flex-wrap">
+                        {message.reactions.map((reaction) => {
+                            const reactedByMe = reaction.reactors?.some(r => r.userId === currentUserId)
+                            return (
+                                <button
+                                    onClick={() => handleReactionFunc(reaction, message.id)}
+                                    key={reaction.id}
+                                    title={reaction.reactors?.map(r => r.user?.name).join(", ")}
+                                    className={`group relative flex items-center gap-1 px-2 py-1.5 rounded-lg border text-xs font-medium transition-all duration-150
+                        ${reactedByMe
+                                            ? "bg-indigo-500/20 border-indigo-500/50 text-indigo-300 hover:bg-indigo-500/30"
+                                            : "bg-white/[0.04] border-white/[0.08] text-gray-400 hover:bg-white/[0.08] hover:border-white/[0.15]"
+                                        }`}
+                                >
+                                    <span className="text-[1rem] leading-none">{reaction.emoji}</span>
+                                    {reaction.reactors?.length > 0 && (
+                                        <span className="tabular-nums">{reaction.reactors.length}</span>
+                                    )}
+                                </button>
+                            )
                         })}
+                        <button
+                            onClick={() => handleReaction(message, true)}
+                            className="flex items-center justify-center w-7 h-7 rounded-full border border-white/[0.06] bg-white/[0.02] text-gray-500 hover:bg-white/[0.08] hover:text-gray-300 transition-all duration-150"
+                        >
+                            <i className="fa-solid fa-face-smile text-xs" />
+                        </button>
                     </div>
-                    <div onClick={()=>handleReaction(message , true)} className="px-1.5 py-0.5 hover:bg-gray-8 rounded-lg bg-gray-7">
-                          <i className="fa-solid fa-face-smile"></i>
-                    </div>
-                        </div>
-                }
+                )}
 
             </div>
             <AnimatePresence>

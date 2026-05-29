@@ -1,9 +1,10 @@
 import { create } from "zustand";
+import { chatMessageStore } from "./chatMessage-store";
+import { userStore } from "./user-store";
 
 export let messageSettingsStore = create((set, get) => ({
     selectedMedia: null,
     setSelectedMedia: (media) => set({ selectedMedia: media }),
-    messagesProgress: {},
     editMessage: {},
     openMessageOptionId: null,
     replyMessage: null,
@@ -44,5 +45,33 @@ export let messageSettingsStore = create((set, get) => ({
             return
         }
         set({reactMessage : {id: message.id, senderId: message.senderId , left : left  } })
+    },
+
+     handleReactionFunc : (reaction ,  messageId , emoji)=>{
+       
+        let handleReaction = chatMessageStore.getState().handleReaction
+        if (!reaction && emoji){
+            handleReaction(emoji)
+            set({reactMessage : null})
+            return
+        }
+        const session = userStore.getState().session
+        const handleAddReaction = chatMessageStore.getState().handleAddReaction
+           const handleDeleteReaction = chatMessageStore.getState().handleDeleteReaction
+           const handleRemoveReaction = chatMessageStore.getState().handleRemoveReaction
+        let myReaction = reaction.reactors.find(reactor=>reactor.userId ===session.user.id)
+ 
+        if (myReaction){
+            if (reaction.reactors.length === 1){
+                handleDeleteReaction(reaction.id , messageId)
+            }else{
+                handleRemoveReaction({id : reaction.id , reactorId : myReaction.id,messageId })
+            }
+        }else{
+            handleAddReaction({id : reaction.id , userId : session.user.id , reactorId : crypto.randomUUID() , messageId})
+        }
+            set({reactMessage : null})
+
     }
+  
 }))

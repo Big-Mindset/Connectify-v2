@@ -201,7 +201,7 @@ model Message {
   senderId           String
   chatId             String
   lastMessage        Chat?                 @relation("lastMessage")
-  enceyptedContent   String?
+  encryptedContent   String?
   search_index       String[]
   firstLetters_index String[]
   reactions          reaction[]
@@ -231,14 +231,16 @@ model reaction {
   name String?
   reactors reactionUsers[]
   messageId String
-  message   Message @relation(fields: [messageId], references: [id])
+  message   Message @relation(fields: [messageId], references: [id] , onDelete: Cascade)
+  @@unique([emoji,messageId])
 }
 model reactionUsers {
   id String @id @default(uuid())
   reactionId String
-  reaction reaction @relation(fields: [reactionId],references: [id])
+  reaction reaction @relation(fields: [reactionId],references: [id] , onDelete: Cascade)
   userId String
   user User @relation(fields: [userId],references: [id])
+  @@unique([reactionId,userId])
 }
 
 model message_securityKeys {

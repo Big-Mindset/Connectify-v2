@@ -30,14 +30,14 @@ export default function MainInput({ chatId }) {
     let plusOptionsRef = useRef(null)
     let plusRef = useRef(null)
     let textInputRef = useRef(null)
-    
+
     let sendMessage = chatMessageStore(s => s.sendMessage)
-    let setInputRef = messageSettingsStore(s=>s.setInputRef)
+    let setInputRef = messageSettingsStore(s => s.setInputRef)
     let replyMessage = messageSettingsStore(s => s.replyMessage)
     let setReplyMessage = messageSettingsStore(s => s.setReplyMessage)
     let reactMessage = messageSettingsStore(s => s.reactMessage)
     let setReactMessage = messageSettingsStore(s => s.setReactMessage)
-     let inputRef = useRef(null)
+    let inputRef = useRef(null)
 
 
     useEffect(() => {
@@ -58,17 +58,17 @@ export default function MainInput({ chatId }) {
             window.removeEventListener("mousedown", handleClickOutside)
         }
     }, [])
-   useEffect(()=>{
-       if (inputRef.current){
-        setInputRef(inputRef)
-       }
-   },[inputRef])
+    useEffect(() => {
+        if (inputRef.current) {
+            setInputRef(inputRef)
+        }
+    }, [inputRef])
     useEffect(() => {
         let sender = participants.get(replyMessage?.senderId)
         setSenderData(sender)
         textInputRef.current.focus()
     }, [replyMessage])
-   
+
 
 
 
@@ -93,14 +93,10 @@ export default function MainInput({ chatId }) {
             chatId: chatId,
             createdAt: createdAt,
             updatedAt: createdAt,
-            status: {
-                id: crypto.randomUUID(),
-                readAt: null,
-                deliveredAt: null,
-                status: "pending",
-            },
+            status: "PENDING",
             replyTo: replyMessage,
-            media: filePreview
+            media: filePreview || [],
+            reactions : []
         }
 
 
@@ -184,9 +180,9 @@ export default function MainInput({ chatId }) {
 
     }
 
-   let handleCancelReply = ()=>{
-    setReplyMessage(null)
-   }
+    let handleCancelReply = () => {
+        setReplyMessage(null)
+    }
     return (
         <>
             <AnimatePresence>
@@ -229,7 +225,7 @@ export default function MainInput({ chatId }) {
                 </motion.div>}
             </AnimatePresence>
             <div ref={inputRef} className="w-full  shrink-0 p-4">
-                <div className={`  ${(filePreview.length || replyMessage?.id) ? "rounded-lg" : "rounded-full"}  w-full flex flex-col gap-1  focus-within:ring-indigo-400/40 focus-within:ring-2   ring ring-gray-7    bg-gray-2/80   `}>
+                <div className={`  rounded-lg  w-full flex flex-col gap-1  focus-within:ring-indigo-400/40 focus-within:ring-2   ring ring-gray-7    bg-gray-2/80   `}>
                     {replyMessage?.id &&
                         <div className=" pl-3 py-2 flex items-center justify-between text-[0.8rem] border-b border-gray-6 items-baseline bg-gray-4">
                             <div className="flex gap-1">
@@ -334,7 +330,7 @@ export default function MainInput({ chatId }) {
                                 </div>
                             </div>
                             <div className="flex-1">
-                                <input onKeyDown={handleKeyDown} value={inputText} ref={textInputRef} onChange={handleTyping} placeholder="Type a message" type="text" className="w-full  text-[0.95rem]   caret-indigo-400 outline-none" />
+                                <input onKeyDown={handleKeyDown} value={inputText} ref={textInputRef} onChange={handleTyping} placeholder="Type a message" type="text" className="w-full  text-[0.95rem]  text-gray-300/90 caret-indigo-400 outline-none" />
 
 
 
@@ -350,7 +346,7 @@ export default function MainInput({ chatId }) {
 
                         </div>
 
-                        <div className={`${openEmojiPicker ? " scale-[1] opacity-100" : "scale-[0.2] opacity-0 "} absolute z-[500] duration-100 bottom-[110%] origin-bottom-left left-6`}>
+                        <div className={`${openEmojiPicker ? " scale-[1] opacity-100" : "scale-[0] opacity-0 "} absolute z-[500] duration-100 bottom-[110%] origin-bottom-left left-6`}>
 
                             <EmojiPicker setOpenEmojiPicker={setOpenEmojiPicker} perLine={10} previewPosition={"bottom"} setInputText={setInputText} />
                         </div>

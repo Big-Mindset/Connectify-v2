@@ -1,104 +1,12 @@
 import { prisma } from "../prismaClient.js"
-import cloudinary from "./cloudinary.js"
+import { client } from "./redis.js"
 import { secure_message } from "./security-e2ee/encryptMessage.js"
-let secureMessage = new secure_message(Buffer.from(process.env.KEK_KEY, "hex"))
 
 export class SocketQueries {
     constructor() {
 
     }
-    async createMessage(messageData) {
-        let content = messageData.content
-        let media = messageData.media
-        console.log(media)
-        if (!content.trim() && !media) {
-            return null
-        }
-        try {
-            if (content) {
-                let { encrypteContent, keys, firstLetters_search, letters_search } = secureMessage.encryptMessage(content)
 
-                let message = await prisma.message.create({
-                    data: {
-                        id: messageData.id,
-                        message_security: {
-                            create: keys
-                        },
-                        enceyptedContent: encrypteContent,
-                        chatId: messageData.chatId,
-                        replyToId: messageData.replyToId,
-                        senderId: messageData.senderId,
-                        search_index: letters_search,
-                        firstLetters_index: firstLetters_search,
-                        status: {
-                            create: {
-                                id: messageData.status.id,
-                                status: "SENT",
-                            }
-                        },
-                        replyToId : messageData?.replyTo?.id
-                    },
-                    
-                    select: {
-                        id: true
-                    }
-
-                })
-                if (media?.length > 0) {
-
-                     await prisma.media.createMany({
-                        data: media.map((m) => ({
-                            id: m.id,
-                            type: m.type,
-                            messageId: message.id,
-                            publicId: m.publicId,
-                            url: m.url,
-                            filename: m.filename
-
-                        })),
-                        skipDuplicates: true
-
-                    })
-                   
-                }
-                return message.id
-            } else {
-               let message =  await prisma.message.create({
-                    data: {
-                        id: messageData.id,
-                        chatId: messageData.chatId,
-                        senderId: messageData.senderId,
-                        status : {
-                             create: {
-                                id: messageData.status.id,
-                                status: "SENT",
-                            }
-                        },
-                        media : {
-                            createMany : {
-                                 data: media.map((m) => ({
-                            id: m.id,
-                            type: m.type,
-                            publicId: m.publicId,
-                            url: m.url,
-                            filename: m.filename
-
-                        }))
-                            }
-                        }
-                    },select : {
-                        id : true,
-                    
-                    }
-                })
-                return message.id
-            }
-
-        } catch (error) {
-            console.log(error.message)
-            return null
-        }
-    }
     async getFriendIds(userId) {
         let friendIds = await prisma.friendship.findMany({
             where: {
@@ -115,5 +23,114 @@ export class SocketQueries {
         })
 
         return friendIds.map((friend) => friend.user1Id === userId ? friend.user2Id : friend.user1Id)
+    }
+    async updateToDelivered(statusData) {
+    
+        try {
+            let status = await prisma.status.create({
+                data: {
+                    userId : statusData.userId,
+                    messageId : statusData.id,
+                    status : "DELIVERED",
+                    deliveredAt : new Date(),
+                    readAt : null
+                }
+            })
+            return status || null
+        } catch (error) {
+            return error
+        }
+    }
+    async updateToRead(statusData) {
+    
+       try {
+            let status = await prisma.status.create({
+                data: {
+                    userId : statusData.userId,
+                    messageId : statusData.id,
+                    status : "READ",
+                    readAt : new Date(),
+                }
+            })
+            return status || null
+        } catch (error) {
+            return error
+        }
+    }
+    async allMessagesDelivered(userId) {
+
+        try {
+            let messages = await prisma.message.findMany({
+
+                where: {
+                    chat: {
+                        participants: {
+                            some: {
+                                userId: userId,
+                            }
+                        }
+                    },
+                    NOT: {
+                        status: {
+                            some: {
+                                userId: userId, status: {
+                                    in: ["DELIVERED", "READ"]
+                                }
+                            }
+                        }
+                    },
+
+                },
+                orderBy: {
+                    createdAt: "desc"
+                },
+                select: {
+                    id: true,
+                    senderId: true,
+                    chatId: true
+                }
+            })
+            let deliveredAt = new Date()
+            await prisma.status.createMany({
+                data : messages.map((msg)=>({
+                    userId ,
+                    messageId : msg.id,
+                    status : "DELIVERED",
+                    deliveredAt 
+                })),
+                skipDuplicates : true,
+
+            })
+            let senderIds = new Set(messages.map((msg) => msg.senderId))
+            senderIds = [...senderIds]
+
+            let filteredData = {}
+            await Promise.all(
+
+                senderIds.map(async (id) => {
+                    let activeChat = await client.GET(`user-activeChat:${id}`)
+                    if (activeChat && !filteredData[id]) {
+                     
+                        filteredData[id] = { chatId: activeChat , userId , deliveredAt , messages : {} }
+                    }
+                    
+                })
+            )
+
+            
+            
+            
+            messages.forEach((msg) => {
+                let chatId = filteredData[msg.senderId]?.chatId
+              
+                if (msg.chatId === chatId) {
+                    filteredData[msg.senderId].messages[msg.id] = true
+                }
+            })
+            return filteredData 
+        } catch (error) {
+            console.log(error.message)
+
+        }
     }
 }

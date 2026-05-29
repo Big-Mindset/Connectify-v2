@@ -12,6 +12,7 @@ import ConfirmMessageDeletion from "./chatWindow-componenets/confirm-messageDele
 import { messageSettingsStore } from "@/store/messageSettings-store";
 import { AnimatePresence } from "framer-motion";
 import EmojiPicker from "./chatWindow-componenets/Emoji-Picker";
+import { chatMessageStore } from "@/store/chatMessage-store";
 let ChatMessage = dynamic(() => import("./chatWindow-componenets/chat-message"))
 export default function ChatWindow({ chatId }) {
     const setOpenMessageOptionId = messageSettingsStore(s=>s.setOpenMessageOptionId)
@@ -22,7 +23,7 @@ export default function ChatWindow({ chatId }) {
    const selectedMedia = mediaStore(s=>s.selectedMedia)
     const optionsRef = useRef(null)
     const plusRef = useRef(null)
-    const handleMessageSent = messageSettingsStore(s => s.handleMessageSent)
+    const handleMessageSent = chatMessageStore(s => s.handleMessageSent)
     const MessagesContainerRef = useRef(null)
     const editingMessage = messageSettingsStore(s=>s.editingMessage)
     const deleteMessage = messageSettingsStore(s=>s.deleteMessage)
@@ -35,10 +36,8 @@ export default function ChatWindow({ chatId }) {
             }
         }
         window.addEventListener("mousedown", handleopenMessageOptionId)
-
-        socket.on("message-sent", handleMessageSent)
+        
         return () => {
-            socket.off("message-sent", handleMessageSent)
 
             window.removeEventListener("mousedown", handleopenMessageOptionId)
         }
@@ -51,7 +50,7 @@ export default function ChatWindow({ chatId }) {
             top: scrollHeight,
         })
     }, [])
-    return <div className="flex flex-col  bg-gray-3 h-dvh overflow-hidden  relative">
+    return <div className="flex flex-col  bg-gray-2 h-dvh overflow-hidden  relative">
 
            {(reactMessage?.id) && <div onClick={()=>setReactMessage(null)} className="fixed inset-0 bg-gray-200 z-[2000] opacity-0">
             </div>}
@@ -70,7 +69,7 @@ export default function ChatWindow({ chatId }) {
             <AnimatePresence>
           {deleteMessage?.id && <ConfirmMessageDeletion />}
                 </AnimatePresence>
-            <div ref={MessagesContainerRef} className="main-content  overflow-y-scroll  min-h-0 flex flex-col gap-3 ">
+            <div ref={MessagesContainerRef} className="main-content  overflow-y-scroll  min-h-0 flex flex-1 flex-col-reverse gap-3 ">
 
                 {messages?.map((message) => {
                     

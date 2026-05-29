@@ -12,12 +12,9 @@ import { Server } from "socket.io";
 import messageRouter from "./routes/message.js";
 import {ExpressPeerServer } from "peer"
 import groupRouter from "./routes/group.js";
-import { client } from "./lib/redis.js";
 import userRouter from "./routes/user.js";
-import { prisma } from "./prismaClient.js";
 import { SocketConnection } from "./lib/socket-class.js";
 import { instrument } from "@socket.io/admin-ui";
-import multer from "multer";
 var app = express();
 let server = createServer(app)
 app.use(cors({
@@ -63,6 +60,7 @@ instrument(io,{
 auth :false
 })
 io.on("connection",async (socket)=>{
+ 
   Socket.handleConnection(socket)
   // socket.on("register-peer-socket",async (peerId)=>{
   //   Socket.RegisterPeerConnection(socket, peerId)
@@ -70,12 +68,25 @@ io.on("connection",async (socket)=>{
   socket.on("join-chat",async (chatId)=>{
     socket.join(chatId)
   })
-  socket.on("send-message", async (message , participantIds)=>{
-    Socket.handleSendMessage(socket , message , participantIds)
+  socket.on("send-message", async (participantIds , message)=>{
+    Socket.handleSendMessage(socket ,message ,  participantIds )
+  })
+  socket.on("message-delivered" , (data)=>{
     
-    
+    Socket.handleMessageDelivered(socket , data)
+  })
+  socket.on("message-deliverd-all",()=>{
+    Socket.handleMessageDeliveredAll(socket)
+  })
+  socket.on("message-read",(data)=>{
+    Socket.handleMessageRead(socket , data)
+  })
+  socket.on("mark-asRead",(statusData)=>{
+   Socket.markAllAsRead(socket , statusData)
+
   })
   socket.on("disconnect",async ()=>{
+
       Socket.handleDisconnection(socket)
 
   })

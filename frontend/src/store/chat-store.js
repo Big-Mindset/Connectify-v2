@@ -119,6 +119,11 @@ export const chatStore = create((set, get) => ({
         name: null
     },
     chats: [],
+    setChats : (func)=>{
+        set((state)=>({
+            chats : func(state.chats)
+        }))
+    },
     participants: new Map(),
     setParticipants: (userId, data) => set(state => ({
         participants: new Map(state.participants).set(userId, data)
@@ -155,6 +160,7 @@ export const chatStore = create((set, get) => ({
                 let updatedData = AllChats.map((chat) => {
                     let chatMembersIds = get().chatMembersIds
                     let participants = get().participants
+              
                     chatMembersIds.set(chat.id, chat.participants.map(({ user }) => user.id))
 
                     chat.participants.forEach(({ user }) => {
@@ -189,8 +195,21 @@ export const chatStore = create((set, get) => ({
               
                 socket.emit("join-chat", chatId)
                 set({selectedChat :{id : id , userId : userId} })
-                set({messages :messages.reverse() })
-               
+                set({messages :messages })
+                let updateStatus = await Axios.put(`/message/mark-asread?chatId=${chatId}`)
+                if (updateStatus.status === 200){
+                    console.log(updateStatus)
+                   let data =  updateStatus.data
+                   if (data === null) return
+                   if (data.count > 0 && data.senderId){
+                       let statusData = updateStatus.data
+                       
+                       
+                       console.log("sending the socket to backend ")
+                    
+                        socket.emit("mark-asRead",{senderId :  statusData.senderId , chatId  , readAt : statusData.readAt})
+                   }
+                            }
             }
         } catch (error) {
             console.log(error?.message || error?.response?.data?.message)

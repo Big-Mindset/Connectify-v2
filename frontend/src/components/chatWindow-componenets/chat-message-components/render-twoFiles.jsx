@@ -67,7 +67,7 @@ export default function RenderTwoFiles({ files, moreFiles, multipleFiles, delete
                             </div>
                         </>
                         }
-                        {/* <div onClick={()=>handleOpenFile(i,file)} className="bg-gray-300"> */}
+                        <div onClick={()=>handleOpenFile(i,file)} className="bg-gray-300">
 
                         {
                             file.type.startsWith("image") ?
@@ -76,7 +76,7 @@ export default function RenderTwoFiles({ files, moreFiles, multipleFiles, delete
                             <RenderVideo hoveredFile={hoveredFile} multipleVideoes={multipleFiles} video={file} />
                             
                         }
-                        {/* </div> */}
+                        </div>
 
 
                     </div>

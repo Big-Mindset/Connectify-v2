@@ -4,7 +4,7 @@ import { mediaStore } from "@/store/media-store"
 import Image from "next/image"
 
 export default function MediaShowcase({ mediaData }) {
-
+    console.log(mediaData)
     return <div className="bg-gray-2 opacity-[0.95] fixed z-[99] inset-0 ">
         {/* <div onClick={() => setSelectedMedia(null)} className="fixed  inset-0 z-20 ">
 
@@ -84,13 +84,13 @@ const Main = ({ media }) => {
             newMedia = forward
         }
         setSelectedMedia((prev)=>{
-            return {...prev , idx : index , selectedFileId : prev.files[idx].id}
+            return {...prev , idx : index , selectedFileId : prev.files[index].id}
          })
     }
    
     return <div className="flex  m-20 items-center justify-center  gap-24">
         {
-            media.length > 1 &&
+            media.files.length > 1 &&
             <div onClick={() => handleImageChange("backward")} className="px-3.5 py-3 rounded-full hover:bg-gray-4 border border-gray-5 ">
                 <i className="fa-solid fa-arrow-left" ></i>
             </div>
@@ -106,7 +106,7 @@ const Main = ({ media }) => {
                 <Image width={600} className="object-contain " height={600} src={selectedMedia.url} alt={selectedMedia.id} />
             }
         </div>
-        {media.length > 1 &&
+        {media.files.length > 1 &&
 
             <div onClick={() => handleImageChange("forward")} className="px-3.5 py-3 rounded-full hover:bg-gray-4 border border-gray-5 ">
                 <i className="fa-solid fa-arrow-right" ></i>
@@ -115,13 +115,13 @@ const Main = ({ media }) => {
     </div>
 }
 const ImagesSelector = ({ media }) => {
+    console.log(media)
     const setSelectedMedia = mediaStore((s) => s.setSelectedMedia)
     let handleSelectFile = (fileId , idx)=>{
          setSelectedMedia((prev)=>{
            return {...prev , idx , selectedFileId : fileId}
          })
    }
-   console.log(media)
     return <div className="flex items-center  justify-center  gap-0.5">
         {media.files.map((file, i) => {
 

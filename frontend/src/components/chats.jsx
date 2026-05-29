@@ -8,6 +8,7 @@ import ChatMenu from "./chat-components/chat-menu";
 import { AnimatePresence } from "framer-motion";
 import { chatStore } from "@/store/chat-store";
 import { userStore } from "@/store/user-store";
+import { socketStore } from "@/store/socket";
 const CreateGroup = dynamic(() => import("./chat-components/create-group"))
 const ChatSettings = dynamic(() => import("./chat-components/chat-settings"))
 const ChatUser = dynamic(() => import("./chat-components/chat-user"))
@@ -20,24 +21,51 @@ export default function Chats() {
     const [openMenu, setOpenMenu] = useState(false)
     const childRef = useRef(null)
     const chatMenuRef = useRef(null)
-    
-    
+
+
     const setInviteComp = chatStore(s => s.setInviteComp)
     const inviteComp = chatStore(s => s.inviteComp)
     const getChats = chatStore(s => s.getChats)
     const chats = chatStore(s => s.chats)
     const filteredChats = chatStore(s => s.filteredChats)
     const setFilteredChats = chatStore(s => s.setFilteredChats)
-    const session = userStore(s=>s.session)
+    const session = userStore(s => s.session)
+    const socket = socketStore(s => s.socket)
+    const handleMarkAllAsRead = socketStore(s => s.handleMarkAllAsRead)
+    const handleReceiveMessage = socketStore(s => s.handleReceiveMessage)
+    const handleUpdateAllToDelivered = socketStore(s => s.handleUpdateAllToDelivered)
+    const handleDeliverMessage = socketStore(s => s.handleDeliverMessage)
+    const handleReadMessage = socketStore(s => s.handleReadMessage)
+
     let user = session?.user
-    useEffect(()=>{
-        if (user?.id){
+    useEffect(() => {
+
+
+        if (user?.id) {
 
             getChats(user?.id)
         }
 
-    },[user])
+    }, [session?.user?.id])
+    useEffect(() => {
+        if (!socket) return
+        socket?.on("updateToDelivered",handleUpdateAllToDelivered)
+        socket?.on("mark-asRead", handleMarkAllAsRead)
+        socket?.on("message-delivered", handleDeliverMessage)
+        socket.on("message-read",handleReadMessage)
+        socket.on("send-message", handleReceiveMessage)
+        
+        
+        return () => {
+            
+            socket.off("message-read",handleReadMessage)
+            socket?.off("message-delivered", handleDeliverMessage)
+            socket?.off("updateToDelivered",handleUpdateAllToDelivered)
+            socket?.off("send-message", handleReceiveMessage)
+            socket?.off("mark-asRead", handleMarkAllAsRead)
 
+        }
+    }, [socket])
     useEffect(() => {
         let handleCloseSettings = (e) => {
             if (childRef.current && !childRef.current.contains(e.target)) {
@@ -46,11 +74,14 @@ export default function Chats() {
             if (chatMenuRef.current && !chatMenuRef.current.contains(e.target)) {
                 setOpenMenu(false)
             }
-            
+
         }
-        
+
         window.addEventListener("mousedown", handleCloseSettings)
-        return () => { window.removeEventListener("mousedown", handleCloseSettings) }
+        return () => {
+            window.removeEventListener("mousedown", handleCloseSettings)
+
+        }
     }, [])
 
     useEffect(() => {
@@ -131,7 +162,7 @@ export default function Chats() {
                 <input onChange={handleSearch} onFocus={() => setHover(false)} onBlur={() => setHover(true)} type="text" placeholder="Start searching here" className="p-2 w-full placeholder:text-[0.9rem]  outline-none" />
                 <Search className="size-5" />
             </div>
-    
+
 
             <div className="all-chats-section p-1">
                 <span className="text-xl font-bold">Chats</span>
@@ -157,13 +188,13 @@ export default function Chats() {
                         </AnimatePresence>
                         <div className="flex flex-col gap-2">
                             {filteredChats.map((chat) => {
-                                return <ChatUser  key={chat.id} chat={chat} childRef={childRef} setChatSettings={setChatSettings} />
+                                return <ChatUser key={chat.id} chat={chat} childRef={childRef} setChatSettings={setChatSettings} />
                             })}
-                        </div>
                         </div>
                     </div>
                 </div>
             </div>
-        
+        </div>
+
     </div>
 }

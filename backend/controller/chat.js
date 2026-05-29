@@ -10,6 +10,7 @@ let secureMessage = new secure_message(Buffer.from(process.env.KEK_KEY, "hex"))
 
 export const getChatbyId = async (req, res, next) => {
     let id = req.params.id
+    let user = req.user
     if (!id) {
         throw createError(400, { message: "Error opening Chat" })
     }
@@ -32,18 +33,27 @@ export const getChatbyId = async (req, res, next) => {
                         id: true,
                         chatId: true,
                         media: true,
-                        reactions: true,
+                        reactions: {
+                            include : {
+                                reactors : {
+                                    select : {
+                                        userId : true,
+                                        id : true
+                                    }
+                                }
+                            }
+                        },
                         senderId: true,
                         replyTo: {
                             select: {
                                 id: true,
-                                enceyptedContent: true,
+                                encryptedContent: true,
                                 senderId: true,
                                 message_security : true
 
                             }
                         },
-                        enceyptedContent: true,
+                        encryptedContent: true,
 
 
                         _count: {
@@ -51,7 +61,13 @@ export const getChatbyId = async (req, res, next) => {
                                 replies: true,
                             }
                         },
-                        status: true,
+                        status: {
+                            where : {
+                                userId : {
+                                    not : user.id
+                                }
+                            }
+                        },
                         message_security: true,
                         createdAt: true,
                         updatedAt: true
@@ -65,18 +81,20 @@ export const getChatbyId = async (req, res, next) => {
 
         }
         let decryptedMessages = chat.messages.map((msg) => {
-            if (!msg.enceyptedContent) return msg
-            let { enceyptedContent, message_security, ...rest } = msg
+            if (!msg.encryptedContent) return msg
+            let { encryptedContent, message_security, ...rest } = msg
             if (msg?.replyTo?.id) {
 
-                let { enceyptedContent: replyEncryptedContent,message_security, ...restReply } = msg.replyTo
+                let { encryptedContent: replyEncryptedContent,message_security, ...restReply } = msg.replyTo
                 let replyToContent = secureMessage.decryptMessage(replyEncryptedContent, message_security)
                 rest.replyTo = { ...restReply, content: replyToContent }
             }
-            let content = secureMessage.decryptMessage(enceyptedContent, message_security)
+            let content = secureMessage.decryptMessage(encryptedContent, message_security)
             return { ...rest, content }
         })
         chat.messages = decryptedMessages
+        await client.SADD(`active-chat:${chat.id}`,req.user.id)
+        await client.SET(`user-activeChat:${req.user.id}` , chat.id)
         return res.status(200).json({ chat: chat })
     } catch (error) {
         next(error)
@@ -93,13 +111,20 @@ const getMessageData = (userId) => {
             select: {
                 id: true,
                 createdAt: true,
-                status: true,
-                enceyptedContent: true,
+                status: {
+                    where : {
+                        userId : {
+                            not : userId
+                        }
+                    }
+                },
+                encryptedContent: true,
                 media: {
                     select: {
                         type: true
                     }
-                }
+                },
+                message_security: true
             }
         },
         participants: {
@@ -160,7 +185,8 @@ export let get_chats = async (req, res, next) => {
                     chat: {
 
                         lastMessage: {
-                            createdAt: "desc"
+                            
+                            createdAt: "desc",
                         },
 
                     }
@@ -174,18 +200,29 @@ export let get_chats = async (req, res, next) => {
             select: {
                 chat: {
                     select: getMessageData(user.id)
+                   
                 },
             }
         })
 
         let friendsWithStatus = await Promise.all(
             allFriends.map(async ({ chat }) => {
+           
+                let lastMessage = chat.lastMessage
 
+                if (lastMessage && lastMessage.encryptedContent){
+
+                   let content =  secureMessage.decryptMessage(lastMessage.encryptedContent ,lastMessage.message_security)
+                   let {encryptedContent ,message_security, ...rest} = lastMessage
+                    lastMessage = {...rest , content }
+                 
+                
+                }
                 if (chat.isGroup) return chat
                 let userId = chat.participants[0].user.id === req.user.id ? chat.participants[1].user.id : chat.participants[0].user.id
 
                 let isOnline = await client.SISMEMBER("online_users", userId)
-                return { ...chat, isOnline : isOnline ? true : false }
+                return { ...chat, isOnline : isOnline ? true : false , lastMessage }
             })
         )
 

@@ -7,7 +7,6 @@ import { useEffect } from "react"
 
 export default function connectSocket() {
     let connectSocket = socketStore(s => s.connectSocket)
-    let disconnectSocket = socketStore(s => s.disconnectSocket)
      let { isPending, data } = authClient.useSession()
      let router = useRouter()
   const Peer = socketStore(s=>s.Peer)
@@ -18,10 +17,8 @@ export default function connectSocket() {
             router.push("/login")
         }
         connectSocket(data?.user?.id)
-        Peer()
-        return () => {
-            disconnectSocket()
-        }
+        // Peer()
+       
     }, [isPending, data])
     return null
 }

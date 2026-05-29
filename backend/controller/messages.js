@@ -2,59 +2,166 @@ import { prisma } from "../prismaClient.js"
 import { config } from "dotenv"
 import { secure_message } from "../lib/security-e2ee/encryptMessage.js"
 import createError from "http-errors"
-import { GetObjectCommand, PutObjectCommand, S3 } from "@aws-sdk/client-s3"
+import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3"
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 import { s3 } from "../lib/s3-client.js"
-import multer from "multer"
-import cloudinary from "../lib/cloudinary.js"
-import { uploadToCloudinary } from "../lib/uploadToCloudinary.js"
+import { client } from "../lib/redis.js"
 let secureMessage = new secure_message(Buffer.from(process.env.KEK_KEY, "hex"))
 
-export const createMessage = async (req, res, next) => {
-    config()
-    const messageData = req.body
-    let content = messageData.content
-    let media = messageData.media
-    if (!content.trim() && !media) {
-        createError(400, { message: "Message is empty write text or add attachments" })
-    }
-    let { encrypteContent, keys, firstLetters_search, letters_search } = secureMessage.encryptMessage(content)
-    try {
-        let message = await prisma.message.create({
-            data: {
-                message_security: {
-                    create: keys
-                },
-                enceyptedContent: encrypteContent,
-                chatId: messageData.chatId,
-                replyToId: messageData.replyToId,
-                senderId: req.user.id,
-                search_index: letters_search,
-                firstLetters_index: firstLetters_search,
-                status: {
-                    create: {
-                        status: "SENT",
+export const createMessage = async (req, res, next) => { 
+
+        let messageData  = req.body
+        let content = messageData.content
+        let media = messageData.media
+        if (!content.trim() && !media) {
+           throw createError(400, { message: "media or content is required" })
+        }
+        let message = null
+     
+        try {
+            if (content) {
+                let { encrypteContent, keys, firstLetters_search, letters_search } = secureMessage.encryptMessage(content)
+
+                let messageRes = await prisma.message.create({
+                    data: {
+                        id: messageData.id,
+                        message_security: {
+                            create: keys
+                        },
+                        encryptedContent: encrypteContent,
+                        chatId: messageData.chatId,
+                        replyToId: messageData.replyToId,
+                        senderId: messageData.senderId,
+                        search_index: letters_search,
+                        firstLetters_index: firstLetters_search,
+                       
+                        replyToId : messageData?.replyTo?.id
+                    },
+                    
+                    select: {
+                        id: true,
+                        status : true
                     }
+
+                })
+                if (media?.length > 0) {
+
+                     await prisma.media.createMany({
+                        data: media.map((m) => ({
+                            id: m.id,
+                            type: m.type,
+                            messageId: message.id,
+                            publicId: m.publicId,
+                            url: m.url,
+                            filename: m.filename
+
+                        })),
+                        skipDuplicates: true
+
+                    })
+                   
+                }
+
+                message = messageRes
+            } else {
+               let messageRes =  await prisma.message.create({
+                    data: {
+                        id: messageData.id,
+                        chatId: messageData.chatId,
+                        senderId: messageData.senderId,
+                        media : {
+                            createMany : {
+                                 data: media.map((m) => ({
+                            id: m.id,
+                            type: m.type,
+                            publicId: m.publicId,
+                            url: m.url,
+                            filename: m.filename
+
+                        }))
+                            }
+                        }
+                    },select : {
+                        id : true,
+                        status : true
+                    }
+                })
+                message = messageRes
+            }
+            if (message?.id){
+                 await prisma.chat.update({
+                where : {
+                    id : messageData.chatId,
                 },
-            },
-           select : {
-            id : true
-           }
-
-        })
-        let response = message
-
-        if (media) {
-            let createdMedia = await prisma.media.create({
-                data: {
-                    media_objectKey: media.objectKey,
-                    type: media.type,
-                    messageId: message.id,
+                data : {
+                    lastMessageId : messageData.id
                 }
             })
-            response.media = createdMedia
+            }
+            if (message.id && !message.status){
+                message.status = []
+            }
+            
+            return res.status(201).json({message})
+        } catch (error) {
+            next(error)
         }
-        return res.status(200).json({ message: response })
+}
+
+export const markAsRead = async (req ,res , next)=>{
+    try {
+        let user = req.user
+        let chatId = req.query.chatId
+         let messages = await  prisma.message.findMany({
+            where : {
+                chatId,
+                status : {
+                    some : {
+                        
+                        userId : user.id,
+                        status : "DELIVERED"
+                    },
+                },
+              
+            },
+            orderBy : {
+                createdAt : "desc"
+            },
+            select : {
+            id : true,
+            senderId : true
+            }
+         }) 
+         let messageIds = messages.map((msg)=>msg.id)
+         let readAt = new Date()
+         if (!messages.length) return res.status(200).json(null)
+             let {count} = await prisma.status.updateMany({
+                 where : {
+                     messageId : {
+                           in : messageIds
+                            },
+                        userId : user.id
+                    },
+                    data : {
+                        status : "READ",
+                        readAt : readAt
+                    }
+                })
+                if (count === 0) return res.status(200).json({count})
+            
+                let senderId = messages[0].senderId
+
+                let currentActiveChat = await client.SISMEMBER(`active-chat:${chatId}` , senderId)
+                if (!currentActiveChat){
+                    res.status(200).json(null)
+
+                }
+                res.status(200).json({senderId , count , readAt})
+                
+            
+
+      
+           
     } catch (error) {
         next(error)
     }
@@ -102,13 +209,13 @@ export const searchMessages = async (req, res, next) => {
                     id: true,
                     createdAt: true,
                     updatedAt: true,
-                    enceyptedContent: true,
+                    encryptedContent: true,
                     reactions: true,
                     message_security : true,
 
                     replyTo: {
                         select: {
-                            enceyptedContent: true,
+                            encryptedContent: true,
                             senderId : true,
                             createdAt: true,
                             updatedAt: true,
@@ -148,12 +255,12 @@ export const searchMessages = async (req, res, next) => {
                     id: true,
                     createdAt: true,
                     updatedAt: true,
-                    enceyptedContent: true,
+                    encryptedContent: true,
                     reactions: true,
                     message_security : true,
                     replyTo: {
                         select: {
-                            enceyptedContent: true,
+                            encryptedContent: true,
                            senderId : true,
                             message_security : true,
                             createdAt: true,
@@ -177,9 +284,9 @@ export const searchMessages = async (req, res, next) => {
             
         }
            let decryptedMessages  = messages.map((msg)=>{
-            let {enceyptedContent ,message_security ,...rest} = msg
-            let {enceyptedContent : replyEncryptedContent,...restReply} = msg.replyTo
-          let content = secureMessage.decryptMessage(msg.enceyptedContent , msg.message_security)
+            let {encryptedContent ,message_security ,...rest} = msg
+            let {encryptedContent : replyEncryptedContent,...restReply} = msg.replyTo
+          let content = secureMessage.decryptMessage(msg.encryptedContent , msg.message_security)
           let replyToContent = secureMessage.decryptMessage(replyEncryptedContent , restReply.message_security)
           rest.replyTo = {...restReply , content : replyToContent}
           return {...rest,content}
@@ -244,7 +351,7 @@ export const searchMediaMessages = async (req, res, next) => {
                 createdAt : true,
                 message : {
                     select : {
-                        enceyptedContent : true,
+                        encryptedContent : true,
                         message_security : true,
                         id: true,
                         createdAt : true,
@@ -347,7 +454,7 @@ export const updateMessage = async (req, res, next) => {
                         create : keys
                     }
                 },
-                enceyptedContent: encrypteContent,
+                encryptedContent: encrypteContent,
                 firstLetters_index : {
                      set : n_grams_singleLetters
                 },
@@ -371,7 +478,7 @@ export const updateMessage = async (req, res, next) => {
                 message_security: {
                     delete: true
                 },
-                enceyptedContent: "",
+                encryptedContent: "",
                 search_index : [],
                 firstLetters_index : [],
                 
@@ -391,9 +498,8 @@ export const updateMessage = async (req, res, next) => {
 }
 
 export const deleteMessage = async (req, res, next) => {
-    console.log(req.body)
+
     let {messageId , senderId} = req.body
-    console.log(messageId , senderId)
     if (senderId !== req.user.id){
         res.status(400).json({message : "you don't have permission to delete this message"})
     }
@@ -418,19 +524,23 @@ export const deleteMessage = async (req, res, next) => {
 }
 
 
-export const createReactions = async (req, res, next) => {
+export const createReaction = async (req, res, next) => {
     let data = req.body
-    console.log(data)
     try {
 
 
         let reaction = await prisma.reaction.create({
             data: {
                 id : data.id,
-                senderId: req.user.id,
                 messageId: data.messageId,
                 emoji: data.emoji,
                 name: data.name,
+                reactors : {
+                    create : {
+                        id : data.reactors[0].id,
+                        userId : data.reactors[0].userId,
+                    }
+                }
             },
             select : {
                 id : true
@@ -441,10 +551,44 @@ export const createReactions = async (req, res, next) => {
         next(error)
     }
 }
+export const removeReaction = async (req , res , next)=>{
+    let data =req.body
+    try {
+        let removedReaction = await prisma.reactionUsers.delete({
+            where :  {
+             id : data.id
+            },
+            select : {
+                reactionId : true
+            }
+        })
+        if (removedReaction.reactionId) return res.status(200).json({reactionId : removedReaction.reactionId})
+    } catch (error) {
+        next(error)
+    }
+} 
+export const addReaction =  async (req ,res ,next)=>{
+   let data = req.body
+    try {
+        let addReaction = await prisma.reactionUsers.create({
+            data :  {
+                reactionId : data.reactionId,
+                userId : req.user.id,
+                id : data.reactorId
+            },
+            select : {
+                reactionId : true
+            }
+        })
+        if (!addReaction.reactionId) return res.status(500).json({message : "Error adding reaction"})
+            return res.status(201).json({reactionId : addReaction.reactionId})
 
-export const deleteRection = async (req, res, next) => {
+    } catch (error) {
+        next(error)
+    }
+}
+export const deleteReaction = async (req, res, next) => {
     let data = req.body
-
     try {
         let deletedReaction = await prisma.reaction.delete({
             where: {
@@ -490,9 +634,9 @@ export const moreMessages = async (req, res, next) => {
         })
 
              let decryptedMessages  = getMoreMessasges.map((msg)=>{
-            let {enceyptedContent ,message_security ,...rest} = msg
-            let {enceyptedContent : replyEncryptedContent,...restReply} = msg.replyTo
-          let content = secureMessage.decryptMessage(msg.enceyptedContent , msg.message_security)
+            let {encryptedContent ,message_security ,...rest} = msg
+            let {encryptedContent : replyEncryptedContent,...restReply} = msg.replyTo
+          let content = secureMessage.decryptMessage(msg.encryptedContent , msg.message_security)
           let replyToContent = secureMessage.decryptMessage(replyEncryptedContent , restReply.message_security)
           rest.replyTo = {...restReply , content : replyToContent}
           return {...rest,content}

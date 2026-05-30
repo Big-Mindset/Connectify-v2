@@ -46,7 +46,7 @@ export const auth = betterAuth({
         sendOnSignIn : true,
         expiresIn : 60*20,
             sendVerificationEmail : ({user ,token , url})=>{
-                console.log(url)
+             
                 SendEmail({
                     recipient : user.name,
                     to : user.email,

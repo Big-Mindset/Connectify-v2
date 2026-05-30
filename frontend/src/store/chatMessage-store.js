@@ -146,14 +146,16 @@ export let chatMessageStore = create((set, get) => ({
         let deleteMessage = messageSettingsStore.getState().deleteMessage
         let setDeleteMessage = messageSettingsStore.getState().setDeleteMessage
         let setMessages = chatStore.getState().setMessages
-
+        let socket = socketStore.getState().socket
         try {
 
             let res = await Axios.delete(`/message/delete-message`, { data: { messageId: deleteMessage.id, senderId: deleteMessage.senderId } })
+            
             if (res.status === 200) {
                 setMessages((messages) => {
                     return messages.filter((msg) => msg.id !== deleteMessage?.id)
                 })
+                socket.emit("delete-message",)
             }
             setDeleteMessage(null)
         } catch (error) {

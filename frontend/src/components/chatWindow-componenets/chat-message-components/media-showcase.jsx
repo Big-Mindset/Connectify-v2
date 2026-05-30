@@ -4,7 +4,7 @@ import { mediaStore } from "@/store/media-store"
 import Image from "next/image"
 
 export default function MediaShowcase({ mediaData }) {
-    console.log(mediaData)
+
     return <div className="bg-gray-2 opacity-[0.95] fixed z-[99] inset-0 ">
         {/* <div onClick={() => setSelectedMedia(null)} className="fixed  inset-0 z-20 ">
 
@@ -115,7 +115,7 @@ const Main = ({ media }) => {
     </div>
 }
 const ImagesSelector = ({ media }) => {
-    console.log(media)
+
     const setSelectedMedia = mediaStore((s) => s.setSelectedMedia)
     let handleSelectFile = (fileId , idx)=>{
          setSelectedMedia((prev)=>{

@@ -198,7 +198,7 @@ export const chatStore = create((set, get) => ({
                 set({messages :messages })
                 let updateStatus = await Axios.put(`/message/mark-asread?chatId=${chatId}`)
                 if (updateStatus.status === 200){
-                    console.log(updateStatus)
+             
                    let data =  updateStatus.data
                    if (data === null) return
                    if (data.count > 0 && data.senderId){
@@ -206,7 +206,7 @@ export const chatStore = create((set, get) => ({
                        
                        
                        console.log("sending the socket to backend ")
-                    
+
                         socket.emit("mark-asRead",{senderId :  statusData.senderId , chatId  , readAt : statusData.readAt})
                    }
                             }

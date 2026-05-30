@@ -5,7 +5,7 @@ import createError from "http-errors"
 export default async function protectRoute(req , res, next){
     try {
         let session = await auth.api.getSession({headers : req.headers })
-        console.log(session)
+     
         let user = session.user
         if (!session){
             throw createError(401,{message : "You are unauthorized" ,})

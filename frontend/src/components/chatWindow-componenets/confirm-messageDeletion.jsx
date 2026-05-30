@@ -19,7 +19,7 @@ export default function ConfirmMessageDeletion() {
             if (children.children.length > 2){
                 children.children[0].innerHTML = null
             }
-            // console.log(childrenArr)
+          
             // if (subChildren.length === 3){
             //    subChildren[0].innerHTML = null
                 

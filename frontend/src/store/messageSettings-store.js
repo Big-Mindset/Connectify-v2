@@ -8,70 +8,70 @@ export let messageSettingsStore = create((set, get) => ({
     editMessage: {},
     openMessageOptionId: null,
     replyMessage: null,
-    reactMessage : null,
-    setReactMessage : (reactMessage)=>set({reactMessage}),
+    reactMessage: null,
+    setReactMessage: (reactMessage) => set({ reactMessage }),
     setReplyMessage: (replyMessage) => set({ replyMessage }),
     setOpenMessageOptionId: (func) => {
         set((prev) => {
             return { openMessageOptionId: func(prev.openMessageOptionId) }
         })
     },
-    inputRef : null,
-    setInputRef : (inputRef)=>set({inputRef}),
+    inputRef: null,
+    setInputRef: (inputRef) => set({ inputRef }),
     setEditMessage: (editMessage) => set({ editMessage }),
-    deleteMessage : null,
-    setDeleteMessage : (deleteMessage)=>set({deleteMessage}),
+    deleteMessage: null,
+    setDeleteMessage: (deleteMessage) => set({ deleteMessage }),
 
-     handleEditMessage : (message) => {
+    handleEditMessage: (message) => {
         let editMessasge = get().editMessage
         if (editMessasge?.id === message?.id) return
-        set({editMessage : { id: message.id, senderId: message.senderId, content: message.content || "" ,  media : !!message.media.length} })
+        set({ editMessage: { id: message.id, senderId: message.senderId, content: message.content || "", media: !!message.media.length } })
     },
-     handleReplyMessage : (message) => {
-         let replyMessage = get().replyMessage
-         if (replyMessage?.id === message.id) return
-        set({replyMessage : { id: message.id, senderId: message.senderId , content : message.content || ""}})
+    handleReplyMessage: (message) => {
+        let replyMessage = get().replyMessage
+        if (replyMessage?.id === message.id) return
+        set({ replyMessage: { id: message.id, senderId: message.senderId, content: message.content || "" } })
     },
-    handleDeleteMessage : (message)=>{
+    handleDeleteMessage: (message) => {
         let deleteMessage = get().deleteMessage
         if (deleteMessage?.id === message?.id) return
-        set( { deleteMessage : { id: message.id, senderId: message.senderId, content: message.content || ""} })
+        set({ deleteMessage: { id: message.id, senderId: message.senderId, content: message.content || "" } })
     },
-    handleReaction : (message , left)=>{
+    handleReaction: (message, left) => {
         let reactMessage = get().reactMessage
-        console.log(reactMessage)
+
         if (message.id === reactMessage?.id) {
-            set({reactMessage : null })
+            set({ reactMessage: null })
             return
         }
-        set({reactMessage : {id: message.id, senderId: message.senderId , left : left  } })
+        set({ reactMessage: { id: message.id, senderId: message.senderId, left: left } })
     },
 
-     handleReactionFunc : (reaction ,  messageId , emoji)=>{
-       
+    handleReactionFunc: (reaction, messageId, emoji) => {
+
         let handleReaction = chatMessageStore.getState().handleReaction
-        if (!reaction && emoji){
+        if (!reaction && emoji) {
             handleReaction(emoji)
-            set({reactMessage : null})
+            set({ reactMessage: null })
             return
         }
         const session = userStore.getState().session
         const handleAddReaction = chatMessageStore.getState().handleAddReaction
-           const handleDeleteReaction = chatMessageStore.getState().handleDeleteReaction
-           const handleRemoveReaction = chatMessageStore.getState().handleRemoveReaction
-        let myReaction = reaction.reactors.find(reactor=>reactor.userId ===session.user.id)
- 
-        if (myReaction){
-            if (reaction.reactors.length === 1){
-                handleDeleteReaction(reaction.id , messageId)
-            }else{
-                handleRemoveReaction({id : reaction.id , reactorId : myReaction.id,messageId })
+        const handleDeleteReaction = chatMessageStore.getState().handleDeleteReaction
+        const handleRemoveReaction = chatMessageStore.getState().handleRemoveReaction
+        let myReaction = reaction.reactors.find(reactor => reactor.userId === session.user.id)
+
+        if (myReaction) {
+            if (reaction.reactors.length === 1) {
+                handleDeleteReaction(reaction.id, messageId)
+            } else {
+                handleRemoveReaction({ id: reaction.id, reactorId: myReaction.id, messageId })
             }
-        }else{
-            handleAddReaction({id : reaction.id , userId : session.user.id , reactorId : crypto.randomUUID() , messageId})
+        } else {
+            handleAddReaction({ id: reaction.id, userId: session.user.id, reactorId: crypto.randomUUID(), messageId })
         }
-            set({reactMessage : null})
+        set({ reactMessage: null })
 
     }
-  
+
 }))

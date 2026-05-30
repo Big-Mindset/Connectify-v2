@@ -39,7 +39,8 @@ export let socketStore = create((set, get) => ({
 
             let setChats = chatStore.getState().setChats
 
-            sok.on("message-notification", (message) => {
+            sok.on("message-notification", (message , type) => {
+                
                 sok.emit("message-delivered", { chatId: message.chatId, id: message.id, senderId: message.senderId })
                 setChats((chats)=> {
                     return chats.map((chat) => {

@@ -30,12 +30,12 @@ export default function Home() {
   }, [session.isPending])
   let { selectedPage } = navigationStore()
   let selectedChat = chatStore(s => s.selectedChat)
-  if (session.isPending && !session?.data) {
+  if (session.isPending || !session?.data) {
     return (<div className="size-full bg-red-200">
       Loading Session
     </div>)
   }
-  if (session?.data) {
+
     return (
       <div className="flex text-white flex-1 justify-center relative h-full  ">
        
@@ -67,5 +67,5 @@ export default function Home() {
       </div>
 
     );
-  }
+  
 }

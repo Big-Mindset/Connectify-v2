@@ -1,7 +1,7 @@
 "use client"
 
 import { MoreVerticalIcon, Search, Send } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import FilteredChats from "./chat-components/filteredChats";
 import dynamic from "next/dynamic";
 import ChatMenu from "./chat-components/chat-menu";
@@ -30,15 +30,12 @@ export default function Chats() {
     const session = userStore(s => s.session)
 
     let user = session?.user
-    useEffect(() => {
-
-
-        if (user?.id !== null) {
+    useLayoutEffect(() => {
+        if (user?.id !== null && !chats?.length) {
             getChats(user?.id)
 
         }
-
-    }, [session?.user?.id])
+    }, [])
 
     useEffect(() => {
         let handleCloseSettings = (e) => {

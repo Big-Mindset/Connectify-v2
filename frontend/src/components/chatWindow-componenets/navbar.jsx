@@ -1,6 +1,6 @@
 "use client"
 
-import { BellOff,  Camera, ChevronDown, DoorClosed, EllipsisVerticalIcon, Filter, Flag, PhoneCall, Search, Text, Timer, Trash, Trash2, UserX } from "lucide-react";
+import { BellOff,  Camera, ChevronDown, DoorClosed, EllipsisVerticalIcon, Flag, PhoneCall, Search, Timer, Trash, Trash2, UserX } from "lucide-react";
 import Avatar from "../Avatar";
 import { useEffect, useRef, useState } from "react";
 import OptionButton from "../option-button";
@@ -18,10 +18,12 @@ export default function Navbar({receiverInfo}) {
     const [muteNotifications, setOpenMuteNotifications] = useState(false)
     const [disappearingMessageComp, setDisappearingMessageComp] = useState(false)
     const chatSettingRef = useRef(null)
-    const searchMessageRef = useRef(null)
     const audioCall = socketStore(s=>s.audioCall)
     const setSearchTab = navigationStore(s=>s.setSearchTab)
     const searchTab = navigationStore(s=>s.searchTab)
+    const setFilters = navigationStore(s => s.setFilters)
+    
+    
     useEffect(() => {
         let handleCallMenu = (e) => {
             if (callRef.current && !callRef.current.contains(e.target)) {
@@ -56,6 +58,16 @@ export default function Navbar({receiverInfo}) {
     let handleAudioCall = async ()=>{
         
         audioCall(["FF17kgjOehECrwnXtVe8j1sRWxY5FR8V"])
+    }
+    let handleCloseSearchTab = ()=>{
+        if (!searchTab){
+            setSearchTab(true)
+            return
+        }
+        setFilters(()=>({}))
+        setSearchTab(false)
+        
+        
     }
     return (
         <>
@@ -95,7 +107,7 @@ export default function Navbar({receiverInfo}) {
 
                             </div>
                            
-                            <div onClick={()=>setSearchTab(!searchTab)} className="p-2.5  hover:bg-gray-5 duration-100 rounded-full">
+                            <div onClick={handleCloseSearchTab} className="p-2.5  hover:bg-gray-5 duration-100 rounded-full">
                                 <Search size={15} />
                             </div>
                            

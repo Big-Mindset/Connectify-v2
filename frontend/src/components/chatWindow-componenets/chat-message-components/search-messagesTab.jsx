@@ -5,7 +5,6 @@ import { useEffect, useRef, useState } from "react"
 import MessageFilter from "../navbar-components/filter-messages"
 import { navigationStore } from "@/store/navigation-store"
 import { Axios } from "@/lib/axiosInstance"
-import { userStore } from "@/store/user-store"
 import { SearchedMessage } from "./searched-message"
 import { chatStore } from "@/store/chat-store"
 export const SearchMessageTab = () => {
@@ -20,8 +19,8 @@ export const SearchMessageTab = () => {
         clearInterval(debounceTimeout.current)
         debounceTimeout.current = null
         debounceTimeout.current = setTimeout(() => {
-            if (inputText.trim().length > 0) {
-                if (inputText === filters.content) return
+            if (inputText.trim().length > 0 && inputText.trim() !== (filters?.content?.trim() || "")) {
+                
                 setFilters((filters) => {
                     return { ...filters, content: inputText }
                 })
@@ -33,10 +32,12 @@ export const SearchMessageTab = () => {
         }
     }, [inputText])
     useEffect(() => {
-        if (!Object.keys(filters).length) return
         queryMessages()
     }, [filters])
+
+
     let queryMessages = async () => {
+        
         let {senders , ...rest} = filters
 
         let res = await Axios.post("/message/search", {...rest , senderIds : senders?.map((sender)=>sender.id) || [] , chatId : selectedChat.id})

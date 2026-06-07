@@ -27,14 +27,20 @@ export default function SignIn({setLoginMethod , setEmail}){
               ...data
           },{
             onError : (ctx)=>{
+                
                 if (ctx.error.code === "EMAIL_NOT_VERIFIED"){
                     toast.error(ctx.error.message)
                 
                     setEmail(data.email)
                     setLoginMethod("verify-email")
                 }else{
+                    console.log(ctx)
+                    if (ctx?.error?.status === 429){
+                        setError(ctx?.error.error)
+                    }else{
 
-                    setError(ctx.error?.message)
+                        setError(ctx.error?.message)
+                    }
                 }
             },
             onSuccess : (ctx)=>{

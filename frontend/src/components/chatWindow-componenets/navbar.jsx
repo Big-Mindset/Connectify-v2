@@ -1,6 +1,6 @@
 "use client"
 
-import { BellOff,  Camera, ChevronDown, DoorClosed, EllipsisVerticalIcon, Flag, PhoneCall, Search, Text, Timer, Trash, Trash2, UserX } from "lucide-react";
+import { BellOff,  Camera, ChevronDown, DoorClosed, EllipsisVerticalIcon, Filter, Flag, PhoneCall, Search, Text, Timer, Trash, Trash2, UserX } from "lucide-react";
 import Avatar from "../Avatar";
 import { useEffect, useRef, useState } from "react";
 import OptionButton from "../option-button";
@@ -9,6 +9,7 @@ import DisappearingMessages from "./navbar-components/disappearing-messages";
 import { formateTime } from "@/lib/formateTime";
 import { AnimatePresence , motion } from "framer-motion";
 import { socketStore } from "@/store/socket";
+import { navigationStore } from "@/store/navigation-store";
 
 export default function Navbar({receiverInfo}) {
     const [calltype, setCallType] = useState(false)
@@ -17,12 +18,16 @@ export default function Navbar({receiverInfo}) {
     const [muteNotifications, setOpenMuteNotifications] = useState(false)
     const [disappearingMessageComp, setDisappearingMessageComp] = useState(false)
     const chatSettingRef = useRef(null)
+    const searchMessageRef = useRef(null)
     const audioCall = socketStore(s=>s.audioCall)
+    const setSearchTab = navigationStore(s=>s.setSearchTab)
+    const searchTab = navigationStore(s=>s.searchTab)
     useEffect(() => {
         let handleCallMenu = (e) => {
             if (callRef.current && !callRef.current.contains(e.target)) {
                 setCallType(false)
             }
+          
             if (chatSettingRef.current && !chatSettingRef.current.contains(e.target)) {
                 setNavOptions(false)
             }
@@ -49,12 +54,13 @@ export default function Navbar({receiverInfo}) {
     }
     let online = true
     let handleAudioCall = async ()=>{
-   
+        
         audioCall(["FF17kgjOehECrwnXtVe8j1sRWxY5FR8V"])
     }
     return (
         <>
-            <div className="relative shrink-0 z-50 bg-gray-1 border-b border-gray-6 ">
+    
+            <div className="relative shrink-0 z-50 bg-gray-1 border-b border-r border-gray-6 ">
                 <div className="py-2 px-5">
                     <div className="flex justify-between items-center">
                         <div className="flex items-center gap-2">
@@ -64,7 +70,7 @@ export default function Navbar({receiverInfo}) {
                                 <p className=" text-[0.8rem] text-gray-300 text-sm ">{receiverInfo.isOnline ? <span className="text-[0.7rem] uppercase font-bold tracking-wider">online</span> : formateTime(receiverInfo?.lastseen)}</p>
                             </div>
                         </div>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-4">
                             <div className="relative">
 
                                 <div className="border flex    cursor-pointer rounded-full   overflow-hidden duration-200  border-indigo-400">
@@ -88,11 +94,13 @@ export default function Navbar({receiverInfo}) {
                                 </div>
 
                             </div>
-                            <div className="p-2.5 cursor-pointer hover:bg-gray-5 duration-100 rounded-full">
+                           
+                            <div onClick={()=>setSearchTab(!searchTab)} className="p-2.5  hover:bg-gray-5 duration-100 rounded-full">
                                 <Search size={15} />
                             </div>
+                           
                             <div ref={chatSettingRef} onClick={() => setNavOptions(prev => !prev)} className="relative p-2 duration-150 rounded-full hover:bg-gray-5 cursor-pointer">
-                                <EllipsisVerticalIcon size={15} />
+                                <EllipsisVerticalIcon size={18} />
                                 <AnimatePresence>
 
                             {navOptions &&

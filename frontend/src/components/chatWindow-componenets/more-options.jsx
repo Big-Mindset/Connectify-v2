@@ -29,11 +29,11 @@ export default function MoreOptions({ optionsRef, message }) {
 
                 <Option message={message} text={"Edit"} icon={<i className="fa-solid fa-pen"></i>} />
                 <Option message={message} text={"Reply"} icon={<i className="fa-solid fa-reply"></i>} />
-                <Option text={"Reaction"} icon={<i className="fa-solid fa-face-surprise"></i>} />
+                <Option message={message} text={"Reaction"} icon={<i className="fa-solid fa-face-surprise"></i>} />
                 <Option text={"Forward"} icon={<i className="fa-solid fa-share"></i>} />
 
                 <hr className="border border-gray-7 my-1.5" />
-                <Option text={"Copy text"} icon={<i className="fa-solid fa-copy"></i>} />
+                <Option message={{content : message.content}} text={"Copy text"} icon={<i className="fa-solid fa-copy"></i>} />
                 <Option text={"Pin message"} icon={<i className="fa-solid fa-thumbtack"></i>} />
 
                 <hr className="border border-gray-7 my-1.5" />
@@ -49,6 +49,7 @@ function Option({ text, icon, red, message }) {
     let handleEditMessage = messageSettingsStore(s => s.handleEditMessage)
     let handleReplyMessage = messageSettingsStore(s => s.handleReplyMessage)
     let handleDeleteMessage = messageSettingsStore(s => s.handleDeleteMessage)
+    let handleReaction = messageSettingsStore(s => s.handleReaction)
     let handleMessageSettings = () => {
         text = text.toLowerCase().trim()
 
@@ -59,6 +60,10 @@ function Option({ text, icon, red, message }) {
             handleReplyMessage(message)
         } else if (text === "delete") {
             handleDeleteMessage(message)
+        }else if (text === "reaction"){
+            handleReaction(message)
+        }else if (text === "copy text"){
+            navigator.clipboard.writeText(message.content)
         }
 
         setOpenMessageOptionId(() => null)

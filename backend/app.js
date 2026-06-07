@@ -15,6 +15,7 @@ import groupRouter from "./routes/group.js";
 import userRouter from "./routes/user.js";
 import { SocketConnection } from "./lib/socket-class.js";
 import { instrument } from "@socket.io/admin-ui";
+import {rateLimit , ipKeyGenerator} from "express-rate-limit"
 var app = express();
 let server = createServer(app)
 app.use(cors({
@@ -40,19 +41,41 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+const globalRateLimiter = rateLimit({
+  windowMs : 15 * 60 * 1000,
+  limit : 100,
+  message : {
+    error : "Too many attempts, wait a moment"
+  },
+})
+const loginRateLimiter = rateLimit({
+  windowMs : 15 * 60 * 1000,
+  keyGenerator : (req)=>req.body.email || ipKeyGenerator(req),
+  
+  limit : 15,
+  message : {
+    error : "Too many login attempts, wait a moment"
+  },
+})
 
-
-
+const passwordResetLimitter = rateLimit({
+  windowMs : 60 * 60 * 1000,
+  limit : 5,
+  message : {
+    error : "Too many password reset attempts, wait a moment"
+  },
+})
 
 // app.use(express.static(path.join(__dirname, 'public')));
 
+app.use("/api/auth/sign-in/email",loginRateLimiter)
+app.use("/api/auth/request-password-reset",passwordResetLimitter)
 app.all("/api/auth/*", toNodeHandler(auth));
-app.use('/friendship', friendRequest);
-app.use('/chat',chatRouter)
+app.use('/friendship',globalRateLimiter, friendRequest);
+app.use('/chat',globalRateLimiter,chatRouter)
 app.use("/message",messageRouter)
-app.use("/group",groupRouter)
-app.use("/user",userRouter)
-
+app.use("/group",globalRateLimiter,groupRouter)
+app.use("/user",globalRateLimiter,userRouter)
     
 
 let Socket = new SocketConnection(io)
@@ -84,6 +107,10 @@ io.on("connection",async (socket)=>{
   socket.on("mark-asRead",(statusData)=>{
    Socket.markAllAsRead(socket , statusData)
 
+  })
+  socket.on("reaction-updates",(data , chatId)=>{
+    console.log(chatId)
+    Socket.handleReactionUpdates(socket,data,chatId)
   })
   socket.on("disconnect",async ()=>{
 

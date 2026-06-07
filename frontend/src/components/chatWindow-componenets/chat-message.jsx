@@ -25,7 +25,6 @@ function ChatMessage({ optionsRef, message, plusRef, key }) {
 
     const [messageHover, setMessageHover] = useState(false)
     const participants = chatStore(s => s.participants)
-    const [progress, setProgress] = useState()
     const messagesProgress = chatMessageStore(s => s.messagesProgress)
     const editMessage = messageSettingsStore(s => s.editMessage)
     const replyMessage = messageSettingsStore(s => s.replyMessage)
@@ -39,7 +38,7 @@ function ChatMessage({ optionsRef, message, plusRef, key }) {
     const inputRef = messageSettingsStore(s => s.inputRef)
     const handleReaction = messageSettingsStore(s => s.handleReaction)
     const handleReactionFunc = messageSettingsStore(s => s.handleReactionFunc)
-    const session = userStore(s=>s.session)
+    const session = userStore(s => s.session)
     let twoFiles = message.media.filter(m => {
         if (m.type.startsWith("video") || m.type.startsWith("image")) return true
         return false
@@ -57,30 +56,27 @@ function ChatMessage({ optionsRef, message, plusRef, key }) {
             return message.id
         })
     }
-    useEffect(() => {
-        let progress = messagesProgress?.[message.id]
-        let values = Object.values(progress || {})
-        if (values) {
-
-            let overallProgress = values.reduce((a, b) => a + b, 0)
-            setProgress(overallProgress / values.length)
-        }
-    }, [messagesProgress?.[message.id]])
+    const progress = useMemo(() => {
+        const fileProgress = messagesProgress?.[message.id];
+        if (!fileProgress) return 0;
+        const values = Object.values(fileProgress);
+        return values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+    }, [messagesProgress?.[message.id]]);
 
 
     useEffect(() => {
         if (!deleteMessage?.id || deleteMessage.id !== message.id) return
         setDeleteMessage({ ...deleteMessage, messageRef: MessageRef })
     }, [deleteMessage?.id])
-    let sender = participants.get(message.senderId)
-    let replyToSender;
-    if (message.replyTo !== null) {
-        replyToSender = participants.get(message.replyTo.senderId)
-    }
 
     let currentUserId = session?.user?.id
-    
+
     let status = messageStatus(message.status)
+    let sender = currentUserId === message.senderId ? session.user : participants.get(message.senderId)
+    let replyToSender;
+    if (message.replyTo !== null) {
+        replyToSender = currentUserId === message.replyTo.senderId ? session.user : participants.get(message.replyTo.senderId)
+    }
     return (
         <div ref={MessageRef} key={key} className="relative" >
             {message.id === reactMessage?.id &&
@@ -92,26 +88,51 @@ function ChatMessage({ optionsRef, message, plusRef, key }) {
                         if (!reactMessage?.top) {
                             if (rect1?.bottom > rect2?.bottom) {
                                 setReactMessage({ ...reactMessage, top: true })
-                           
+
                             }
                         }
                     }
                 }} className={`absolute  ${reactMessage?.left ? `left-20 ${reactMessage?.top ? "bottom-10" : ""}` : `${reactMessage?.top && "bottom-full"} right-40 `}  z-[60000]`}>
 
-                    <EmojiPicker reactions={message.reactions}  perLine={12} emojiSize={28} previewPosition={"none"} />
+                    <EmojiPicker reactions={message.reactions} perLine={12} emojiSize={28} previewPosition={"none"} />
                 </div>
             }
             <div
                 onMouseEnter={() => setMessageHover(true)}
                 onMouseLeave={() => setMessageHover(false)}
-                className={`py-2 px-3.5 flex flex-col overflow-hidden ${replyMessage?.id === message.id ? "bg-blue-800/30 before:content-[''] before:w-0.5 before:bg-blue-600 before:bottom-0 before:top-0 before:absolute relative before:left-0 " : (openMessageOptionId === message.id || editMessage?.id === message.id || reactMessage?.id === message.id) ? "bg-gray-5" : "hover:bg-gray-5"}  relative group rounded-r-sm duration-150  max-w-[97%] w-full cursor-pointer `}>
+                className={`py-2 px-3.5 flex flex-col overflow-hidden ${replyMessage?.id === message.id ? "bg-blue-800/30 before:content-[''] before:w-0.5 before:bg-blue-600 before:bottom-0 before:top-0 before:absolute relative before:left-0 " : (openMessageOptionId === message.id || editMessage?.id === message.id || reactMessage?.id === message.id) ? "bg-gray-5" : "hover:bg-gray-3"}  relative group rounded-r-sm duration-150  max-w-[97%] w-full cursor-pointer `}>
                 {
                     message?.replyTo !== null &&
+                    <div className="flex items-center w-full ">
+                                     <div className="shrink-0 ml-4 w-12 h-4 mt-2 border-l-2 border-t-2 border-gray-500 rounded-tl-lg group/reply1 hover:border-indigo-200 duration-200" />
 
-                    <div className="ml-4 relative duration-200 group/reply1 hover:border-indigo-200 w-10 h-3 border-l-2 border-t-2 border-gray-500 rounded-tl-lg">
+                        <div className="flex items-center gap-2 min-w-0 flex-1 px-2 py-1 rounded-lg">
 
-                        <div className="absolute -top-4 left-[55%] w-full ml-2 mb-1  px-3 py-1.5 rounded-lg text-[0.8rem] whitespace-nowrap">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-0.5 text-gray-300/90 font-bold shrink-0">
+                                <Avatar image={replyToSender?.image} size={"size-4"} />
+                                <h3
+                                    className="max-w-[80px] truncate"
+                                    style={{ fontSize: 'clamp(0.65rem, 1.2vw, 0.85rem)' }}
+                                >
+                                    {replyToSender?.name}
+                                </h3>
+                            </div>
+
+                            <div className="p-0.5 rounded-full bg-gray-300 shrink-0" />
+
+                            <p
+                                className="text-gray-300 flex-1 min-w-0 line-clamp-1 group-hover/reply1:text-gray-200"
+                                style={{ fontSize: 'clamp(0.65rem, 1.5vw, 0.85rem)' }}
+                            >
+                                {message?.replyTo?.content}
+                            </p>
+
+                        </div>
+                        {/* <div className="ml-4 relative bh-red- duration-200 group/reply1 hover:border-indigo-200 w-10 h-3 border-l-2 border-t-2 border-gray-500 rounded-tl-lg">
+
+                        <div className="absolute -top-4 left-[55%] w-full ml-2 mb-1  px-3 py-1.5 rounded-lg text-[0.8rem] " />
+                        
+                            <div className="flex items-center gap-2 min-w-0 text-sm">
 
                                 <div className="flex items-center gap-0.5 text-gray-300/90 font-bold ">
                                     <Avatar image={replyToSender?.image} size={"size-4"} />
@@ -122,8 +143,8 @@ function ChatMessage({ optionsRef, message, plusRef, key }) {
                                 </div>
                                 <p className="text-gray-300 group-hover/reply1:text-gray-200">{message?.replyTo?.content}</p>
                             </div>
-                        </div>
 
+                    </div> */}
                     </div>
                 }
 
@@ -146,17 +167,17 @@ function ChatMessage({ optionsRef, message, plusRef, key }) {
 
                             <div className="flex items-center gap-1 text-gray-300 text-xs whitespace-nowrap">
                                 <span>{formateTime(message.createdAt)}</span>
-                               {message.senderId === session.user.id &&(
+                                {message.senderId === session.user.id && (
 
-                                   status === "sent" ? <Check  size={14} className=" text-gray-400"  /> : status === "delivered" ? <CheckCheck size={14} className=" text-gray-400" /> : status === "read" && <CheckCheck size={14} className=" text-green-400" />   
+                                    status === "sent" ? <Check size={14} className=" text-gray-400" /> : status === "delivered" ? <CheckCheck size={14} className=" text-gray-400" /> : status === "read" && <CheckCheck size={14} className=" text-green-400" />
                                 )
-                               }
+                                }
                             </div>
                         </div>
                         {message.media.length > 0 &&
                             <div className="flex flex-col gap-1 ">
                                 {
-                                    message.status.status === "pending" ?
+                                    message.status === "PENDING" ?
                                         <div className="w-[300px] rounded-xl bg-zinc-900 p-3 shadow-lg">
                                             <div className="w-full h-2 bg-zinc-700 rounded-full overflow-hidden">
                                                 <div

@@ -18,7 +18,7 @@ export class secure_message {
             let encryptedBuffer = Buffer.concat([cipher.update(content , "utf8") , cipher.final()])
             
             encrypteContent = encryptedBuffer.toString("hex")
-            ngrams = this.content_ngrams(content , true , true)
+            ngrams = this.content_ngrams(content)
    
         }
 
@@ -35,7 +35,6 @@ export class secure_message {
         return {
             keys,
             encrypteContent,
-            firstLetters_search : ngrams.n_grams_singleLetters,
             letters_search : ngrams.n_grams  
         }
     }
@@ -73,35 +72,35 @@ export class secure_message {
             authTag_v2: authTag.toString("hex"), vi_v2: iv.toString("hex"), encryptedDek : encryptedDek.toString("hex")
         }
     }
-    content_ngrams(content , gin , binaryTree) {
+    content_ngrams(content) {
         let normalizeText = content.toLowerCase().trim().split(" ")
-        let n_grams = new Map()
-        let first_letters_ngrams = new Map()
+        let n_grams = new Set()
         for (let word of normalizeText) {
-            if (binaryTree){
-
-                let firstLetter = word[0]
-                let hashedFirstLetter = createHmac("sha256", this.kek_key).update(firstLetter).digest("hex").slice(0, 16)
-                if (!first_letters_ngrams.has(firstLetter)) {
-                    first_letters_ngrams.set(firstLetter, hashedFirstLetter)
-                }
+            if (word && word.length > 1){
+                n_grams.add(this.hmac(word))
             }
-            if (gin){
+          
+           
 
-                let val = word[0]
-                for (let i = 1; i < word.length; i++) {
-                    val += word[i]
-                    if (!n_grams.has(val)) {
-                        let hashedValue = createHmac("sha256", this.kek_key).update(val).digest("hex").slice(0, 16)
-                        n_grams.set(val, hashedValue)
-                    }
+                for (let i = 1 ; i <= Math.min(2 , word.length - 1);i++){
+                    let value = word.slice(0 , i)
+                    n_grams.add(this.hmac(value))
                 }
-            }
+                for (let i = 0; i < word.length - 2; i++) {
+                    let value = word.slice(i , i +3)
+                 
+                        let hashedValue = this.hmac(value)
+                        n_grams.add(hashedValue)
+                    
+                }
+            
         }
         return {
-            n_grams: [...n_grams.values()],
-            n_grams_singleLetters: [...first_letters_ngrams.values()]
+            n_grams: [...n_grams],
         }
+    }
+    hmac(text){
+        return createHmac("sha256", this.kek_key).update(text).digest("hex").slice(0, 16)
     }
 
 

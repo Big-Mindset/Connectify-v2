@@ -63,7 +63,8 @@ export const auth = betterAuth({
         cookieCache : {
             enabled : true,
             maxAge : 2 * 60,
-            strategy : "compact"
+            strategy : "compact",
+            
         }
     },
     user : {

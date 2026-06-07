@@ -9,7 +9,6 @@ import { client } from "../lib/redis.js"
 let secureMessage = new secure_message(Buffer.from(process.env.KEK_KEY, "hex"))
 
 export const createMessage = async (req, res, next) => { 
-
         let messageData  = req.body
         let content = messageData.content
         let media = messageData.media
@@ -53,7 +52,8 @@ export const createMessage = async (req, res, next) => {
                             messageId: message.id,
                             publicId: m.publicId,
                             url: m.url,
-                            filename: m.filename
+                            filename: m.filename,
+                            size : m.size,
 
                         })),
                         skipDuplicates: true
@@ -76,7 +76,9 @@ export const createMessage = async (req, res, next) => {
                             type: m.type,
                             publicId: m.publicId,
                             url: m.url,
+                            size : m.size,
                             filename: m.filename
+
 
                         }))
                             }
@@ -157,225 +159,319 @@ export const markAsRead = async (req ,res , next)=>{
 
                 }
                 res.status(200).json({senderId , count , readAt})
-                
-            
-
-      
-           
     } catch (error) {
         next(error)
     }
 }
 
-export const searchMessages = async (req, res, next) => {
-    try {
-        let { query, chatId, order, Ids, forwarded } = req.query
+// export const searchMessages = async (req, res, next) => {
+//     try {
+//         let { query, chatId, order, Ids, forwarded } = req.query
 
-        if (query.trim().length === 0 || typeof query !== "string") {
-            throw createError(400, { message: "invalid search input" })
-        }
+//         if (query.trim().length === 0 || typeof query !== "string") {
+//             throw createError(400, { message: "invalid search input" })
+//         }
 
-        let byUser;
+//         let byUser;
 
-        if (Ids.length > 1) {
-            byUser = {
-                OR: Ids
-            }
-        } else if (Ids.length === 1) {
-            byUser = Ids[0]
+//         if (Ids.length > 1) {
+//             byUser = {
+//                 OR: Ids
+//             }
+//         } else if (Ids.length === 1) {
+//             byUser = Ids[0]
 
-        }
-
-
-        if (query.trim().length > 1) {
-            let hashedQuery = secureMessage.content_ngrams(query, true, false)
-            messages = await prisma.message.findMany({
-                where: {
-                    chatId: chatId,
-                    forwarded,
-                    search_index: {
-                        hasSome: hashedQuery.n_grams
-                    },
-
-                    ...byUser
+//         }
 
 
-                },
-                orderBy: {
-                    createdAt: order
-                },
-                take: 10,
-                select: {
-                    id: true,
-                    createdAt: true,
-                    updatedAt: true,
-                    encryptedContent: true,
-                    reactions: true,
-                    message_security : true,
+//         if (query.trim().length > 1) {
+//             let hashedQuery = secureMessage.content_ngrams(query, true, false)
+//             messages = await prisma.message.findMany({
+//                 where: {
+//                     chatId: chatId,
+//                     forwarded,
+//                     search_index: {
+//                         hasSome: hashedQuery.n_grams
+//                     },
 
-                    replyTo: {
-                        select: {
-                            encryptedContent: true,
-                            senderId : true,
-                            createdAt: true,
-                            updatedAt: true,
-                            expiredAt: true,
-                            id: true
-                        }
-                    },
-                    expiredAt: true,
-                    forwarded: true,
-                    status: true,
-                    senderId: true,
-                    _count: {
-                        select: {
-                            replies: true,
-                        }
-                    },
+//                     ...byUser
 
-                }
-            })
-        } else {
-            let hashedQuery = secureMessage.content_ngrams(query, false, true)
 
-            messages = await prisma.message.findMany({
-                where: {
-                    chatId: chatId,
-                    forwarded,
-                    firstLetters_index: {
-                        has: hashedQuery.n_grams_singleLetters[0]
-                    },
+//                 },
+//                 orderBy: {
+//                     createdAt: order
+//                 },
+//                 take: 10,
+//                 select: {
+//                     id: true,
+//                     createdAt: true,
+//                     updatedAt: true,
+//                     encryptedContent: true,
+//                     reactions: true,
+//                     message_security : true,
 
-                },
-                orderBy: {
-                    createdAt: order
-                },
-                take: 10,
-                select: {
-                    id: true,
-                    createdAt: true,
-                    updatedAt: true,
-                    encryptedContent: true,
-                    reactions: true,
-                    message_security : true,
-                    replyTo: {
-                        select: {
-                            encryptedContent: true,
-                           senderId : true,
-                            message_security : true,
-                            createdAt: true,
-                            updatedAt: true,
-                            expiredAt: true,
-                            id: true
-                        }
-                    },
-                    expiredAt: true,
-                    forwarded: true,
-                    status: true,
-                    senderId: true,
-                    _count: {
-                        select: {
-                            replies: true,
-                        }
-                    },
+//                     replyTo: {
+//                         select: {
+//                             encryptedContent: true,
+//                             senderId : true,
+//                             createdAt: true,
+//                             updatedAt: true,
+//                             expiredAt: true,
+//                             id: true
+//                         }
+//                     },
+//                     expiredAt: true,
+//                     forwarded: true,
+//                     status: true,
+//                     senderId: true,
+//                     _count: {
+//                         select: {
+//                             replies: true,
+//                         }
+//                     },
 
-                }
-            })
+//                 }
+//             })
+//         } else {
+//             let hashedQuery = secureMessage.content_ngrams(query, false, true)
+
+//             messages = await prisma.message.findMany({
+//                 where: {
+//                     chatId: chatId,
+//                     forwarded,
+//                     firstLetters_index: {
+//                         has: hashedQuery.n_grams_singleLetters[0]
+//                     },
+
+//                 },
+//                 orderBy: {
+//                     createdAt: order
+//                 },
+//                 take: 10,
+//                 select: {
+//                     id: true,
+//                     createdAt: true,
+//                     updatedAt: true,
+//                     encryptedContent: true,
+//                     reactions: true,
+//                     message_security : true,
+//                     replyTo: {
+//                         select: {
+//                             encryptedContent: true,
+//                            senderId : true,
+//                             message_security : true,
+//                             createdAt: true,
+//                             updatedAt: true,
+//                             expiredAt: true,
+//                             id: true
+//                         }
+//                     },
+//                     expiredAt: true,
+//                     forwarded: true,
+//                     status: true,
+//                     senderId: true,
+//                     _count: {
+//                         select: {
+//                             replies: true,
+//                         }
+//                     },
+
+//                 }
+//             })
             
-        }
-           let decryptedMessages  = messages.map((msg)=>{
-            let {encryptedContent ,message_security ,...rest} = msg
-            let {encryptedContent : replyEncryptedContent,...restReply} = msg.replyTo
-          let content = secureMessage.decryptMessage(msg.encryptedContent , msg.message_security)
-          let replyToContent = secureMessage.decryptMessage(replyEncryptedContent , restReply.message_security)
-          rest.replyTo = {...restReply , content : replyToContent}
-          return {...rest,content}
-        })
-        chat.messages = decryptedMessages
-        res.status(200).json({ messages })
-    } catch (error) {
-        next(error)
-    }
-}
+//         }
+//            let decryptedMessages  = messages.map((msg)=>{
+//             let {encryptedContent ,message_security ,...rest} = msg
+//             let {encryptedContent : replyEncryptedContent,...restReply} = msg.replyTo
+//           let content = secureMessage.decryptMessage(msg.encryptedContent , msg.message_security)
+//           let replyToContent = secureMessage.decryptMessage(replyEncryptedContent , restReply.message_security)
+//           rest.replyTo = {...restReply , content : replyToContent}
+//           return {...rest,content}
+//         })
+//         chat.messages = decryptedMessages
+//         res.status(200).json({ messages })
+//     } catch (error) {
+//         next(error)
+//     }
+// }
 
 
 
-export const searchMediaMessages = async (req, res, next) => {
-    let { mediaType, Ids, order, forwarded, chatId, dates } = req.query
-    if (!chatId){
-        throw createError(400 , {message : "chatId is required to fetch messages"})
-    }
-    if (!mediaType){
-        throw createError(400 , {message : "Select media type"})
+// export const searchMediaMessages = async (req, res, next) => {
+//     let { mediaType, Ids, order, forwarded, chatId, dates } = req.query
+//     if (!chatId){
+//         throw createError(400 , {message : "chatId is required to fetch messages"})
+//     }
+//     if (!mediaType){
+//         throw createError(400 , {message : "Select media type"})
 
-    }
-    let byUser;
+//     }
+//     let byUser;
 
-    if (Ids.length > 1) {
-        byUser = {
-            OR: Ids
-        }
-    } else if (Ids.length === 1) {
-        byUser = Ids[0]
+//     if (Ids.length > 1) {
+//         byUser = {
+//             OR: Ids
+//         }
+//     } else if (Ids.length === 1) {
+//         byUser = Ids[0]
 
-    }
-    // let expectedDateObject = {
-    //     date : Date.now(),
-    //     time : "before/after"
-    // }
-    // let ranges = dates.map((date)=>{
-    //     let createdAt = {
-    //         gte : date.date,
+//     }
+//     // let expectedDateObject = {
+//     //     date : Date.now(),
+//     //     time : "before/after"
+//     // }
+//     // let ranges = dates.map((date)=>{
+//     //     let createdAt = {
+//     //         gte : date.date,
             
-    //     }
-    // })
-    try {
-        let media = await prisma.media.findMany({
-            where: {
-                chatId,
-                type: mediaType,
-                message: {
-                    // ...byUser,
-                    forwarded ,
-                },
+//     //     }
+//     // })
+//     try {
+//         let media = await prisma.media.findMany({
+//             where: {
+//                 chatId,
+//                 type: mediaType,
+//                 message: {
+//                     // ...byUser,
+//                     forwarded ,
+//                 },
                 
                 
-            },
-            orderBy : {
-                createdAt : order
-            },
-            select : {
-                id : true,
-                media_objectKey : true,
-                type : true,
-                createdAt : true,
-                message : {
-                    select : {
-                        encryptedContent : true,
-                        message_security : true,
-                        id: true,
-                        createdAt : true,
-                        status : true
-                    }
-                }
+//             },
+//             orderBy : {
+//                 createdAt : order
+//             },
+//             select : {
+//                 id : true,
+//                 media_objectKey : true,
+//                 type : true,
+//                 createdAt : true,
+//                 message : {
+//                     select : {
+//                         encryptedContent : true,
+//                         message_security : true,
+//                         id: true,
+//                         createdAt : true,
+//                         status : true
+//                     }
+//                 }
                 
-            }
-        })
+//             }
+//         })
         
-        res.status(200).json({media})
+//         res.status(200).json({media})
 
+//     } catch (error) {
+//         next(error)
+//     }
+// }
+
+
+
+export const searchMessages = async (req , res , next )=>{
+    try {
+        let  {content,from , to ,order , senderIds  ,chatId} = req.body
+       
+        let user = req.user
+        let where  = {chatId}
+        if (content){
+             let {n_grams} = secureMessage.content_ngrams(content)
+             where.search_index = {
+                hasEvery : n_grams
+               }
+
+         }
+       let conditions = []
+            if (from){
+                conditions.push({createdAt : {gte : new Date(from) }})
+            }
+            if (to){
+                let endDate = new Date(to)
+                endDate.setDate(endDate.getDate() + 1)
+                conditions.push({createdAt : {lte :endDate  }}) 
+            }
+      if (conditions.length > 0){
+        where.AND = conditions
+      }
+         if (senderIds?.length > 0){
+            where.senderId = {
+                    in : senderIds
+                }
+
+         }
+          let searched_messages = await prisma.message.findMany({
+           where,
+                orderBy :{
+                    createdAt : order || "desc"
+                },
+                    select: {
+                       id : true,
+                        chatId: true,
+                        media: true,
+                        reactions: {
+                            include : {
+                                reactors : {
+                                    select : {
+                                        userId : true,
+                                        id : true
+                                    }
+                                }
+                            }
+                        },
+                        senderId: true,
+                        replyTo: {
+                            select: {
+                                id: true,
+                                encryptedContent: true,
+                                senderId: true,
+                                message_security : true
+
+                            }
+                        },
+                        encryptedContent: true,
+
+
+                        _count: {
+                            select: {
+                                replies: true,
+                            }
+                        },
+                        status: {
+                            where : {
+                                userId : {
+                                    not : user.id
+                                }
+                            }
+                        },
+                        message_security: true,
+                        createdAt: true,
+                        updatedAt: true,
+                    }
+
+                
+            
+          })
+            let decryptedMessages = searched_messages.map((msg) => {
+            if (!msg.encryptedContent) return msg
+            let { encryptedContent, message_security, ...rest } = msg
+            if (msg?.replyTo?.id) {
+
+                let { encryptedContent: replyEncryptedContent,message_security, ...restReply } = msg.replyTo
+                let replyToContent = secureMessage.decryptMessage(replyEncryptedContent, message_security)
+                rest.replyTo = { ...restReply, content: replyToContent }
+            }
+            let content = secureMessage.decryptMessage(encryptedContent, message_security)
+            return { ...rest, content }
+        })
+      
+          res.status(200).json({search_result :  decryptedMessages})
     } catch (error) {
         next(error)
     }
 }
 
 
-
-
-
-
-
-
+ 
 
 
 

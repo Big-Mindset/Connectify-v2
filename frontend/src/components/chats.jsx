@@ -1,7 +1,7 @@
 "use client"
 
 import { MoreVerticalIcon, Search, Send } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import FilteredChats from "./chat-components/filteredChats";
 import dynamic from "next/dynamic";
 import ChatMenu from "./chat-components/chat-menu";
@@ -21,51 +21,25 @@ export default function Chats() {
     const [openMenu, setOpenMenu] = useState(false)
     const childRef = useRef(null)
     const chatMenuRef = useRef(null)
-
+    const [searchQuery , setSearchQuery] = useState("")
 
     const setInviteComp = chatStore(s => s.setInviteComp)
     const inviteComp = chatStore(s => s.inviteComp)
     const getChats = chatStore(s => s.getChats)
     const chats = chatStore(s => s.chats)
-    const filteredChats = chatStore(s => s.filteredChats)
-    const setFilteredChats = chatStore(s => s.setFilteredChats)
     const session = userStore(s => s.session)
-    const socket = socketStore(s => s.socket)
-    const handleMarkAllAsRead = socketStore(s => s.handleMarkAllAsRead)
-    const handleReceiveMessage = socketStore(s => s.handleReceiveMessage)
-    const handleUpdateAllToDelivered = socketStore(s => s.handleUpdateAllToDelivered)
-    const handleDeliverMessage = socketStore(s => s.handleDeliverMessage)
-    const handleReadMessage = socketStore(s => s.handleReadMessage)
 
     let user = session?.user
     useEffect(() => {
 
 
-        if (user?.id) {
-
+        if (user?.id !== null) {
             getChats(user?.id)
+
         }
 
     }, [session?.user?.id])
-    useEffect(() => {
-        if (!socket) return
-        socket?.on("updateToDelivered",handleUpdateAllToDelivered)
-        socket?.on("mark-asRead", handleMarkAllAsRead)
-        socket?.on("message-delivered", handleDeliverMessage)
-        socket.on("message-read",handleReadMessage)
-        socket.on("send-message", handleReceiveMessage)
-        
-        
-        return () => {
-            
-            socket.off("message-read",handleReadMessage)
-            socket?.off("message-delivered", handleDeliverMessage)
-            socket?.off("updateToDelivered",handleUpdateAllToDelivered)
-            socket?.off("send-message", handleReceiveMessage)
-            socket?.off("mark-asRead", handleMarkAllAsRead)
 
-        }
-    }, [socket])
     useEffect(() => {
         let handleCloseSettings = (e) => {
             if (childRef.current && !childRef.current.contains(e.target)) {
@@ -84,51 +58,34 @@ export default function Chats() {
         }
     }, [])
 
-    useEffect(() => {
-        filterMessages()
+    let filteredChats = useMemo(()=>{
+        let result = chats
+        if (selectedChat === "Unread"){
+            result = result.filter((chat)=>{
+                console.log(chat)
+                if (chat.lastMessage.senderId === session.user.id) return false
+                let status = chat.lastMessage.status.find((status)=>status.userId === session.user.id)
 
-    }, [selectedChat, chats])
-
-
-    const filterMessages = () => {
-
-        if (selectedChat === "All") {
-            setFilteredChats(() => chats)
-
-        } else if (selectedChat === "Unread") {
-            let filtered = chats.filter((chat) => {
-
-                if (chat.lastMessage) {
-                    if (chat.lastMessage.status.status === "Sent") {
-                        return chat
-                    }
+                if (status?.status !== "READ"){
+                    return true
                 }
+                return false
             })
-            setFilteredChats(() => filtered)
-        } else if (selectedChat === "Group") {
-            let filtered = chats.filter((chat) => {
-
-                if (chat.isGroup) return chat
-            })
-            setFilteredChats(() => filtered)
+        }else if (selectedChat === "Group"){
+            result = result.filter((chat)=>chat.isGroup)
         }
-    }
-
-
-    const handleSearch = async (evt) => {
-        let value = evt.target.value.trim().toLowerCase()
-        if (!value) {
-            filterMessages()
-            return
-        }
-        setFilteredChats((prev) => {
-            return prev.filter((chat) => {
-                let name = chat.name || chat.user.name
-                name = name.toLowerCase()
-                return name.startsWith(value)
+        if (searchQuery && result.length > 0){
+            result = result?.filter((chat)=>{
+                let name = chat?.name || chat?.user?.name
+                
+                return name.includes(searchQuery)
             })
-        })
-    }
+        }
+        return result
+    },[selectedChat ,searchQuery , chats ])
+
+
+  
     return <div className=" w-full border-r border-gray-6 h-full py-4 px-6 bg-gray-1  ">
         <AnimatePresence>
 
@@ -159,7 +116,7 @@ export default function Chats() {
 
             </div>
             <div className={`search-section ${hover ? " hover:ring-gray-500" : "focus-within:ring-indigo-400 "} flex items-center ring ring-gray-3  gap-1   rounded-full  px-2 overflow-hidden duration-50   focus-within:bg-gray-1 bg-gray-3`}>
-                <input onChange={handleSearch} onFocus={() => setHover(false)} onBlur={() => setHover(true)} type="text" placeholder="Start searching here" className="p-2 w-full placeholder:text-[0.9rem]  outline-none" />
+                <input value={searchQuery} onChange={(e)=>setSearchQuery(e.target.value)} onFocus={() => setHover(false)} onBlur={() => setHover(true)} type="text" placeholder="Start searching here" className="p-2 w-full placeholder:text-[0.9rem]  outline-none" />
                 <Search className="size-5" />
             </div>
 
@@ -167,10 +124,12 @@ export default function Chats() {
             <div className="all-chats-section p-1">
                 <span className="text-xl font-bold">Chats</span>
                 <div className="flex mt-3 text-sm items-center gap-1.5">
-                    {["All", "Unread", "Group", "Favourite"].map((name) => {
+                    {["All", "Unread", "Group"].map((name) => {
                         return <div key={name} onClick={() => setSelectedChat(name)}>
 
-                            <FilteredChats name={name} selectedChat={selectedChat} />
+                            <div className={`px-4 ${selectedChat === name ? "bg-indigo-700" : "hover:bg-indigo-700/70  bg-indigo-600/20"} py-1 cursor-pointer   rounded-lg`}>
+                                {name}
+                            </div>
                         </div>
                     })}
 

@@ -2,12 +2,13 @@ import { useState, useRef, useEffect } from "react"
 import { motion } from "framer-motion"
 export default function VideoControls({videoRef ,isPlaying }) {
     const [showVolume, setShowVolume] = useState(false)
-    const [volume, setVolume] = useState(1)
+    const [volume, setVolume] = useState(0)
     const rangeRef = useRef(null)
     const veritcalRangeRef = useRef(null)
 
     const handleChanges = (e) => {
         let percentage = e.target.value
+        
         videoRef.current.currentTime = (percentage / 100) * videoRef.current.duration
     }
 
@@ -35,14 +36,16 @@ export default function VideoControls({videoRef ,isPlaying }) {
             requestAnimationFrame(handleUpdateTime)
  
         }
+        videoRef.current.volume = volume / 100
+
         video.addEventListener("timeupdate",handleUpdateTime)
         return ()=>{
             video.removeEventListener("timeupdate",handleUpdateTime)
 
         }
     },[])
-    return <div className="flex bg-black/30 right-0 left-0 z-[9999]   absolute bottom-0 items-center gap-1 pr-2">
-        <div className="flex items-center gap-2">
+    return <div className="flex bg-black/30 right-0 left-0 z-[30]    absolute bottom-0 items-center gap-1 pr-2">
+        <div className="flex items-center gap-2 w-full">
             <div className="flex items-center gap-1">
                 <motion.button
                     whileTap={{ y: 1 }}

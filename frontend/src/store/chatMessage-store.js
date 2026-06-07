@@ -2,7 +2,6 @@ import { create } from "zustand"
 import { chatStore } from "./chat-store"
 import { socketStore } from "./socket"
 import axios from "axios"
-import { useRef } from "react"
 import { Axios } from "@/lib/axiosInstance"
 import { messageSettingsStore } from "./messageSettings-store"
 import { userStore } from "./user-store"
@@ -19,6 +18,7 @@ export let chatMessageStore = create((set, get) => ({
             return [messageData , ...messages]
         })
         let uploadedFiles = [];
+        try {
         if (filePreview.length) {
 
             const uploads = filePreview.map((fileData) => {
@@ -48,11 +48,10 @@ export let chatMessageStore = create((set, get) => ({
             });
 
             const results = await Promise.all(uploads);
-
             let completeMediaData = filePreview.map((media, idx) => {
                 let { file, ...rest } = media
                 let data = results[idx].data
-                return { ...rest, url: data.secure_url, publicId: data.public_id }
+                return { ...rest, url: data.secure_url, publicId: data.public_id , size : data.bytes }
             })
             setMessages((messages) => {
                 return messages.map((msg) => {
@@ -62,21 +61,33 @@ export let chatMessageStore = create((set, get) => ({
                     return msg
                 })
             })
-
+           
             messageData.media = completeMediaData
         }
-
-        let { progress, ...rest } = messageData
-        let res = await Axios.post('/message/create-message',{...rest , userId : selectedChat.userId}) 
+            
+            let { progress, ...rest } = messageData
+            let res = await Axios.post('/message/create-message',{...rest , userId : selectedChat.userId}) 
         if (res.status === 201){
             let message = res.data.message
        
-             if (message?.id){
+            if (message?.id){
                 let updatedMessage = get().handleMessageSent(message)
-           
+                
                 socket?.emit("send-message", MembersIds , updatedMessage)
             }
+            return {status : 200}
+
         }
+    } catch (error) {
+        console.log(error?.response)
+         if (error?.response?.status === 429 &&error?.response?.statusText === "Too Many Requests" ){
+        
+             setMessages((messages) => {
+                return messages.filter((msg) =>msg.id !== messageData.id)
+            })
+            return {status : 429}
+        }
+    }
     },
     handleMessageSent: (message) => {
         let setMessages = chatStore.getState().setMessages
@@ -165,8 +176,10 @@ export let chatMessageStore = create((set, get) => ({
     handleReaction: async (emoji) => {
         let reactMessage = messageSettingsStore.getState().reactMessage
         let setReactMessage = messageSettingsStore.getState().setReactMessage
-        let setMessages = chatStore.getState().setMessages
+        let updateMessageReactions = messageSettingsStore.getState().updateMessageReactions
+        let selectedChat = chatStore.getState().selectedChat
         let session = userStore.getState().session
+        let socket = socketStore.getState().socket
         let reactionData = {
             id: crypto.randomUUID(),
             emoji: emoji.native,
@@ -180,14 +193,10 @@ export let chatMessageStore = create((set, get) => ({
         try {
             let res = await Axios.post(`/message/create-reaction`, reactionData)
             if (res.status === 201) {
-                setMessages((messages) => {
-                    return messages.map((msg) => {
-                        if (msg.id === reactMessage?.id) {
-                            return { ...msg, reactions: [...msg.reactions, reactionData] }
-                        }
-                        return msg
-                    })
-                })
+                socket.emit("reaction-updates",{action : "create" ,reaction : reactionData } , selectedChat.id)
+               
+                updateMessageReactions("create" , {...reactionData})
+                
             }
             setReactMessage(null)
         } catch (error) {
@@ -195,68 +204,52 @@ export let chatMessageStore = create((set, get) => ({
         }
     },
     handleDeleteReaction: async (reactionId , messageId) => {
-        let setMessages = chatStore.getState().setMessages
+        let selectedChat = chatStore.getState().selectedChat
+    
+        let socket = socketStore.getState().socket
+        let updateMessageReactions = messageSettingsStore.getState().updateMessageReactions
+
         try {
             let res = await Axios.delete(`/message/delete-reaction`, {data : {reactionId}})
             if (res.status === 200) {
-                setMessages((messages) => {
-                    return messages.map((msg) => {
-                        if (msg.id === messageId) {
-                            return { ...msg, reactions: msg.reactions.filter((reaction)=>reaction.id !== reactionId) }
-                        }
-                        return msg
-                    })
-                })
+                socket.emit("reaction-updates",{action : "delete" ,reaction : {reactionId , messageId} },selectedChat.id)
+                updateMessageReactions("delete",{reactionId , messageId})
+
+             
             }
         } catch (error) {
             console.log(error?.response?.data?.message || error.message)
         }
     },
     handleRemoveReaction: async (reactionProps) => { 
-             let setMessages = chatStore.getState().setMessages
-      
+        let updateMessageReactions = messageSettingsStore.getState().updateMessageReactions
+        let selectedChat = chatStore.getState().selectedChat
+        let socket = socketStore.getState().socket
+
         try {
             let res = await Axios.delete(`/message/remove-reaction`, {data : {id : reactionProps.reactorId}})
             if (res.status === 200) {
-                setMessages((messages) => {
-                    return messages.map((msg) => {
-                        if (msg.id === reactionProps?.messageId) {
-                            return { ...msg, reactions: msg.reactions.map((reaction)=>{
-                                if (reaction.id === reactionProps.id){
-                                    let removedUserReactions = reaction.reactors.filter((reactor)=>reactor.id !== reactionProps.reactorId)
-                                    return {...reaction , reactors : removedUserReactions}
-                                }
-                                return reaction
-                            } ) }
-                        }
-                        return msg
-                    })
-                })
+                socket.emit("reaction-updates",{action : "remove" ,reaction : {id : reactionProps.id , messageId : reactionProps.messageId,reactorId : reactionProps.reactorId} },selectedChat.id)
+                updateMessageReactions("remove" , {...reactionProps})
+           
             }
         } catch (error) {
             console.log(error?.response?.data?.message || error.message)
         }
     },
     handleAddReaction: async (reactionProps) => {
-          let setMessages = chatStore.getState().setMessages
-      
+        let updateMessageReactions = messageSettingsStore.getState().updateMessageReactions
+        let selectedChat = chatStore.getState().selectedChat
+        let socket = socketStore.getState().socket
+        
         try {
             let res = await Axios.post(`/message/add-reaction`,{reactionId : reactionProps.id ,reactorId : reactionProps.reactorId })
        
             if (res.status === 201) {
-                setMessages((messages) => {
-                    return messages.map((msg) => {
-                        if (msg.id === reactionProps?.messageId) {
-                            return { ...msg, reactions: msg.reactions.map((reaction)=>{
-                                if (reaction.id === reactionProps.id){
-                                    return {...reaction , reactors :[...reaction.reactors , {userId : reactionProps.userId , id : reactionProps.reactorId}]}
-                                }
-                                return reaction
-                            }) }
-                        }
-                        return msg
-                    })
-                })
+                socket.emit("reaction-updates",{action : "add" ,reaction : {...reactionProps} },selectedChat.id)
+
+                updateMessageReactions("add" , {...reactionProps})
+              
             }
         } catch (error) {
             console.log(error?.response?.data?.message || error.message)

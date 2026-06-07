@@ -26,8 +26,12 @@ export default function ForgotPassword({setLoginMethod}){
             email : data.email,
            },{
             onError : (ctx)=>{
-                
-                setError(ctx.error.message)
+                 if (ctx?.error?.status === 429){
+                        setError(ctx?.error.error)
+                    }else{
+
+                        setError(ctx.error.message)
+                    }
             },
             onSuccess : (ctx)=>{
                toast.success(ctx.data.message)

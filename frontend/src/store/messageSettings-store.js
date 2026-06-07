@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { chatMessageStore } from "./chatMessage-store";
 import { userStore } from "./user-store";
+import { chatStore } from "./chat-store";
 
 export let messageSettingsStore = create((set, get) => ({
     selectedMedia: null,
@@ -72,6 +73,67 @@ export let messageSettingsStore = create((set, get) => ({
         }
         set({ reactMessage: null })
 
+    },
+    updateMessageReactions: (type, reactionData) => {
+        
+        let setMessages = chatStore.getState().setMessages
+        if (type === "remove") {
+
+            setMessages((messages) => {
+                return messages.map((msg) => {
+                    if (msg.id === reactionData?.messageId) {
+                        return {
+                            ...msg, reactions: msg.reactions.map((reaction) => {
+                                if (reaction.id === reactionData.id) {
+                                    let removedUserReactions = reaction.reactors.filter((reactor) => reactor.id !== reactionData.reactorId)
+                                    return { ...reaction, reactors: removedUserReactions }
+                                }
+                                return reaction
+                            })
+                        }
+                    }
+                    return msg
+                })
+            })
+
+        } else if (type === "delete") {
+
+            setMessages((messages) => {
+                return messages.map((msg) => {
+                    if (msg.id === reactionData.messageId) {
+                        return { ...msg, reactions: msg.reactions.filter((reaction) => reaction.id !== reactionData.reactionId) }
+                    }
+                    return msg
+                })
+            })
+        } else if (type === "create") {
+
+
+            setMessages((messages) => {
+                return messages.map((msg) => {
+                    if (msg.id === reactionData?.messageId) {
+                        return { ...msg, reactions: [...msg.reactions, reactionData] }
+                    }
+                    return msg
+                })
+            })
+        } else if (type === "add") {
+         
+                setMessages((messages) => {
+                    return messages.map((msg) => {
+                        if (msg.id === reactionData?.messageId) {
+                            return { ...msg, reactions: msg.reactions.map((reaction)=>{
+                                if (reaction.id === reactionData.id){
+                                    return {...reaction , reactors :[...reaction.reactors , {userId : reactionData.userId , id : reactionData.reactorId}]}
+                                }
+                                return reaction
+                            }) }
+                        }
+                        return msg
+                    })
+                })
+            
+        }
     }
 
 }))

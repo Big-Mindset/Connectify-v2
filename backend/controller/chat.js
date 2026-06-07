@@ -23,7 +23,27 @@ export const getChatbyId = async (req, res, next) => {
             },
 
             select: {
-                id : true,
+                id: true,
+                participants: {
+                    select: {
+                        user: {
+                            select : {
+
+                                id: true,
+                                name: true,
+                                image: true,
+                                username: true,
+                                lastseen: true
+                            },
+                        },
+
+                    },
+                    orderBy: {
+                        user: {
+                            name: "asc"
+                        }
+                    }
+                },
                 messages: {
                     orderBy: {
                         createdAt: "desc"
@@ -34,11 +54,11 @@ export const getChatbyId = async (req, res, next) => {
                         chatId: true,
                         media: true,
                         reactions: {
-                            include : {
-                                reactors : {
-                                    select : {
-                                        userId : true,
-                                        id : true
+                            include: {
+                                reactors: {
+                                    select: {
+                                        userId: true,
+                                        id: true
                                     }
                                 }
                             }
@@ -49,7 +69,7 @@ export const getChatbyId = async (req, res, next) => {
                                 id: true,
                                 encryptedContent: true,
                                 senderId: true,
-                                message_security : true
+                                message_security: true
 
                             }
                         },
@@ -62,9 +82,9 @@ export const getChatbyId = async (req, res, next) => {
                             }
                         },
                         status: {
-                            where : {
-                                userId : {
-                                    not : user.id
+                            where: {
+                                userId: {
+                                    not: user.id
                                 }
                             }
                         },
@@ -85,7 +105,7 @@ export const getChatbyId = async (req, res, next) => {
             let { encryptedContent, message_security, ...rest } = msg
             if (msg?.replyTo?.id) {
 
-                let { encryptedContent: replyEncryptedContent,message_security, ...restReply } = msg.replyTo
+                let { encryptedContent: replyEncryptedContent, message_security, ...restReply } = msg.replyTo
                 let replyToContent = secureMessage.decryptMessage(replyEncryptedContent, message_security)
                 rest.replyTo = { ...restReply, content: replyToContent }
             }
@@ -93,8 +113,8 @@ export const getChatbyId = async (req, res, next) => {
             return { ...rest, content }
         })
         chat.messages = decryptedMessages
-        await client.SADD(`active-chat:${chat.id}`,req.user.id)
-        await client.SET(`user-activeChat:${req.user.id}` , chat.id)
+        await client.SADD(`active-chat:${chat.id}`, req.user.id)
+        await client.SET(`user-activeChat:${req.user.id}`, chat.id)
         return res.status(200).json({ chat: chat })
     } catch (error) {
         next(error)
@@ -111,10 +131,11 @@ const getMessageData = (userId) => {
             select: {
                 id: true,
                 createdAt: true,
+                senderId : true,
                 status: {
-                    where : {
-                        userId : {
-                            not : userId
+                    where: {
+                        userId: {
+                            not: userId
                         }
                     }
                 },
@@ -132,11 +153,6 @@ const getMessageData = (userId) => {
                 user: {
                     select: {
                         id: true,
-                        name: true,
-                        image: true,
-                        username: true,
-                        lastseen : true
-
                     }
                 }
             }
@@ -164,6 +180,7 @@ const getMessageData = (userId) => {
 
 export let get_chats = async (req, res, next) => {
     let user = req.user
+    let userId = user.id
     try {
         let allFriends = await prisma.friendship.findMany({
             where: {
@@ -185,7 +202,7 @@ export let get_chats = async (req, res, next) => {
                     chat: {
 
                         lastMessage: {
-                            
+
                             createdAt: "desc",
                         },
 
@@ -200,29 +217,45 @@ export let get_chats = async (req, res, next) => {
             select: {
                 chat: {
                     select: getMessageData(user.id)
-                   
+
                 },
             }
         })
 
         let friendsWithStatus = await Promise.all(
             allFriends.map(async ({ chat }) => {
-           
+
+
+
                 let lastMessage = chat.lastMessage
 
-                if (lastMessage && lastMessage.encryptedContent){
+                if (lastMessage && lastMessage.encryptedContent) {
 
-                   let content =  secureMessage.decryptMessage(lastMessage.encryptedContent ,lastMessage.message_security)
-                   let {encryptedContent ,message_security, ...rest} = lastMessage
-                    lastMessage = {...rest , content }
-                 
-                
+                    let content = secureMessage.decryptMessage(lastMessage.encryptedContent, lastMessage.message_security)
+                    let { encryptedContent, message_security, ...rest } = lastMessage
+                    lastMessage = { ...rest, content }
+
+
                 }
                 if (chat.isGroup) return chat
-                let userId = chat.participants[0].user.id === req.user.id ? chat.participants[1].user.id : chat.participants[0].user.id
+                let {user} = chat.participants.find(({ user }) => user.id !== userId)
+          
+                let dmUserData = await prisma.user.findUnique({
+                    where: {
+                        id: user.id
+                    },
+                    select: {
+                        id: true,
+                        name: true,
+                        image: true,
+                        username: true,
+                        lastseen: true
+                    }
+                })
+               
 
-                let isOnline = await client.SISMEMBER("online_users", userId)
-                return { ...chat, isOnline : isOnline ? true : false , lastMessage }
+                let isOnline = await client.SISMEMBER("online_users", dmUserData.id)
+                return { ...chat, isOnline: isOnline ? true : false, lastMessage , participants :[{user : dmUserData}]  }
             })
         )
 

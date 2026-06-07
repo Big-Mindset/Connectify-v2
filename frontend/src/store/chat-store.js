@@ -119,9 +119,9 @@ export const chatStore = create((set, get) => ({
         name: null
     },
     chats: [],
-    setChats : (func)=>{
-        set((state)=>({
-            chats : func(state.chats)
+    setChats: (func) => {
+        set((state) => ({
+            chats: func(state.chats)
         }))
     },
     participants: new Map(),
@@ -141,8 +141,8 @@ export const chatStore = create((set, get) => ({
         set({ replyingTo: data })
     },
     selectedChat: null,
-    setSelectedChat: (chatId) => {
-        set({selectedChat : chatId})
+    setSelectedChat: (chat) => {
+        set({ selectedChat: { id: chat.id, userId: chat.userId } })
     },
     inviteComp: false,
     setInviteComp: (inviteComp) => set({ inviteComp }),
@@ -155,25 +155,24 @@ export const chatStore = create((set, get) => ({
     getChats: async (userId) => {
         try {
             let res = await Axios.get("/chat/chats")
+
             if (res.status === 200) {
                 let AllChats = res.data.allFriends
                 let updatedData = AllChats.map((chat) => {
                     let chatMembersIds = get().chatMembersIds
                     let participants = get().participants
-              
+
                     chatMembersIds.set(chat.id, chat.participants.map(({ user }) => user.id))
 
-                    chat.participants.forEach(({ user }) => {
-                        participants.set(user.id, { name: user.name, username: user.username, image: user.image, isOnline: chat.isOnline, lastseen: user.lastseen })
-                    });
                     if (chat.isGroup) {
                         return chat
                     } else {
-                        let { user } = chat.participants.find(({ user }) => user.id !== userId)
-
+                        let dmUser = chat.participants[0].user
+                        participants.set(dmUser.id, dmUser)
                         let data = {
                             id: chat.id,
-                            userId: user.id,
+                            userId: dmUser.id,
+                            name : dmUser.name,
                             lastMessage: chat.lastMessage,
                             unread_messageCount: chat._count.messages
                         }
@@ -186,34 +185,54 @@ export const chatStore = create((set, get) => ({
             console.log(error.message)
         }
     },
-    getChatById: async (chatId , userId) => {
+    getChatById: async (chatId, userId) => {
         try {
             let socket = socketStore.getState().socket
+            set({ selectedChat: { id: chatId, userId: userId } })
             let res = await Axios.get(`/chat/${chatId}`)
             if (res.status === 200) {
-                let {messages , id} = res.data.chat
-              
-                socket.emit("join-chat", chatId)
-                set({selectedChat :{id : id , userId : userId} })
-                set({messages :messages })
-                let updateStatus = await Axios.put(`/message/mark-asread?chatId=${chatId}`)
-                if (updateStatus.status === 200){
-             
-                   let data =  updateStatus.data
-                   if (data === null) return
-                   if (data.count > 0 && data.senderId){
-                       let statusData = updateStatus.data
-                       
-                       
-                       console.log("sending the socket to backend ")
+                let { messages, id } = res.data.chat
 
-                        socket.emit("mark-asRead",{senderId :  statusData.senderId , chatId  , readAt : statusData.readAt})
-                   }
-                            }
+                socket.emit("join-chat", chatId)
+                set({ messages: messages })
+                let updateStatus = await Axios.put(`/message/mark-asread?chatId=${chatId}`)
+                if (updateStatus.status === 200) {
+
+                    let data = updateStatus.data
+                    if (data === null) return
+                    if (data.count > 0 && data.senderId) {
+                        let statusData = updateStatus.data
+
+
+                        console.log("sending the socket to backend ")
+
+                        socket.emit("mark-asRead", { senderId: statusData.senderId, chatId, readAt: statusData.readAt })
+                    }
+                }
             }
         } catch (error) {
             console.log(error?.message || error?.response?.data?.message)
         }
     },
+    getParticipants: () => {
+        let selectedChat = get().selectedChat
+        let MembersIds = get().chatMembersIds
+        let participants = get().participants
+        let session = userStore.getState().session
+        let ChatMemberIds = MembersIds.get(selectedChat.id)
+        let user = session.user
+        let userData = {
+            id : user.id ,
+            image:user.image,
+            lastseen: user.lastseen,
+            name: user.name,
+            username: user.username
+        }
+let ChatMemberData = ChatMemberIds.map((memberId) => {
+    return participants.get(memberId)
+
+})
+return [userData , ...ChatMemberData]
+    }
 
 }))

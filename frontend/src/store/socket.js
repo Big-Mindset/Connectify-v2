@@ -5,6 +5,7 @@ import { io } from "socket.io-client"
 import { getPeerId } from "@/app/action/getPeerId"
 import { chatStore } from "./chat-store"
 import { chatMessageStore } from "./chatMessage-store"
+import { messageSettingsStore } from "./messageSettings-store"
 
 export let socketStore = create((set, get) => ({
 
@@ -28,12 +29,12 @@ export let socketStore = create((set, get) => ({
             sok.emit("message-deliverd-all", null)
             sok.on("online-user", (id) => {
                 let user = participants.get(id)
-                setParticipants(id, { ...user, isOnline: true })
+                setParticipants(id, { ...(user || {}), isOnline: true })
             })
             sok.on("offline-user", (id) => {
                 let user = participants.get(id)
 
-                setParticipants(id, { ...user, isOnline: false })
+                (id, { ...(user || {}), isOnline: false })
             })
 
 
@@ -210,6 +211,12 @@ export let socketStore = create((set, get) => ({
                 return msg
             })
         })
+    },
+    handleReactionUpdates : ({action , reaction})=>{
+        console.log("running....")
+     let updateMessageReactions = messageSettingsStore.getState().updateMessageReactions
+     updateMessageReactions(action , reaction)
+        
     },
     disconnectSocket: () => {
         let socket = get().socket

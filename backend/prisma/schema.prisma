@@ -203,7 +203,6 @@ model Message {
   lastMessage        Chat?                 @relation("lastMessage")
   encryptedContent   String?
   search_index       String[]
-  firstLetters_index String[]
   reactions          reaction[]
   replyToId          String?
   createdAt          DateTime              @default(now())
@@ -222,7 +221,6 @@ model Message {
   @@index([senderId])
   @@index([createdAt])
   @@index([search_index], type: Gin)
-  @@index([firstLetters_index])
 }
 
 model reaction {
@@ -281,6 +279,7 @@ model Media {
   url String
   publicId String
   filename String?
+  size Int?
   type            String
   messageId       String?
   chatPfpId       String?  @unique

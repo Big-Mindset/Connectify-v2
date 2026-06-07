@@ -11,9 +11,9 @@ export default function RenderVideo({ video, multipleVideoes, hoveredFile }) {
     const videoRef = useRef(null)
     
   
-    return <div>
+    return <div className="w-full h-full">
         {!multipleVideoes ?
-            <div className="w-fit relative">
+            <div className="w-full h-full relative">
 
                 <div onClick={() => {
                     if (videoRef.current.paused) {
@@ -22,7 +22,7 @@ export default function RenderVideo({ video, multipleVideoes, hoveredFile }) {
                         videoRef.current.pause()
                     }
                 }}
-                    className="absolute  z-50 inset-0 " />
+                    className="absolute   z-10 inset-0 " />
                 <div className="flex items-center rounded-md overflow-hidden   right-3 top-2 absolute">
                    
                 </div>
@@ -69,7 +69,7 @@ export default function RenderVideo({ video, multipleVideoes, hoveredFile }) {
                         setIsPlaying(false)
                     }}
                     src={video.url}
-                    className="max-w-[200px] rounded-lg"
+                    className="size-full object-cover  rounded-lg"
                 />
 
                 {hasPlayed &&
@@ -77,7 +77,7 @@ export default function RenderVideo({ video, multipleVideoes, hoveredFile }) {
 
             </div>
             :
-            <div className="w-fit">
+            <div className="w-full h-full relative">
                
                 {!hasPlayed &&
                     <div className="px-4 z-30 py-3.5 rounded-full bg-black/60 group-hover/card:bg-black/90 duration-150 absolute left-1/2 top-1/2 -translate-1/2 ">
@@ -89,7 +89,7 @@ export default function RenderVideo({ video, multipleVideoes, hoveredFile }) {
                     src={video.url}
                     alt={video.videoname}
 
-                    className={`w-[300px] rounded-lg `}
+                    className={`size-full object-cover rounded-lg `}
                 />
             </div>
         }

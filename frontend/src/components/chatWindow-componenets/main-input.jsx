@@ -20,12 +20,12 @@ export default function MainInput({ chatId }) {
     const [editFile, setEditFile] = useState(null)
     const [totalSize, setTotalSize] = useState(0)
     const [openEmojiPicker, setOpenEmojiPicker] = useState(false)
-    const [sizeExceeded, setSizeExceeded] = useState(false)
+    const [sizeExceeded, setSizeExceeded] = useState({})
     const [thumbnailsUrl, setThumbnailsUrl] = useState({})
+    
     const participants = chatStore(s => s.participants)
 
     const [senderData, setSenderData] = useState(null)
-    const selectedMessage = messageSettingsStore(s => s.selectedMessage)
     let session = userStore(s => s.session)
     let plusOptionsRef = useRef(null)
     let plusRef = useRef(null)
@@ -35,8 +35,6 @@ export default function MainInput({ chatId }) {
     let setInputRef = messageSettingsStore(s => s.setInputRef)
     let replyMessage = messageSettingsStore(s => s.replyMessage)
     let setReplyMessage = messageSettingsStore(s => s.setReplyMessage)
-    let reactMessage = messageSettingsStore(s => s.reactMessage)
-    let setReactMessage = messageSettingsStore(s => s.setReactMessage)
     let inputRef = useRef(null)
 
 
@@ -100,7 +98,12 @@ export default function MainInput({ chatId }) {
         }
 
 
-        sendMessage(messageData, filePreview)
+        let res = await sendMessage(messageData, filePreview)
+        console.log(res)
+        if (res?.status === 429){
+            setSizeExceeded({type : "message-limit"})
+
+        }
         setInputText("")
         setFilePreview([])
         setReplyMessage(null)
@@ -110,22 +113,25 @@ export default function MainInput({ chatId }) {
 
         setOpenAttachments(false)
         let files = e.target.files
-
-        let size = 0
+        if ((files.length + filePreview.length) > 10) {
+            setSizeExceeded({type : "files-limit"})
+            return
+        }
+        let size = totalSize
         let validFiles = []
 
 
-        let maxSize = 100
+        let maxSize = 100 * 1024
         let thumbnails = {}
         for (let file of files) {
+            let sizeInKbs = file.size / 1024
             if (!file) return
-            let sizeInMb = (file.size / (1024 * 1024)).toFixed(2)
 
-            if ((sizeInMb > maxSize) || ((sizeInMb + size) > maxSize)) {
-                setSizeExceeded(true)
+            if ((sizeInKbs > maxSize) || ((sizeInKbs + size) > maxSize)) {
+                setSizeExceeded({type : "files-size"})
                 break
             }
-            size += sizeInMb
+            size += sizeInKbs
             let url = URL.createObjectURL(file)
             if (file.type.startsWith("video")) {
 
@@ -141,6 +147,7 @@ export default function MainInput({ chatId }) {
                 file: file
             }
             validFiles.push(media)
+
 
         }
         setTotalSize(size)
@@ -187,11 +194,11 @@ export default function MainInput({ chatId }) {
         <>
             <AnimatePresence>
 
-                {sizeExceeded && <FileSizeExceeded setSizeExceeded={setSizeExceeded} />
+                {sizeExceeded?.type && <FileSizeExceeded sizeExceeded={sizeExceeded} setSizeExceeded={setSizeExceeded} />
                 }
             </AnimatePresence>
 
-            {(editFile || sizeExceeded) && <div className="fixed opacity-50 z-[99] inset-0 bg-gray-2"></div>}
+            {(editFile || sizeExceeded?.type) && <div className="fixed opacity-50 z-[99] inset-0 bg-gray-2"></div>}
             <AnimatePresence>
 
                 {(thumbnailUrl || editFile) && <motion.div

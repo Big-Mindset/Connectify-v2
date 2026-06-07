@@ -9,6 +9,7 @@ import { SocketQueries } from "./queries_class.js"
 export class SocketConnection extends SocketQueries {
     constructor(io) {
         super(io)
+
         this.io = io
     }
     async handleConnection(socket) {
@@ -108,6 +109,10 @@ export class SocketConnection extends SocketQueries {
         for (let key of Object.keys(data)){
             socket.to(key).emit("updateToDelivered",data[key])
         }
+    }
+    async handleReactionUpdates(socket,data,chatId){
+        socket.to(chatId).emit("reaction-updates",data)
+        
     }
     
 

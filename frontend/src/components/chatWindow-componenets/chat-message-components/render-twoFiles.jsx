@@ -36,7 +36,7 @@ export default function RenderTwoFiles({ files, moreFiles, multipleFiles, delete
                     >
 
                         {(hoveredFile === file.id) &&
-                            <div className="flex items-center absolute overflow-hidden right-2 top-2 z-[1000]  rounded-lg">
+                            <div className="flex items-center absolute overflow-hidden right-2 top-2 z-[20]  rounded-lg">
                                 {
                                     deleteButton && <div
 
@@ -55,7 +55,7 @@ export default function RenderTwoFiles({ files, moreFiles, multipleFiles, delete
                         }
 
                         {(moreFiles > 0 && i === 3) && <>
-                            <div className="absolute inset-0 bg-gray-700 z-40 opacity-30">
+                            <div onClick={()=>handleOpenFile(i,file)} className="absolute inset-0 bg-gray-700 z-40 opacity-30">
 
                             </div>
                             <div className="absolute  left-1/2 z-20 top-1/2 -translate-1/2">
@@ -67,7 +67,7 @@ export default function RenderTwoFiles({ files, moreFiles, multipleFiles, delete
                             </div>
                         </>
                         }
-                        <div onClick={()=>handleOpenFile(i,file)} className="bg-gray-300">
+                        <div onClick={()=>handleOpenFile(i,file)} className="bg-gray-300 relative h-full">
 
                         {
                             file.type.startsWith("image") ?

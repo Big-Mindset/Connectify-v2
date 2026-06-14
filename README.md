@@ -11,7 +11,6 @@ Make sure you have the following installed:
 - A valid GitHub OAuth app
 - A valid Google OAuth app
 - SMTP credentials for email delivery
-- AWS S3 credentials
 - Cloudinary credentials
 - LiveKit credentials
 
@@ -45,11 +44,7 @@ SMTP_API_KEY=""
 
 KEK_KEY=""
 
-# Amazon S3
-ACCESS_KEY_AWS=""
-SECRET_KEY_AWS=""
-S3_BUCKET=""
-S3_REGION=""
+"
 
 # Cloudinary
 CLOUDINARY_SECRET=""

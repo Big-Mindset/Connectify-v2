@@ -1,22 +1,34 @@
 import {motion} from "framer-motion"
 import { useState } from "react";
 import Avatar from "../Avatar";
+import { chatStore } from "@/store/chat-store";
+import { navigationStore } from "@/store/navigation-store";
 
-export default function FriendUser() {
+export default function FriendUser({data}) {
     const [moreOptions , setMoreOptions] = useState(false)
+    let getChatById = chatStore(s=>s.getChatById)
+    let setSelectedPage = navigationStore(s=>s.setSelectedPage)
+    let selectedChat = chatStore(s=>s.selectedChat)
+    let handleOpenChat = ()=>{
+      
+            getChatById(data.chatId)
+        
+        
+         
+    }
     return (
         <div className="flex justify-between  p-2 items-center ">
 
             <div className="flex items-center gap-2">
 
-                <Avatar />
+                <Avatar image={data.image} />
                 <div className="flex flex-col text-sm">
-                    <p className="font-medium font-bold">Name</p>
-                    <p className="text-gray-12">i don't like fake people</p>
+                    <p className="font-medium font-bold">{data.name}</p>
+                    <p className="text-gray-12">{data.bio || data.username}</p>
                 </div>
             </div>
             <div className="flex items-center text-gray-400 gap-2">
-                <button className="bg-black group  relative hover:border-indigo-500 border-2 border-gray-900 cursor-pointer px-3 py-2 rounded-full">
+                <button onClick={handleOpenChat} className={`bg-black group  relative ${data.chatId === selectedChat?.id && "border-indigo-500 bg-indigo-600 text-gray-50"} hover:border-indigo-500 border-2 border-gray-900 cursor-pointer px-3 py-2 rounded-full`}>
                     <i className="fa-regular fa-message " ></i>
                    
                 </button>

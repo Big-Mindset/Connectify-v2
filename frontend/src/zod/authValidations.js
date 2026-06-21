@@ -18,6 +18,9 @@ export let signUp = z.object({
 
 })
 
+export let usernameValidation = z.object({
+  username : z.string().min(3,{message : "username must be greater than 3 characters"}).trim().regex(/^[a-zA-Z0-9_.]+$/,{message : "please use letters, numbers, underscores_ and periods."})
+})
 export let emailSchema = z.object({
   email : z.string().trim().min(1,{message : "email is required"}).regex(
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/,

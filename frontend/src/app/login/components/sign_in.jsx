@@ -27,7 +27,6 @@ export default function SignIn({setLoginMethod , setEmail}){
               ...data
           },{
             onError : (ctx)=>{
-                
                 if (ctx.error.code === "EMAIL_NOT_VERIFIED"){
                     toast.error(ctx.error.message)
                 
@@ -44,8 +43,10 @@ export default function SignIn({setLoginMethod , setEmail}){
                 }
             },
             onSuccess : (ctx)=>{
+                console.log(ctx)
+
                 setError(null)
-                router.push("/")
+                // router.push("/")
             },onRequest : ()=>{
                 setLoading("sign-in")
 

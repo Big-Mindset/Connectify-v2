@@ -3,7 +3,7 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import {prisma} from "../prismaClient.js"
 import "dotenv/config"
 import { verificationEmailTemplate } from "./verifications/emailVerification.js";
-import { SendEmail } from "./verifications/sendEmail.js";
+import {SendEmail} from "./verifications/sendEmail.js"
 import { passwordResetEmailTemplate } from "./verifications/passwordResetTempelate.js";
 
 
@@ -30,6 +30,7 @@ export const auth = betterAuth({
         }
 
     },
+    
     socialProviders : {
         google : {
             clientId : process.env.GOOGLE_CLIENT_ID,
@@ -43,14 +44,13 @@ export const auth = betterAuth({
     appName : "Connectify",
     emailVerification : {
         sendOnSignUp : true,
-        sendOnSignIn : true,
         expiresIn : 60*20,
             sendVerificationEmail : ({user ,token , url})=>{
-             
+               let redirectUrl = `http://localhost:3000/api/auth/verify-email?token=${token}`
                 SendEmail({
                     recipient : user.name,
                     to : user.email,
-                    html : verificationEmailTemplate({email : user.email , name : user.name , verificationLink : url}),
+                    html : verificationEmailTemplate({email : user.email , name : user.name , verificationLink : redirectUrl}),
                     subject : "Is That You"
                 })
             }
@@ -79,7 +79,8 @@ export const auth = betterAuth({
                 type : "string",
             }
         }
-    }
+    },
+    
     // plugins : [
     //     username({
     //         usernameValidator : async (username)=>{

@@ -6,6 +6,7 @@ import ConnectSocket from "@/components/connect-socket";
 import Script from "next/script";
 import { Sidebar } from "@/components/sidebar";
 import { Axios } from "@/lib/axiosInstance";
+import SessionConflict from "@/components/SessionConflict";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,9 +39,12 @@ export default function RootLayout({ children }) {
         <ContextProiver >
       <Toaster />
       <ConnectSocket />
-      <div className="flex h-full">
+        
+      <div className="h-full  w-full">
 
+      <SessionConflict children={children}>
         {children}
+      </SessionConflict>
       </div>
         </ContextProiver>
       </body>

@@ -1,14 +1,12 @@
 "use client"
 
-import { MoreVerticalIcon, Search, Send } from "lucide-react";
+import { MessageSquareOff, MoreVerticalIcon, Search } from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import FilteredChats from "./chat-components/filteredChats";
 import dynamic from "next/dynamic";
 import ChatMenu from "./chat-components/chat-menu";
 import { AnimatePresence } from "framer-motion";
 import { chatStore } from "@/store/chat-store";
 import { userStore } from "@/store/user-store";
-import { socketStore } from "@/store/socket";
 const CreateGroup = dynamic(() => import("./chat-components/create-group"))
 const ChatSettings = dynamic(() => import("./chat-components/chat-settings"))
 const ChatUser = dynamic(() => import("./chat-components/chat-user"))
@@ -21,7 +19,7 @@ export default function Chats() {
     const [openMenu, setOpenMenu] = useState(false)
     const childRef = useRef(null)
     const chatMenuRef = useRef(null)
-    const [searchQuery , setSearchQuery] = useState("")
+    const [searchQuery, setSearchQuery] = useState("")
 
     const setInviteComp = chatStore(s => s.setInviteComp)
     const inviteComp = chatStore(s => s.inviteComp)
@@ -36,7 +34,6 @@ export default function Chats() {
 
         }
     }, [])
-
     useEffect(() => {
         let handleCloseSettings = (e) => {
             if (childRef.current && !childRef.current.contains(e.target)) {
@@ -55,34 +52,34 @@ export default function Chats() {
         }
     }, [])
 
-    let filteredChats = useMemo(()=>{
+    let filteredChats = useMemo(() => {
         let result = chats
-        if (selectedChat === "Unread"){
-            result = result.filter((chat)=>{
-                console.log(chat)
-                if (chat.lastMessage.senderId === session.user.id) return false
-                let status = chat.lastMessage.status.find((status)=>status.userId === session.user.id)
+        if (selectedChat === "Unread") {
+            result = result.filter((chat) => {
+                if (!chat.lastMessage || chat.lastMessage?.senderId === session.user.id) return false
+                let status = chat.lastMessage.status.find((status) => status.userId === session.user.id)
 
-                if (status?.status !== "READ"){
+                if (status?.status && status?.status !== "READ") {
                     return true
                 }
                 return false
             })
-        }else if (selectedChat === "Group"){
-            result = result.filter((chat)=>chat.isGroup)
+        } else if (selectedChat === "Group") {
+            result = result.filter((chat) => chat.isGroup)
         }
-        if (searchQuery && result.length > 0){
-            result = result?.filter((chat)=>{
+        if (searchQuery && result.length > 0) {
+            result = result?.filter((chat) => {
                 let name = chat?.name || chat?.user?.name
                 
-                return name.includes(searchQuery)
+                return name.toLowerCase().includes(searchQuery.toLowerCase())
             })
         }
         return result
-    },[selectedChat ,searchQuery , chats ])
+    }, [selectedChat, searchQuery, chats])
 
+    let typingIndicators = chatStore(s=>s.typingIndicators)
+    console.log(typingIndicators)
 
-  
     return <div className=" w-full border-r border-gray-6 h-full py-4 px-6 bg-gray-1  ">
         <AnimatePresence>
 
@@ -93,7 +90,7 @@ export default function Chats() {
                 <CreateGroup setCreateGroup={setCreateGroup} createGroup={createGroup} />
             }
         </AnimatePresence>
-        <div className="flex section-1 flex-col gap-4">
+        <div className="flex section-1 flex-col h-full gap-4">
             <div className="flex items-center justify-between">
                 <p className="text-2xl bg-gradient-to-r from-blue-600 font-bold to-violet-300 text-transparent bg-clip-text  ">CONNECTIFY<span className="size-2 rounded-full  "></span></p>
 
@@ -113,12 +110,12 @@ export default function Chats() {
 
             </div>
             <div className={`search-section ${hover ? " hover:ring-gray-500" : "focus-within:ring-indigo-400 "} flex items-center ring ring-gray-3  gap-1   rounded-full  px-2 overflow-hidden duration-50   focus-within:bg-gray-1 bg-gray-3`}>
-                <input value={searchQuery} onChange={(e)=>setSearchQuery(e.target.value)} onFocus={() => setHover(false)} onBlur={() => setHover(true)} type="text" placeholder="Start searching here" className="p-2 w-full placeholder:text-[0.9rem]  outline-none" />
+                <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onFocus={() => setHover(false)} onBlur={() => setHover(true)} type="text" placeholder="Start searching here" className="p-2 w-full placeholder:text-[0.9rem]  outline-none" />
                 <Search className="size-5" />
             </div>
 
 
-            <div className="all-chats-section p-1">
+            <div className="all-chats-section p-1 flex-1 ">
                 <span className="text-xl font-bold">Chats</span>
                 <div className="flex mt-3 text-sm items-center gap-1.5">
                     {["All", "Unread", "Group"].map((name) => {
@@ -131,7 +128,7 @@ export default function Chats() {
                     })}
 
                 </div>
-                <div className="mt-6 ml-1.5 users-section flex flex-col gap-1.5 ">
+                <div className="pt-6 ml-1.5 users-section flex flex-col gap-1.5 ">
 
 
                     <div className="relative ">
@@ -142,11 +139,19 @@ export default function Chats() {
                                 <ChatSettings childRef={childRef} chatSettings={chatSettings} />
                             }
                         </AnimatePresence>
-                        <div className="flex flex-col gap-2">
+                        {(!filteredChats?.length) ? <div className="flex justify-center mt-20 h-full">
+                            <div className="flex flex-col items-center gap-2">
+                                <div>
+                                    <MessageSquareOff className="text-gray-300" />
+                                </div>
+                                <p className="tracking-wider font-bold text-gray-300">Chats not found</p>
+                            </div>
+                        </div> : <div className="flex flex-col gap-2">
                             {filteredChats.map((chat) => {
                                 return <ChatUser key={chat.id} chat={chat} childRef={childRef} setChatSettings={setChatSettings} />
                             })}
-                        </div>
+                        </div>}
+
                     </div>
                 </div>
             </div>

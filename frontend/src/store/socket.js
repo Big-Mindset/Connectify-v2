@@ -1,83 +1,196 @@
-import { Peer } from "peerjs"
 
 import { create } from "zustand"
 import { io } from "socket.io-client"
-import { getPeerId } from "@/app/action/getPeerId"
 import { chatStore } from "./chat-store"
-import { chatMessageStore } from "./chatMessage-store"
 import { messageSettingsStore } from "./messageSettings-store"
+import { navigationStore } from "./navigation-store"
+import { userStore } from "./user-store"
+import { Axios } from "@/lib/axiosInstance"
 
 export let socketStore = create((set, get) => ({
 
     socket: null,
-    peer: null,
-    audioStream: null,
+    sessionStatus: null,
+    connecting: false,
+    setSessionStatus: (sessionStatus) => set({ sessionStatus }),
     connectSocket: (userId) => {
         if (!userId) return
-        let socket = get().socket
-        if (socket?.connected) {
+        let { socket, connecting } = get()
+        if (socket?.connected && socket.auth.userId === userId) {
             return
         }
+        if (connecting) return
+        set({ connecting: true })
         let sok = io("http://localhost:2525", {
             auth: {
                 userId,
             }
         })
+        let handleDeleteMessageFromUI = messageSettingsStore.getState().handleDeleteMessageFromUI
+        let handleUpdateAllToDelivered = get().handleUpdateAllToDelivered
         let setParticipants = chatStore.getState().setParticipants
         let participants = chatStore.getState().participants
+        let handleMarkAllAsRead = get().handleMarkAllAsRead
+        let setOnlineUsers = userStore.getState().setOnlineUsers
+        let heartbeat = null
         sok.on("connect", async () => {
-            sok.emit("message-deliverd-all", null)
-            sok.on("online-user", (id) => {
-                let user = participants.get(id)
-                setParticipants(id, { ...(user || {}), isOnline: true })
-            })
-            sok.on("offline-user", (id) => {
-                let user = participants.get(id)
+            set({ connecting: false })
+            set({ socket: sok })
+            sok.emit("message-deliverd-all")
 
-                (id, { ...(user || {}), isOnline: false })
-            })
+            clearInterval(heartbeat)
+            heartbeat = setInterval(() => {
+                sok.emit("heartbeat")
 
+            }, 15000)
+        })
+        sok.on("disconnect", () => {
+            set({ connecting: false })
+            clearInterval(heartbeat)
+            get().disconnectSocket()
+        })
+        sok.on("session:conflict", ({ message }) => {
 
-            let setChats = chatStore.getState().setChats
+            set({ sessionStatus: "session:conflict" })
+        })
+        sok.on("session:terminated", (message) => {
 
-            sok.on("message-notification", (message , type) => {
-                
-                sok.emit("message-delivered", { chatId: message.chatId, id: message.id, senderId: message.senderId })
-                setChats((chats)=> {
-                    return chats.map((chat) => {
-                        if (chat.id === message.chatId) {
-                            return { ...chat, lastMessage: { ...chat.lastMessage, content: message.content, updatedAt: message.updatedAt } }
-                        }
-                        return chat
-                    })
-                })
+            set({ sessionStatus: "session:terminated" })
+            get().disconnectSocket()
+        })
+        sok.on("mark-asRead", handleMarkAllAsRead)
+        sok.on("updateToDelivered", handleUpdateAllToDelivered)
 
-            })
+        sok.on("typing",(data)=>{
+            console.log("start here----------------------------")
 
-
+           let setTypingIndicators = chatStore.getState().setTypingIndicators
+           setTypingIndicators((prev)=>{
+            let typingIndicators = new Map(prev)
+            let value = typingIndicators.get(data.chatId)
+            if (!value){
+                value = new Set()
+            }
+            value.add(data.userId)
+            typingIndicators.set(data.chatId , value)
+            return typingIndicators
+           })
+            console.log("ended heree")
 
         })
-        set({ socket: sok })
+        sok.on("stop-typing",(data)=>{
+            console.log("stop here----------------------------")
+             let setTypingIndicators = chatStore.getState().setTypingIndicators
+           setTypingIndicators((prev)=>{
+            let typingIndicators = new Map(prev)
+            let value = typingIndicators.get(data.chatId)
+            if (!value){
+                return prev
+            }
+            value.delete(data.userId)
+            typingIndicators.set(data.chatId , value)
+            if (value.size=== 0){
+                typingIndicators.delete(data.chatId)
+            }
+            return typingIndicators
+           })
+            
+        })
+
+        sok.on("online-user", async (id) => {
+            let user = participants.get(id)
+
+            setParticipants(id, { ...(user || {}), isOnline: 1 })
+            let selectedPage = navigationStore.getState().selectedPage
+
+            if (selectedPage === "friends") {
+                console.log("running this if...")
+                let res = await Axios.get(`/friendship/user-data?userId=${id}`)
+                console.log(res)
+                if (res.status === 200) {
+
+                    setOnlineUsers((prev) => {
+                        return [...prev, res.data.userData]
+                    })
+                }
+            }
+        })
+
+
+
+        sok.on("offline-user", (id) => {
+            let user = participants.get(id)
+            setParticipants(id, { ...(user || {}), isOnline: 0 })
+
+            setOnlineUsers((prev) => {
+                return prev.filter((user)=>user.id !== id)
+            })
+        })
+
+
+        let setChats = chatStore.getState().setChats
+
+        sok.on("message-notification", (message) => {
+
+            sok.emit("message-delivered", { chatId: message.chatId, id: message.id, senderId: message.senderId })
+            setChats((chats) => {
+                return chats.map((chat) => {
+                    if (chat.id === message.chatId) {
+                        return {
+                            ...chat, lastMessage: { content: message.content, updatedAt: message.updatedAt, senderId: message.senderId, id: message.id, media: message.media?.map((media) => media.type), status: message.status, createdAt: message.createdAt, updatedAt: message.updatedAt }
+                            , unread_messageCount: (chat.unread_messageCount || 0) + 1
+                        }
+                    }
+                    return chat
+                })
+            })
+
+        })
+        sok?.on("delete-message", handleDeleteMessageFromUI)
+
+
+
+
+
     },
     handleMarkAllAsRead: (data) => {
 
         try {
 
-
             let setMessages = chatStore.getState().setMessages
             let setChats = chatStore.getState().setChats
             let selectedChat = chatStore.getState().selectedChat
-            if (selectedChat.id !== data.chatId) return
-            setMessages((messages) => {
-                return messages.map((msg) => {
-                    return {
-                        ...msg, status: msg.status.map((status) => {
-                            if (status.userId === data.userId && status.status !== "READ") {
-                                return { ...status, readAt: data.readAt, status: "READ" }
+            if (selectedChat?.id === data.chatId) {
+
+                setMessages((messages) => {
+                    return messages.map((msg) => {
+                        return {
+                            ...msg, status: msg.status.map((status) => {
+                                if (status.userId === data.userId && status.status !== "READ") {
+                                    return { ...status, readAt: data.readAt, status: "READ" }
+                                }
+                                return status
+                            })
+                        }
+                    })
+                })
+            }
+            setChats((chats) => {
+                return chats.map((chat) => {
+                    if (chat.id === data.chatId) {
+
+                        return {
+                            ...chat, lastMessage: {
+                                ...chat.lastMessage, status: chat.lastMessage.status.map((status) => {
+                                    if (status.userId === data.userId && status.status !== "READ") {
+                                        return { ...status, readAt: data.readAt, status: "READ" }
+                                    }
+                                    return status
+                                })
                             }
-                            return status
-                        })
+                        }
                     }
+                    return chat
                 })
             })
         } catch (error) {
@@ -127,19 +240,22 @@ export let socketStore = create((set, get) => ({
 
 
     },
-    handleUpdateAllToDelivered: (data) => {
+    handleUpdateAllToDelivered: (prettyData, payload) => {
         let setMessages = chatStore.getState().setMessages
         let selectedChat = chatStore.getState().selectedChat
-
-        if (selectedChat.id === data.chatId) {
-
+        let setChats = chatStore.getState().setChats
+        let { deliveredAt, userId } = payload
+        let selectedChatMessage = prettyData[selectedChat?.id]
+        let uniqueId = crypto.randomUUID()
+        if (selectedChatMessage && selectedChatMessage.length > 0) {
+            let chatMessagesSet = new Set(selectedChatMessage)
             setMessages((msgs) => {
                 return msgs.map((msg) => {
-                    if (data.messages[msg.id]) {
+                    if (chatMessagesSet.has(msg.id)) {
                         let status = {
-                            id: crypto.randomUUID(),
-                            deliveredAt: data.deliveredAt,
-                            userId: data.userId,
+                            id: uniqueId,
+                            deliveredAt,
+                            userId,
                             status: "DELIVERED",
 
                         }
@@ -151,6 +267,23 @@ export let socketStore = create((set, get) => ({
                 })
             })
         }
+
+        setChats((chats) => {
+            return chats.map((chat) => {
+                if (prettyData[chat.id]) {
+                    let status = {
+                        id: uniqueId,
+                        deliveredAt,
+                        userId,
+                        status: "DELIVERED",
+
+                    }
+                    return { ...chat, lastMessage: { ...chat.lastMessage, status: [...chat.lastMessage.status, status] } }
+                }
+                return chat
+            })
+        })
+
 
     },
     handleDeliverMessage: (data) => {
@@ -186,7 +319,7 @@ export let socketStore = create((set, get) => ({
 
         let setMessages = chatStore.getState().setMessages
         let setChats = chatStore.getState().setChats
-      
+
         setChats((chats) => {
             return chats.map((chat) => {
                 if (chat.id === data.chatId) {
@@ -212,61 +345,14 @@ export let socketStore = create((set, get) => ({
             })
         })
     },
-    handleReactionUpdates : ({action , reaction})=>{
-        console.log("running....")
-     let updateMessageReactions = messageSettingsStore.getState().updateMessageReactions
-     updateMessageReactions(action , reaction)
-        
+    handleReactionUpdates: ({ action, reaction }) => {
+
+        let updateMessageReactions = messageSettingsStore.getState().updateMessageReactions
+        updateMessageReactions(action, reaction)
+
     },
     disconnectSocket: () => {
-        let socket = get().socket
-        if (socket?.connected) {
-            socket?.disconnect()
-        }
+
         set({ socket: null })
     },
-    Peer: async (userId) => {
-        if (get().peer) {
-            return
-        }
-        var peer = new Peer(userId, {
-            host: "localhost",
-            port: 2525,
-            path: "/peerjs"
-
-        });
-
-        set({ peer: peer })
-        let stream = get().audioStream
-        peer.on("open", async (id) => {
-            get().socket?.emit("register-peer-socket", id)
-            if (!stream) {
-
-                // stream = await navigator.mediaDevices.getUserMedia({
-                //     audio: true
-                // })
-            }
-            set({ audioStream: stream })
-
-        })
-        peer.on("call", (call) => {
-            call.answer(stream)
-            call.on("stream", (remoteStream) => {
-            });
-        })
-        peer.on("close", () => {
-            set({ peer: null })
-        })
-
-    },
-    audioCall: async (userIds) => {
-        let stream = get().audioStream
-        let peer = get().peer
-        let peerIds = await getPeerId(userIds)
-        peerIds.forEach((id) => {
-            let call = peer.call(id, stream)
-            call.on("stream", (stream) => {
-            })
-        })
-    }
 }))

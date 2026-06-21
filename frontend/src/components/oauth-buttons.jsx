@@ -7,7 +7,8 @@ export const OauthButtons = () => {
     const handleSocialLogin = async (provider) => {
         await authClient.signIn.social({
             provider,
-            callbackURL: "/",
+            callbackURL: "http://localhost:3000",
+            
         })
     }
     return (

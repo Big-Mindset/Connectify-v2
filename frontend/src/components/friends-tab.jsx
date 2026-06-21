@@ -12,20 +12,30 @@ import toast from "react-hot-toast";
 import { userStore } from "@/store/user-store";
 
 export default function FriendsTab() {
-    const [allFriends, setAllFriends] = useState([])
-    const [pendingRequest, setPendingRequest] = useState([])
+    let allFriends = userStore(s => s.allFriends)
+    let setAllFriends = userStore(s => s.setAllFriends)
+    let pendingRequest = userStore(s => s.pendingRequest)
+    let setPendingRequest = userStore(s => s.setPendingRequest)
+    let onlineUsers = userStore(s => s.onlineUsers)
+    let setOnlineUsers = userStore(s => s.setOnlineUsers)
     const [selectedCategory, setSelectedCategory] = useState("online")
+
     const setInviteComp = chatStore(s => s.setInviteComp)
-    let session = userStore(s=>s.session)
+
+    let session = userStore(s => s.session)
     let userId = session?.user?.id
+
     useEffect(() => {
         let getAllFriends = async () => {
             if (allFriends?.length > 0) return
             try {
 
                 let { data } = await Axios.get("/friendship/all-friends")
-                setAllFriends(data.FriendRequests)
+                setAllFriends(() => data.allFriends)
+                let onlineUsers = data.allFriends?.filter((friend) => friend.isOnline)
+                setOnlineUsers(() => onlineUsers)
             } catch (error) {
+                console.log(error.message)
                 toast.error(error?.response?.data?.message || "Server error")
             }
 
@@ -35,21 +45,22 @@ export default function FriendsTab() {
             try {
 
                 let { data } = await Axios.get("/friendship/get-requests")
-                setPendingRequest(data.friendRequests)
+                setPendingRequest(() => data.friendRequests)
             } catch (error) {
+                console.log(error.message)
                 toast.error(error?.response?.data?.message || "Server error")
 
             }
         }
-        if (selectedCategory === "all") {
-            getAllFriends()
-        } else if (selectedCategory === "pending") {
-            getRequests()
-        }
 
-    }, [selectedCategory])
+        getAllFriends()
+        getRequests()
+
+
+    }, [])
     let requestSent = []
     let requestReceived = []
+
     pendingRequest.forEach((req) => {
 
         if (req.sender.id === userId) {
@@ -63,7 +74,7 @@ export default function FriendsTab() {
     })
     return (
         <div className="h-full flex flex-col gap-6 py-1 px-6 gap-2 ">
-            <div className="Header flex flex-col gap-2">
+            <div className="Header  flex flex-col gap-2">
 
                 <div className=" flex items-center  ">
                     <div className="flex items-center   w-full gap-5   h-[60px] ">
@@ -98,68 +109,111 @@ export default function FriendsTab() {
                 </div>
             </div>
             {selectedCategory === "online" ?
-                <div>
+                <div className="flex-1">
                     <div className="flex items-center text-sm gap-3">
                         <p>Online</p>
                         <span>-</span>
-                        <span>{"2"}</span>
+                        <span>{onlineUsers.length}</span>
                     </div>
-                    <div className="flex flex-col gap-4 mt-2">
-                        <FriendUser />
-                    </div>
+                    {!onlineUsers.length ? <div className="text-center">
+
+                        <h1 className="text-2xl font-bold mt-10 text-gray-300">Oops, You are alone</h1>
+                        <p className="text-sm text-gray-300">Maybe add some more friends ? </p>
+                    
+                    </div> :
+
+
+                        <div className="flex flex-col gap-4 mt-2">
+
+                            {onlineUsers.map((user) => {
+                                return <FriendUser key={user.id} data={user} />
+                            })}
+                        </div>
+                    }
                 </div>
                 : selectedCategory === "all" ?
-                    <div>
-                        <div className="flex items-center text-sm gap-3">
-                            <p>All friends</p>
-                            <span>-</span>
-                            <span>{"2"}</span>
+                    (
+
+                        <div className="flex-1 flex flex-col ">
+                            <div className="flex text-sm gap-3 ">
+                                <p>All friends</p>
+                                <span>-</span>
+                                <span>{allFriends?.length}</span>
+                            </div>
+                            {!allFriends.length ? <div className="flex justify-center mt-20 items-center ">
+                                <div className="text-center">
+
+                                    <h1 className="text-2xl font-bold text-gray-300">Friends not found</h1>
+                                    <p className="text-sm text-gray-300">Add new friends with username</p>
+                                    <button onClick={() => setInviteComp(true)} className="px-2.5 mt-3 w-full py-1 gap-1 duration-150 cursor-pointer border-2 border-indigo-700/50 hover:border-indigo-200 focus:border-indigo-300 hover:border-indigo-300 bg-indigo-500/90  rounded-lg">
+                                        <p>Add Friend</p>
+                                    </button>
+                                </div>
+                            </div> :
+                                <div className="flex flex-col gap-4 mt-2">
+                                    {allFriends.map((user) => {
+                                        return <FriendUser key={user.id} data={user} />
+                                    })}
+                                </div>
+                            }
+
                         </div>
-                        <div className="flex flex-col gap-4 mt-2">
-                            <FriendUser />
-                        </div>
+                    )
+                    : (selectedCategory === "pending" &&
+                        requestReceived.length === 0 &&
+                        requestSent.length === 0) ? (
+                        <div className="flex flex-col items-center justify-center py-10 text-center">
 
-                    </div> : selectedCategory === "pending" && <div className="flex flex-col gap-2">
-                        {pendingRequest.length === 0 ? <div></div> :
-                            <>
-                                {requestReceived.length === 0 ? null :
-                                    <div className="flex flex-col">
+                            <h3 className="mt-4 text-2xl font-semibold text-white">
+                                No pending requests
+                            </h3>
 
-                                        <div className="flex items-center text-sm gap-3">
-                                            <p>Received</p>
-                                            <span>-</span>
-                                            <span>{"2"}</span>
-                                        </div>
-                                        <div className="flex flex-col gap-4 mt-2">
-                                            {requestReceived.map((req) => {
-                                                return <FriendRequest setPendingRequest={setPendingRequest} key={req.id} data={req} received={true} />
+                            <p className="mt-2 max-w-sm text-sm text-gray-400">
+                                When someone sends you a friend request or you send one to others,
+                                they'll appear here.
+                            </p>
+                        </div>) : (
 
-                                            })}
-                                        </div>
-                                    </div>
-                                }
-                                {requestSent.length === 0 ? null :
+                        <div className="flex flex-col gap-10">
 
-                                    <div className="flex flex-col">
 
-                                        <div className="flex items-center text-sm gap-3">
-                                            <p>Sent</p>
-                                            <span>-</span>
-                                            <span>{requestSent.length}</span>
-                                        </div>
-                                        <div className="flex flex-col gap-4 mt-2">
-                                            {requestSent.map((req) => {
-                                                return <FriendRequest key={req.id} data={req} />
+                            <div className="flex flex-col">
 
-                                            })}
-                                        </div>
-                                    </div>
-                                }
-                            </>
-                        }
-                    </div>
+                                <div className="flex font-bold items-center text-sm gap-3">
+                                    <p className=" text-gray-300">Received</p>
+                                    <span>-</span>
+                                    <span>{requestReceived.length}</span>
+                                </div>
 
-            }
+                                <div className="flex flex-col gap-4 mt-2">
+                                    {requestReceived.map((req) => {
+                                        return <FriendRequest setPendingRequest={setPendingRequest} key={req.id} data={req} received={true} />
+
+                                    })}
+                                </div>
+
+                            </div>
+
+
+                            <div className="flex flex-col">
+
+                                <div className="flex font-bold items-center text-sm gap-3">
+                                    <p className="text-gray-300">Sent</p>
+                                    <span>-</span>
+                                    <span>{requestSent.length}</span>
+                                </div>
+
+                                <div className="flex flex-col gap-4 mt-2">
+                                    {requestSent.map((req) => {
+                                        return <FriendRequest key={req.id} data={req} />
+
+                                    })}
+                                </div>
+
+                            </div>
+
+
+                        </div>)}
         </div>
     )
 }

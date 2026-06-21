@@ -10,7 +10,7 @@ import { useState } from "react"
 import { AnimatePresence } from "framer-motion"
 import { userStore } from "@/store/user-store"
 import OnlineStatus from "./OnlineStatus"
-let UserProfile = dynamic(() => import("./User-Profile"))
+let UserProfile = dynamic(() => import("./User-Profile"),{ssr : false})
 export const Sidebar = () => {
     const [openProfile, setOpenProfile] = useState(false)
     let selectedPage = navigationStore(s => s.selectedPage)

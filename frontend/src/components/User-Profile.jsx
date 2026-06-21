@@ -156,7 +156,7 @@ export default function UserProfile({ setOpenProfile }) {
                             </div>
 
                             <div className="flex flex-col items-center">
-                                <div className="font-bold text-gray-200 text-2xl">{profileData.name}</div>
+                                <div className="font-bold text-center text-gray-200 text-2xl">{profileData.name}</div>
                                 <div className="flex gap-1 ml-5 items-center bg-indigo-400/20 px-2 py-0.5 rounded-full">
                                     <p className="text-gray-200/90 text-sm">{user.username}</p>
                                     <div className="text-indigo-200 hover:text-white duration-200 cursor-pointer p-1">
@@ -193,6 +193,7 @@ export default function UserProfile({ setOpenProfile }) {
                                 <label htmlFor="name" className="tracking-wider text-[0.8rem] text-indigo-100">Name</label>
                                 <input
                                     value={profileData.name}
+                                    maxLength={40}
                                     onChange={(e) => setProfileData(prev => ({ ...prev, name: e.target.value }))}
                                     type="text"
                                     id="name"

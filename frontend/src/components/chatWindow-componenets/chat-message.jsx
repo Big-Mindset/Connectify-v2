@@ -109,7 +109,7 @@ function ChatMessage({ optionsRef, message, plusRef, key }) {
                         <div className="flex items-center gap-2 min-w-0 flex-1 px-2 py-1 rounded-lg">
 
                             <div className="flex items-center gap-0.5 text-gray-300/90 font-bold shrink-0">
-                                <Avatar image={replyToSender?.image} size={"size-4"} />
+                                <Avatar image={replyToSender?.image} size={"size-4"} textSize={"text-[0.8rem]"} />
                                 <h3
                                     className="max-w-[80px] truncate"
                                     style={{ fontSize: 'clamp(0.65rem, 1.2vw, 0.85rem)' }}
@@ -156,7 +156,7 @@ function ChatMessage({ optionsRef, message, plusRef, key }) {
 
                     <div className="relative">
 
-                        <Avatar size={"size-11"} image={sender?.image || GirlImage} />
+                        <Avatar size={"size-11"} textSize={"text-[1.5rem]"} image={sender?.image} />
                     </div>
 
                     <div className="w-full  pt-1 ">

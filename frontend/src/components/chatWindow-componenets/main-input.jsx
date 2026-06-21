@@ -10,6 +10,7 @@ import { generateThumbnail } from "@/lib/generateThumbnail";
 import { userStore } from "@/store/user-store";
 import { messageSettingsStore } from "@/store/messageSettings-store";
 import { chatMessageStore } from "@/store/chatMessage-store";
+import { socketStore } from "@/store/socket";
 let RenderFile = dynamic(() => import("./main-input-components/renderFile"))
 let FileSizeExceeded = dynamic(() => import("./main-input-components/file-sizeExceeded"))
 const EmojiPicker = dynamic(() => import("./Emoji-Picker"), { ssr: false })
@@ -22,9 +23,9 @@ export default function MainInput({ chatId }) {
     const [openEmojiPicker, setOpenEmojiPicker] = useState(false)
     const [sizeExceeded, setSizeExceeded] = useState({})
     const [thumbnailsUrl, setThumbnailsUrl] = useState({})
-    
+    const [isTyping, setIsTyping] = useState(false)
     const participants = chatStore(s => s.participants)
-
+    let selectedChat = chatStore(s => s.selectedChat)
     const [senderData, setSenderData] = useState(null)
     let session = userStore(s => s.session)
     let plusOptionsRef = useRef(null)
@@ -36,8 +37,9 @@ export default function MainInput({ chatId }) {
     let replyMessage = messageSettingsStore(s => s.replyMessage)
     let setReplyMessage = messageSettingsStore(s => s.setReplyMessage)
     let inputRef = useRef(null)
-
-
+    let debounceTimeout = useRef(null)
+    let chatMembersIds = chatStore(s => s.chatMembersIds).get(chatId)
+    let socket = socketStore(s => s.socket)
     useEffect(() => {
         const handleClickOutside = (e) => {
             if (plusOptionsRef.current &&
@@ -56,6 +58,7 @@ export default function MainInput({ chatId }) {
             window.removeEventListener("mousedown", handleClickOutside)
         }
     }, [])
+
     useEffect(() => {
         if (inputRef.current) {
             setInputRef(inputRef)
@@ -94,18 +97,18 @@ export default function MainInput({ chatId }) {
             status: "PENDING",
             replyTo: replyMessage,
             media: filePreview || [],
-            reactions : []
+            reactions: []
         }
 
 
+        setFilePreview([])
         let res = await sendMessage(messageData, filePreview)
-        console.log(res)
-        if (res?.status === 429){
-            setSizeExceeded({type : "message-limit"})
+
+        if (res?.status === 429) {
+            setSizeExceeded({ type: "message-limit" })
 
         }
         setInputText("")
-        setFilePreview([])
         setReplyMessage(null)
     }
 
@@ -114,7 +117,7 @@ export default function MainInput({ chatId }) {
         setOpenAttachments(false)
         let files = e.target.files
         if ((files.length + filePreview.length) > 10) {
-            setSizeExceeded({type : "files-limit"})
+            setSizeExceeded({ type: "files-limit" })
             return
         }
         let size = totalSize
@@ -128,7 +131,7 @@ export default function MainInput({ chatId }) {
             if (!file) return
 
             if ((sizeInKbs > maxSize) || ((sizeInKbs + size) > maxSize)) {
-                setSizeExceeded({type : "files-size"})
+                setSizeExceeded({ type: "files-size" })
                 break
             }
             size += sizeInKbs
@@ -180,6 +183,7 @@ export default function MainInput({ chatId }) {
         setInputText(e.target.value)
     }
 
+
     let handleKeyDown = (e) => {
         if (e.key === "Enter") {
             handleSendMessage()
@@ -190,8 +194,28 @@ export default function MainInput({ chatId }) {
     let handleCancelReply = () => {
         setReplyMessage(null)
     }
+
+
+    useEffect(() => {
+        clearInterval(debounceTimeout.current)
+        debounceTimeout.current = null
+        if (!isTyping) {
+            socket.emit("typing", { chatId, chatMembersIds, userId: user.id })
+            setIsTyping(true)
+        }
+        debounceTimeout.current = setTimeout(() => {
+            socket.emit("stop-typing" , { chatId, chatMembersIds, userId: user.id })
+            setIsTyping(false)
+        }, 700)
+        return () => {
+            clearTimeout(debounceTimeout.current)
+            debounceTimeout.current = null
+        }
+    }, [inputText])
+
     return (
         <>
+        fasdfa
             <AnimatePresence>
 
                 {sizeExceeded?.type && <FileSizeExceeded sizeExceeded={sizeExceeded} setSizeExceeded={setSizeExceeded} />

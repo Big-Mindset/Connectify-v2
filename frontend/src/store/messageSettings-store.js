@@ -36,7 +36,7 @@ export let messageSettingsStore = create((set, get) => ({
     handleDeleteMessage: (message) => {
         let deleteMessage = get().deleteMessage
         if (deleteMessage?.id === message?.id) return
-        set({ deleteMessage: { id: message.id, senderId: message.senderId, content: message.content || "" } })
+        set({ deleteMessage: { id: message.id, senderId: message.senderId, content: message.content || "", chatId: message.chatId } })
     },
     handleReaction: (message, left) => {
         let reactMessage = get().reactMessage
@@ -46,6 +46,37 @@ export let messageSettingsStore = create((set, get) => ({
             return
         }
         set({ reactMessage: { id: message.id, senderId: message.senderId, left: left } })
+    },
+    handleDeleteMessageFromUI: ({ id, chatId }) => {
+
+        let setMessages = chatStore.getState().setMessages
+        let setChats = chatStore.getState().setChats
+        let selectedChat = chatStore.getState().selectedChat
+        if (selectedChat?.id === chatId) {
+
+            setMessages((messages) => messages.filter((msg) => msg.id !== id))
+        }
+        let isLastMessage = false
+        let messages = chatStore.getState().messages
+
+
+        setChats((chats) => {
+
+            return chats.map((chat) => {
+                if (chat.id === chatId) {
+                    if (chat.lastMessage.id === id) {
+                        isLastMessage = true
+                        return { ...chat, lastMessage: messages[0] || null }
+
+
+                    }
+
+                }
+                return chat
+            })
+        })
+        return isLastMessage
+
     },
 
     handleReactionFunc: (reaction, messageId, emoji) => {
@@ -75,7 +106,7 @@ export let messageSettingsStore = create((set, get) => ({
 
     },
     updateMessageReactions: (type, reactionData) => {
-        
+
         let setMessages = chatStore.getState().setMessages
         if (type === "remove") {
 
@@ -118,21 +149,23 @@ export let messageSettingsStore = create((set, get) => ({
                 })
             })
         } else if (type === "add") {
-         
-                setMessages((messages) => {
-                    return messages.map((msg) => {
-                        if (msg.id === reactionData?.messageId) {
-                            return { ...msg, reactions: msg.reactions.map((reaction)=>{
-                                if (reaction.id === reactionData.id){
-                                    return {...reaction , reactors :[...reaction.reactors , {userId : reactionData.userId , id : reactionData.reactorId}]}
+
+            setMessages((messages) => {
+                return messages.map((msg) => {
+                    if (msg.id === reactionData?.messageId) {
+                        return {
+                            ...msg, reactions: msg.reactions.map((reaction) => {
+                                if (reaction.id === reactionData.id) {
+                                    return { ...reaction, reactors: [...reaction.reactors, { userId: reactionData.userId, id: reactionData.reactorId }] }
                                 }
                                 return reaction
-                            }) }
+                            })
                         }
-                        return msg
-                    })
+                    }
+                    return msg
                 })
-            
+            })
+
         }
     }
 

@@ -10,12 +10,13 @@ import { toNodeHandler } from "better-auth/node";
 import chatRouter from "./routes/chat.js";
 import { Server } from "socket.io";
 import messageRouter from "./routes/message.js";
-import {ExpressPeerServer } from "peer"
+// import {ExpressPeerServer } from "peer"
 import groupRouter from "./routes/group.js";
 import userRouter from "./routes/user.js";
 import { SocketConnection } from "./lib/socket-class.js";
 import { instrument } from "@socket.io/admin-ui";
 import {rateLimit , ipKeyGenerator} from "express-rate-limit"
+
 var app = express();
 let server = createServer(app)
 app.use(cors({
@@ -34,9 +35,9 @@ let io  = new Server(server,{
 // view engine setup
 // app.set('views', path.join(__dirname, 'views'));
 
-let peerServer = ExpressPeerServer(server)
+// let peerServer = ExpressPeerServer(server)
 
-app.use("/peerjs", peerServer);
+// app.use("/peerjs", peerServer);
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -83,16 +84,31 @@ instrument(io,{
 auth :false
 })
 io.on("connection",async (socket)=>{
- 
+  
+  
+
   Socket.handleConnection(socket)
   // socket.on("register-peer-socket",async (peerId)=>{
   //   Socket.RegisterPeerConnection(socket, peerId)
   // })
   socket.on("join-chat",async (chatId)=>{
-    socket.join(chatId)
+     Socket.handleJoinChat(socket , chatId)
+  })
+  socket.on("leave-chat",(chatId)=>{
+    console.log("leaving room "+chatId)
+    Socket.handleLeaveChat(socket , chatId)
+  })
+  socket.on("heartbeat",()=>{
+    Socket.handleHeartbeat(socket)
   })
   socket.on("send-message", async (participantIds , message)=>{
     Socket.handleSendMessage(socket ,message ,  participantIds )
+  })
+  socket.on("typing",(data)=>{
+    Socket.handleTyping(socket,data , "typing")
+  })
+  socket.on("stop-typing",(data)=>{
+    Socket.handleTyping(socket ,data , "stop-typing")
   })
   socket.on("message-delivered" , (data)=>{
     
@@ -108,8 +124,10 @@ io.on("connection",async (socket)=>{
    Socket.markAllAsRead(socket , statusData)
 
   })
+  socket.on("delete-message",(message , membersIds)=>{
+    Socket.handleDeleteMessage(socket ,message , membersIds)
+  })
   socket.on("reaction-updates",(data , chatId)=>{
-    console.log(chatId)
     Socket.handleReactionUpdates(socket,data,chatId)
   })
   socket.on("disconnect",async ()=>{
@@ -132,6 +150,7 @@ app.use(function(err, req, res, next) {
 
   
 
-server.listen(2525,()=>{
+server.listen(2525,async ()=>{
+ 
   console.log("listening to port")
 })

@@ -10,6 +10,7 @@ import { formateTime } from "@/lib/formateTime";
 import { AnimatePresence , motion } from "framer-motion";
 import { socketStore } from "@/store/socket";
 import { navigationStore } from "@/store/navigation-store";
+import { chatStore } from "@/store/chat-store";
 
 export default function Navbar({receiverInfo}) {
     const [calltype, setCallType] = useState(false)
@@ -22,7 +23,7 @@ export default function Navbar({receiverInfo}) {
     const setSearchTab = navigationStore(s=>s.setSearchTab)
     const searchTab = navigationStore(s=>s.searchTab)
     const setFilters = navigationStore(s => s.setFilters)
-    
+    const handleCloseChat = chatStore(s=>s.handleCloseChat)
     
     useEffect(() => {
         let handleCallMenu = (e) => {
@@ -52,6 +53,9 @@ export default function Navbar({receiverInfo}) {
             setOpenMuteNotifications(true)
         } else if (param === "Disappearing Message") {
             setDisappearingMessageComp(true)
+        }else if (param === "Close Chat"){
+            console.log("closing chat...")
+            handleCloseChat()
         }
     }
     let online = true

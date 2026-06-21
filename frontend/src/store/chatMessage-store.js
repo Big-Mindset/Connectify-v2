@@ -15,6 +15,8 @@ export let chatMessageStore = create((set, get) => ({
         let selectedChat = chatStore.getState().selectedChat
         let setMessages = chatStore.getState().setMessages
         setMessages((messages) => {
+            console.log(messageData)
+            console.log(messages)
             return [messageData , ...messages]
         })
         let uploadedFiles = [];
@@ -156,17 +158,18 @@ export let chatMessageStore = create((set, get) => ({
     handleDeleteMessage: async () => {
         let deleteMessage = messageSettingsStore.getState().deleteMessage
         let setDeleteMessage = messageSettingsStore.getState().setDeleteMessage
-        let setMessages = chatStore.getState().setMessages
+        let handleDeleteMessageFromUI = messageSettingsStore.getState().handleDeleteMessageFromUI
         let socket = socketStore.getState().socket
+                let MembersIds = chatStore.getState().chatMembersIds.get(deleteMessage.chatId)
+
         try {
 
-            let res = await Axios.delete(`/message/delete-message`, { data: { messageId: deleteMessage.id, senderId: deleteMessage.senderId } })
+            let res = await Axios.delete(`/message/delete-message`, { data: { messageId: deleteMessage.id, senderId: deleteMessage.senderId , chatId : deleteMessage.chatId  } })
             
             if (res.status === 200) {
-                setMessages((messages) => {
-                    return messages.filter((msg) => msg.id !== deleteMessage?.id)
-                })
-                socket.emit("delete-message",)
+              let isLastMessage =  handleDeleteMessageFromUI({chatId :deleteMessage.chatId , id :  deleteMessage.id })
+                console.log(deleteMessage)
+                socket.emit("delete-message",{chatId : deleteMessage.chatId , id : deleteMessage.id , isLastMessage } ,MembersIds )
             }
             setDeleteMessage(null)
         } catch (error) {

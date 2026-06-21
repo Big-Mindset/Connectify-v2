@@ -1,7 +1,7 @@
 import express from "express"
 import protectRoute from "../middleware/auth.middleware.js"
 import { accept_friendrequest, cancel_request, get_friendrequest, reject_friendrequest, send_friendrequest } from "../controller/friends.js"
-import { getAllFriends } from "../controller/chat.js"
+import { getAllFriends, handleGetUserdata } from "../controller/chat.js"
 let router = express.Router()
 
 router.get("/",(req , res)=>{
@@ -16,7 +16,7 @@ router.delete("cancel-request",cancel_request)
 router.put("/reject-request",reject_friendrequest)
 router.get("/get-requests"  , get_friendrequest)
 router.get("/all-friends" , getAllFriends)
-
+router.get("/user-data" , handleGetUserdata)
 // router.get("/get-user"  , getUser)
 // router.get("/send",(req , res)=>{
 

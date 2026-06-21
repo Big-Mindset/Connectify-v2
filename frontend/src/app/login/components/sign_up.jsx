@@ -5,7 +5,7 @@ import { useLoading } from "@/lib/loading_hook"
 import { signUp } from "@/zod/authValidations"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Axios } from "@/lib/axiosInstance"
-import { Check, Loader, Loader2, X } from "lucide-react"
+import { Cctv, Check, Loader, Loader2, X } from "lucide-react"
 import toast from "react-hot-toast"
 import { authClient } from "@/lib/auth-client"
 import { OauthButtons } from "@/components/oauth-buttons"
@@ -55,6 +55,7 @@ export default function SingUp({ setLoginMethod, setEmail }) {
             ...data
         }, {
             onError: (ctx) => {
+                console.log(ctx)
                 if (ctx.error.code === "EMAIL_NOT_VERIFIED") {
                     toast.error(ctx.error.message)
 
@@ -65,6 +66,7 @@ export default function SingUp({ setLoginMethod, setEmail }) {
                 }
             },
             onSuccess: (ctx) => {
+                console.log(ctx)
                 setError(null)
                 toast.success("Account created")
                 setLoginMethod("verify-email")

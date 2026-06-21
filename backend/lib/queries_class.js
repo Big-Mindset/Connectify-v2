@@ -58,7 +58,6 @@ export class SocketQueries {
         }
     }
     async allMessagesDelivered(userId) {
-
         try {
             let messages = await prisma.message.findMany({
 
@@ -70,15 +69,13 @@ export class SocketQueries {
                             }
                         }
                     },
-                    NOT: {
+                   
                         status: {
-                            some: {
-                                userId: userId, status: {
-                                    in: ["DELIVERED", "READ"]
-                                }
+                            none : {
+                                userId 
                             }
                         }
-                    },
+                    
 
                 },
                 orderBy: {
@@ -90,6 +87,13 @@ export class SocketQueries {
                     chatId: true
                 }
             })
+          
+
+
+
+
+
+
             let deliveredAt = new Date()
             await prisma.status.createMany({
                 data : messages.map((msg)=>({
@@ -101,36 +105,40 @@ export class SocketQueries {
                 skipDuplicates : true,
 
             })
-            let senderIds = new Set(messages.map((msg) => msg.senderId))
-            senderIds = [...senderIds]
-
-            let filteredData = {}
-            await Promise.all(
-
-                senderIds.map(async (id) => {
-                    let activeChat = await client.GET(`user-activeChat:${id}`)
-                    if (activeChat && !filteredData[id]) {
-                     
-                        filteredData[id] = { chatId: activeChat , userId , deliveredAt , messages : {} }
-                    }
-                    
-                })
-            )
-
-            
-            
-            
-            messages.forEach((msg) => {
-                let chatId = filteredData[msg.senderId]?.chatId
-              
-                if (msg.chatId === chatId) {
-                    filteredData[msg.senderId].messages[msg.id] = true
+            let values = {userId , deliveredAt}
+            let senderIdsMap = new Map()
+            for (let msg of messages){
+                if (!senderIdsMap.has(msg.senderId)){
+                    senderIdsMap.set(msg.senderId ,{})
                 }
-            })
-            return filteredData 
+                let chatMap = senderIdsMap.get(msg.senderId)
+                if (!chatMap[msg.chatId]){
+                    chatMap[msg.chatId] =  []
+                }
+                chatMap[msg.chatId].push(msg.id)
+            }
+            return {senderIdsMap , payload : values} 
         } catch (error) {
             console.log(error.message)
 
+        }
+    }
+    async getChatParticipants(chatId , userId){
+        try {
+            let participants = await prisma.chatParticipant.findMany({
+                where :{
+                    chatId,
+                    userId : {
+                        not : userId
+                    }
+                },
+                select : {
+                    userId : true
+                }
+            })
+            return participants
+        } catch (error) {
+            console.log(error.message)
         }
     }
 }

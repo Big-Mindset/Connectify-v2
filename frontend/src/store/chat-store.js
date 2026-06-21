@@ -2,6 +2,7 @@ import { Axios } from "@/lib/axiosInstance"
 import { create } from "zustand"
 import { userStore } from "./user-store"
 import { socketStore } from "./socket"
+import { navigationStore } from "./navigation-store"
 // const messages = [
 //   {
 //     id: "m1",
@@ -152,11 +153,18 @@ export const chatStore = create((set, get) => ({
             messages: func(prev.messages)
         }))
     },
-    getChats: async (userId) => {
+    typingIndicators : new Map(),
+    setTypingIndicators : (func)=>{
+      set((state)=>({typingIndicators : func(state.typingIndicators)}))
+    },
+    typingUsersInfo : "",
+    setTypingUsersInfo : (typingUsersInfo)=>set({typingUsersInfo}),
+    getChats: async () => {
         try {
             let res = await Axios.get("/chat/chats")
 
             if (res.status === 200) {
+
                 let AllChats = res.data.allFriends
                 let updatedData = AllChats.map((chat) => {
                     let chatMembersIds = get().chatMembersIds
@@ -168,13 +176,15 @@ export const chatStore = create((set, get) => ({
                         return chat
                     } else {
                         let dmUser = chat.participants[0].user
+                        dmUser.isOnline = chat.isOnline
                         participants.set(dmUser.id, dmUser)
                         let data = {
                             id: chat.id,
                             userId: dmUser.id,
-                            name : dmUser.name,
+                            name: dmUser.name,
                             lastMessage: chat.lastMessage,
-                            unread_messageCount: chat._count.messages
+                            unread_messageCount: chat._count.messages,
+                           
                         }
                         return data
                     }
@@ -186,27 +196,42 @@ export const chatStore = create((set, get) => ({
         }
     },
     getChatById: async (chatId, userId) => {
+        
         try {
+
             let socket = socketStore.getState().socket
+            let setChats = get().setChats
+            let selectedPage = navigationStore.getState().selectedPage
+            let setSelectedPage = navigationStore.getState().setSelectedPage
+            if (selectedPage === "friends"){
+                setSelectedPage("main")
+            }
+            let selectedChat = get().selectedChat
+            if (selectedChat?.id === chatId) return
             set({ selectedChat: { id: chatId, userId: userId } })
+            set({messages : []})
             let res = await Axios.get(`/chat/${chatId}`)
+ 
             if (res.status === 200) {
                 let { messages, id } = res.data.chat
-
                 socket.emit("join-chat", chatId)
                 set({ messages: messages })
                 let updateStatus = await Axios.put(`/message/mark-asread?chatId=${chatId}`)
+               
                 if (updateStatus.status === 200) {
-
+                    setChats((chats) => {
+                        return chats.map((chat) => {
+                            if (chat.id === chatId) {
+                                return { ...chat, unread_messageCount: 0 }
+                            }
+                            return chat
+                        })
+                    })
                     let data = updateStatus.data
                     if (data === null) return
-                    if (data.count > 0 && data.senderId) {
+                    if (data.count > 0) {
                         let statusData = updateStatus.data
-
-
-                        console.log("sending the socket to backend ")
-
-                        socket.emit("mark-asRead", { senderId: statusData.senderId, chatId, readAt: statusData.readAt })
+                        socket.emit("mark-asRead", {  chatId, readAt: statusData.readAt })
                     }
                 }
             }
@@ -222,17 +247,52 @@ export const chatStore = create((set, get) => ({
         let ChatMemberIds = MembersIds.get(selectedChat.id)
         let user = session.user
         let userData = {
-            id : user.id ,
-            image:user.image,
+            id: user.id,
+            image: user.image,
             lastseen: user.lastseen,
             name: user.name,
             username: user.username
         }
-let ChatMemberData = ChatMemberIds.map((memberId) => {
-    return participants.get(memberId)
+        let ChatMemberData = ChatMemberIds.map((memberId) => {
+            return participants.get(memberId)
 
-})
-return [userData , ...ChatMemberData]
+        })
+        return [userData, ...ChatMemberData]
+    },
+    LoadMoreMessage : async ()=>{
+        // if (!messageId) return
+        let messages = get().messages
+        let msgId = messages[messages.length - 1]?.id
+        if (!msgId) return
+        let setMessages = get().setMessages
+        try {
+            let res = await Axios.get(`/message/get-moreMessages?messageId=${msgId}`)
+            console.log(res)
+            if (res.status === 200){
+                let {messages} = res.data
+                if (!messages.length){
+
+                    return false
+                }
+                setMessages(prev=>{
+                    return [...prev , ...messages]
+                })
+                return true
+            }
+        } catch (error) {
+            console.log(error.message)
+        }
+    },
+    handleCloseChat : ()=>{
+        try {
+            let socket = socketStore.getState().socket
+            let selectedChat = get().selectedChat
+            socket.emit("leave-chat",selectedChat.id)
+            set({selectedChat : null})
+            set({messages : []})
+        } catch (error) {
+            console.log(error.message)
+        }
     }
 
 }))

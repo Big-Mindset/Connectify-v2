@@ -21,7 +21,7 @@ model User {
   image         String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-  username      String
+  username      String?
   lastseen      DateTime @default(now())
 
   notifications   Notification[]
@@ -190,9 +190,7 @@ model ChatParticipant {
   clearChatAt DateTime?
 
   @@unique([userId, chatId])
-  @@index([clearChatAt])
-  @@index([chatId, userId])
-  @@index([userId])
+  @@index([chatId])
   @@map("chat_participant")
 }
 

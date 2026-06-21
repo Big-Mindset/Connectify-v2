@@ -180,7 +180,20 @@ export default function MainInput({ chatId }) {
     let thumbnailUrl = thumbnailsUrl[editFile?.url]
 
     const handleTyping = (e) => {
+           clearInterval(debounceTimeout.current)
+        debounceTimeout.current = null
+        let val = e.target.value
         setInputText(e.target.value)
+        if (val.length < inputText.length) return
+        
+        if (!isTyping) {
+            socket.emit("typing", { chatId, chatMembersIds, userId: user.id })
+            setIsTyping(true)
+        }
+        debounceTimeout.current = setTimeout(() => {
+            socket.emit("stop-typing" , { chatId, chatMembersIds, userId: user.id })
+            setIsTyping(false)
+        }, 700)
     }
 
 
@@ -197,21 +210,12 @@ export default function MainInput({ chatId }) {
 
 
     useEffect(() => {
-        clearInterval(debounceTimeout.current)
-        debounceTimeout.current = null
-        if (!isTyping) {
-            socket.emit("typing", { chatId, chatMembersIds, userId: user.id })
-            setIsTyping(true)
-        }
-        debounceTimeout.current = setTimeout(() => {
-            socket.emit("stop-typing" , { chatId, chatMembersIds, userId: user.id })
-            setIsTyping(false)
-        }, 700)
+     
         return () => {
             clearTimeout(debounceTimeout.current)
             debounceTimeout.current = null
         }
-    }, [inputText])
+    }, [])
 
     return (
         <>

@@ -96,8 +96,21 @@ export class SocketConnection extends SocketQueries {
     }
 
     async handleSendMessage(socket, message, participantIds) {
-        
 
+        try {
+            let InActiveFriends = await this.getInActiveMembers(message.chatId, participantIds)
+            socket.to(message.chatId).emit("send-message", message)
+            if (InActiveFriends) {
+
+                for (let id of InActiveFriends) {
+                    socket.to(id).emit("message-notification", message)
+                }
+            }
+
+
+        } catch (error) {
+            console.log(error)
+        }
 
     }
     async getInActiveMembers(chatId, participantIds) {
@@ -198,7 +211,7 @@ export class SocketConnection extends SocketQueries {
             if (InActiveFriends) {
 
                 for (let id of InActiveFriends) {
-                    socket.to(id).emit(event, {userId : data.userId , chatId : data.chatId})
+                    socket.to(id).emit(event, { userId: data.userId, chatId: data.chatId })
                 }
             }
         } catch (error) {

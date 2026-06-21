@@ -68,7 +68,7 @@ export default function ChatWindow({ chatId }) {
                 
                 loadingRef.current = true   
                 let hasMore = await LoadMoreMessage()
-                console.log(hasMore)
+              
                 if (!hasMore){
                     fetchMore.current = false
                 }

@@ -434,7 +434,6 @@ export let getAllFriends = async (req, res, next) => {
 
             return {...friend.user1 , chatId : friend.chat.id , isOnline }
         }))
-        console.log(updatedData)
 
         return res.status(200).json({ allFriends : updatedData })
 
@@ -447,7 +446,6 @@ export let  handleGetUserdata =  async (req ,res , next)=>{
     try {
         let user = req.user
         let {userId} = req.query
-        console.log(user.id , userId)
          let friendData = await prisma.friendship.findFirst({
             where : {
                 OR : [

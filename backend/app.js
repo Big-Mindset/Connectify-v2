@@ -95,7 +95,6 @@ io.on("connection",async (socket)=>{
      Socket.handleJoinChat(socket , chatId)
   })
   socket.on("leave-chat",(chatId)=>{
-    console.log("leaving room "+chatId)
     Socket.handleLeaveChat(socket , chatId)
   })
   socket.on("heartbeat",()=>{

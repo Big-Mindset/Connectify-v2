@@ -12,7 +12,7 @@ Make sure you have the following installed:
 - A valid Google OAuth app
 - SMTP credentials for email delivery
 - Cloudinary credentials
-- LiveKit credentials
+- LiveKit credentials (optional)
 
 ---
 

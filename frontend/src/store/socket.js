@@ -62,7 +62,6 @@ export let socketStore = create((set, get) => ({
         sok.on("updateToDelivered", handleUpdateAllToDelivered)
 
         sok.on("typing",(data)=>{
-            console.log("start here----------------------------")
 
            let setTypingIndicators = chatStore.getState().setTypingIndicators
            setTypingIndicators((prev)=>{
@@ -75,11 +74,9 @@ export let socketStore = create((set, get) => ({
             typingIndicators.set(data.chatId , value)
             return typingIndicators
            })
-            console.log("ended heree")
 
         })
         sok.on("stop-typing",(data)=>{
-            console.log("stop here----------------------------")
              let setTypingIndicators = chatStore.getState().setTypingIndicators
            setTypingIndicators((prev)=>{
             let typingIndicators = new Map(prev)
@@ -104,9 +101,8 @@ export let socketStore = create((set, get) => ({
             let selectedPage = navigationStore.getState().selectedPage
 
             if (selectedPage === "friends") {
-                console.log("running this if...")
                 let res = await Axios.get(`/friendship/user-data?userId=${id}`)
-                console.log(res)
+               
                 if (res.status === 200) {
 
                     setOnlineUsers((prev) => {

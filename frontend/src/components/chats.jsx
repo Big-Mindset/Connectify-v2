@@ -1,12 +1,15 @@
 "use client"
 
-import { MessageSquareOff, MoreVerticalIcon, Search } from "lucide-react";
+import { Loader2Icon, LoaderIcon, MessageSquareOff, MoreVerticalIcon, Search } from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import Logo from "@/assets/logop.webp"
 import ChatMenu from "./chat-components/chat-menu";
 import { AnimatePresence } from "framer-motion";
 import { chatStore } from "@/store/chat-store";
 import { userStore } from "@/store/user-store";
+import { useLoading } from "@/lib/loading_hook";
+import Image from "next/image";
 const CreateGroup = dynamic(() => import("./chat-components/create-group"))
 const ChatSettings = dynamic(() => import("./chat-components/chat-settings"))
 const ChatUser = dynamic(() => import("./chat-components/chat-user"))
@@ -28,12 +31,20 @@ export default function Chats() {
     const session = userStore(s => s.session)
 
     let user = session?.user
+
+    let {loading , setLoading} = useLoading()
     useLayoutEffect(() => {
         if (user?.id !== null && !chats?.length) {
-            getChats(user?.id)
-
+            handleGetChats()
+           
         }
     }, [])
+    let handleGetChats = async ()=>{
+        setLoading("loading-chats")
+            await getChats(user?.id)
+        setLoading("")
+
+    }
     useEffect(() => {
         let handleCloseSettings = (e) => {
             if (childRef.current && !childRef.current.contains(e.target)) {
@@ -78,7 +89,7 @@ export default function Chats() {
     }, [selectedChat, searchQuery, chats])
 
     let typingIndicators = chatStore(s=>s.typingIndicators)
-    console.log(typingIndicators)
+  
 
     return <div className=" w-full border-r border-gray-6 h-full py-4 px-6 bg-gray-1  ">
         <AnimatePresence>
@@ -139,7 +150,12 @@ export default function Chats() {
                                 <ChatSettings childRef={childRef} chatSettings={chatSettings} />
                             }
                         </AnimatePresence>
-                        {(!filteredChats?.length) ? <div className="flex justify-center mt-20 h-full">
+                        {loading === "loading-chats" ? <div className="flex justify-center mt-40">
+                            <div className="relative text-center">
+                             <Image src={Logo} alt="connectify-logo" className="bg-cover size-10 mx-auto animate-pulse" width={100} height={100} />
+                              <p className="font-bold text-gray-300 tracking-wider mt-2">Wait a Moment...</p>
+                            </div> 
+                        </div> :  (!filteredChats?.length) ? <div className="flex justify-center mt-20 h-full">
                             <div className="flex flex-col items-center gap-2">
                                 <div>
                                     <MessageSquareOff className="text-gray-300" />

@@ -42,9 +42,9 @@ export default function RootLayout({ children }) {
         
       <div className="h-full  w-full">
 
-      <SessionConflict children={children}>
+      {/* <SessionConflict children={children}> */}
         {children}
-      </SessionConflict>
+      {/* </SessionConflict> */}
       </div>
         </ContextProiver>
       </body>

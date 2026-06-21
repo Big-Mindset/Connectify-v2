@@ -114,22 +114,16 @@ export class SocketConnection extends SocketQueries {
 
     }
     async getInActiveMembers(chatId, participantIds) {
-        console.time("SMEMBERS")
+        const t0 = performance.now();
         let activeUserIds = new Set(await client.SMEMBERS(`active-chat:${chatId}`))
-
-        console.timeEnd("SMEMBERS")
-
-        console.time("FILTER")
+        console.log('smembers took', performance.now() - t0);
+      
         let inActiveIds = participantIds.filter((id) => !activeUserIds.has(id))
 
-        console.timeEnd("FILTER")
-
-        console.time("ONLINE")
         if (inActiveIds.length > 0) {
             let inActiveChatUser = await filterOnline(inActiveIds)
             return inActiveChatUser
         }
-        console.timeEnd("ONLINE")
 
         return null
     }
@@ -204,8 +198,8 @@ export class SocketConnection extends SocketQueries {
 
     }
     async handleTyping(socket, data, event) {
-        console.log(event)
         try {
+            console.log(data)
             let InActiveFriends = await this.getInActiveMembers(data.chatId, data.chatMembersIds)
             socket.to(data.chatId).emit(event, { userId: data.userId, chatId: data.chatId })
             if (InActiveFriends) {

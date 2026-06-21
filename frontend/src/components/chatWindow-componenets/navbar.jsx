@@ -54,15 +54,13 @@ export default function Navbar({receiverInfo}) {
         } else if (param === "Disappearing Message") {
             setDisappearingMessageComp(true)
         }else if (param === "Close Chat"){
-            console.log("closing chat...")
             handleCloseChat()
         }
     }
-    let online = true
-    let handleAudioCall = async ()=>{
+    // let handleAudioCall = async ()=>{
         
-        audioCall(["FF17kgjOehECrwnXtVe8j1sRWxY5FR8V"])
-    }
+    //     audioCall(["FF17kgjOehECrwnXtVe8j1sRWxY5FR8V"])
+    // }
     let handleCloseSearchTab = ()=>{
         if (!searchTab){
             setSearchTab(true)
@@ -91,12 +89,12 @@ export default function Navbar({receiverInfo}) {
 
                                 <div className="border flex    cursor-pointer rounded-full   overflow-hidden duration-200  border-indigo-400">
 
-                                    <div onClick={()=>handleAudioCall()} className="px-3.5 text-sm py-0.5 gap-1.5 duration-150 flex items-center hover:bg-indigo-600">
+                                    <div  className="px-3.5 text-sm py-0.5 gap-1.5 duration-150 flex items-center hover:bg-indigo-600">
                                         <span>Audio Call</span>
                                         <PhoneCall size={15} />
                                     </div>
 
-                                    <div ref={callRef} onClick={() => setCallType(prev => !prev)} className="h-[40px]  px-1.5 flex justify-center items-center hover:bg-indigo-700/90 border-indigo-400 border-l ">
+                                    <div ref={callRef} className="h-[40px]  px-1.5 flex justify-center items-center hover:bg-indigo-700/90 border-indigo-400 border-l ">
 
                                         <ChevronDown size={18} />
                                     </div>

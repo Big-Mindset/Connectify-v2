@@ -55,7 +55,6 @@ export default function SingUp({ setLoginMethod, setEmail }) {
             ...data
         }, {
             onError: (ctx) => {
-                console.log(ctx)
                 if (ctx.error.code === "EMAIL_NOT_VERIFIED") {
                     toast.error(ctx.error.message)
 
@@ -66,7 +65,6 @@ export default function SingUp({ setLoginMethod, setEmail }) {
                 }
             },
             onSuccess: (ctx) => {
-                console.log(ctx)
                 setError(null)
                 toast.success("Account created")
                 setLoginMethod("verify-email")

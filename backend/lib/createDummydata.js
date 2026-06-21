@@ -35,32 +35,13 @@ function randomDate(days = 30) {
   return new Date(now - Math.random() * days * 24 * 60 * 60 * 1000);
 }
 
-async function reset() {
-  await prisma.message_securityKeys.deleteMany();
-  await prisma.status.deleteMany();
-  await prisma.reactionUsers.deleteMany();
-  await prisma.reaction.deleteMany();
-  await prisma.media.deleteMany();
-  await prisma.message.deleteMany();
-  await prisma.chatParticipant.deleteMany();
-  await prisma.chat.deleteMany();
-  await prisma.friendship.deleteMany();
-  await prisma.request.deleteMany();
-  await prisma.block.deleteMany();
-  await prisma.notification.deleteMany();
-  await prisma.session.deleteMany();
-  await prisma.account.deleteMany();
-  await prisma.verification.deleteMany();
-  await prisma.user.deleteMany();
-}
+
 
 export async function main() {
   if (RESET_DB) {
-    console.log("Resetting DB...");
     await reset();
   }
 
-  console.log("Creating users...");
 
   const used = new Set();
 
@@ -92,7 +73,6 @@ export async function main() {
 
   const userIds = users.map(u => u.id);
 
-  console.log("Creating friendships...");
 
   const pairs = new Set();
   const friendships = [];
@@ -115,7 +95,6 @@ export async function main() {
 
   await prisma.friendship.createMany({ data: friendships });
 
-  console.log("Creating chats...");
 
   const chats = friendships.map(f => ({
     id: randomUUID(),
@@ -151,7 +130,6 @@ export async function main() {
 
   await prisma.chatParticipant.createMany({ data: participants });
 
-  console.log("Creating messages...");
 
   const messages = [];
   const statuses = [];
@@ -222,12 +200,6 @@ export async function main() {
     await prisma.message_securityKeys.createMany({ data: keys.slice(i, i + 500) });
   }
 
-  console.log("DONE");
-  console.log({
-    users: users.length,
-    friendships: friendships.length,
-    chats: chats.length,
-    messages: messages.length,
-  });
+
 }
 

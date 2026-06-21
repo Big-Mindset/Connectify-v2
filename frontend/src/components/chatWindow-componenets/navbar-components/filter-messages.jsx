@@ -14,7 +14,6 @@ export default function MessageFilter({ref ,setFilterTab}) {
   const [dates , setDates] = useState({})
   const filters  = navigationStore(s=>s.filters)
   const setFilters = navigationStore(s=>s.setFilters)
-  console.log(order)
   const today = useMemo(() => {
     const d = new Date();
     return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, "0"), String(d.getDate()).padStart(2, "0")].join("-");
@@ -53,7 +52,7 @@ export default function MessageFilter({ref ,setFilterTab}) {
   });
   let handleSearch = ()=>{
     let usersSet = new Set(selectedParticipants)
-    let newSender = filters.senders.find((sender)=>!usersSet.has(sender.id))
+    let newSender = filters?.senders?.find((sender)=>!usersSet.has(sender.id))
     
     if (filters.from === dates.from && filters.to === dates.to && filters.order === order && !newSender) return
     setFilters((filters)=>{

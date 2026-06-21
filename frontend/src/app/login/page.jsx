@@ -15,12 +15,8 @@ export default function Login() {
     let session = authClient.useSession()
    
     let router = useRouter()
-    let getsession = async ()=>{
-        let session = await authClient.getSession()
-        
-    }
+   
     useEffect(()=>{
-        getsession()
         if (session && session.data !== null){
             router.push("/")
         }

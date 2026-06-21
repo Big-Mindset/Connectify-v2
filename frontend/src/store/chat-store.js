@@ -3,6 +3,7 @@ import { create } from "zustand"
 import { userStore } from "./user-store"
 import { socketStore } from "./socket"
 import { navigationStore } from "./navigation-store"
+import { useLoading } from "@/lib/loading_hook"
 // const messages = [
 //   {
 //     id: "m1",
@@ -158,7 +159,7 @@ export const chatStore = create((set, get) => ({
       set((state)=>({typingIndicators : func(state.typingIndicators)}))
     },
     typingUsersInfo : "",
-    setTypingUsersInfo : (typingUsersInfo)=>set({typingUsersInfo}),
+    setTypingUsersInfo : (typingUsersInfo)=>{set({typingUsersInfo})},
     getChats: async () => {
         try {
             let res = await Axios.get("/chat/chats")
@@ -267,7 +268,7 @@ export const chatStore = create((set, get) => ({
         let setMessages = get().setMessages
         try {
             let res = await Axios.get(`/message/get-moreMessages?messageId=${msgId}`)
-            console.log(res)
+          
             if (res.status === 200){
                 let {messages} = res.data
                 if (!messages.length){

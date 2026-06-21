@@ -15,8 +15,7 @@ export let chatMessageStore = create((set, get) => ({
         let selectedChat = chatStore.getState().selectedChat
         let setMessages = chatStore.getState().setMessages
         setMessages((messages) => {
-            console.log(messageData)
-            console.log(messages)
+       
             return [messageData , ...messages]
         })
         let uploadedFiles = [];
@@ -168,7 +167,7 @@ export let chatMessageStore = create((set, get) => ({
             
             if (res.status === 200) {
               let isLastMessage =  handleDeleteMessageFromUI({chatId :deleteMessage.chatId , id :  deleteMessage.id })
-                console.log(deleteMessage)
+          
                 socket.emit("delete-message",{chatId : deleteMessage.chatId , id : deleteMessage.id , isLastMessage } ,MembersIds )
             }
             setDeleteMessage(null)

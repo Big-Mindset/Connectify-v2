@@ -33,7 +33,6 @@ export default function SignIn({setLoginMethod , setEmail}){
                     setEmail(data.email)
                     setLoginMethod("verify-email")
                 }else{
-                    console.log(ctx)
                     if (ctx?.error?.status === 429){
                         setError(ctx?.error.error)
                     }else{
@@ -43,7 +42,6 @@ export default function SignIn({setLoginMethod , setEmail}){
                 }
             },
             onSuccess : (ctx)=>{
-                console.log(ctx)
 
                 setError(null)
                 // router.push("/")

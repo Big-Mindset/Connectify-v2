@@ -5,7 +5,6 @@ import { Check, CheckCheck } from "lucide-react"
 import MoreOptions from "./more-options"
 import { AnimatePresence } from "framer-motion"
 import { memo, useEffect, useMemo, useRef, useState } from "react"
-import GirlImage from "@/assets/download.jpg"
 import { chatStore } from "@/store/chat-store"
 import { formateTime } from "@/lib/formateTime"
 import dynamic from "next/dynamic"
@@ -150,7 +149,7 @@ function ChatMessage({ optionsRef, message, plusRef, key }) {
 
                 <div className={`flex   w-full gap-4`}>
                     {(messageHover || message.id === openMessageOptionId || reactMessage?.id === message.id) &&
-                        <MessageSettings handleMoreOptions={handleMoreOptions} plusRef={plusRef} message={message} />
+                        <MessageSettings userId={session.user.id} handleMoreOptions={handleMoreOptions} plusRef={plusRef} message={message} />
                     }
 
 
@@ -260,7 +259,7 @@ function ChatMessage({ optionsRef, message, plusRef, key }) {
             <AnimatePresence>
                 {openMessageOptionId === message.id &&
 
-                    <MoreOptions optionsRef={optionsRef} message={message} />}
+                    <MoreOptions optionsRef={optionsRef} message={message} userId={session.user.id} />}
             </AnimatePresence>
         </div>
 

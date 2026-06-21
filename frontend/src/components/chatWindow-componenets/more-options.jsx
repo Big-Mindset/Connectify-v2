@@ -4,7 +4,7 @@ import { messageSettingsStore } from "@/store/messageSettings-store"
 import {  useLayoutEffect, useState } from "react"
 
 
-export default function MoreOptions({ optionsRef, message }) {
+export default function MoreOptions({ optionsRef, message , userId }) {
     let inputRef = messageSettingsStore(s => s.inputRef)
     const [isTouching , setIsTouching] = useState(null)
     useLayoutEffect(() => {
@@ -26,8 +26,9 @@ export default function MoreOptions({ optionsRef, message }) {
             ref={optionsRef}
             className={`absolute z-40 ${isTouching ? "bottom-full" : "top-[9%]"} border border-gray-7  right-17 rounded-sm  bg-gray-5 w-[200px] p-2  `}>
             <div className="flex flex-col gap-0.5 text-[0.8rem]">
-
+              {userId === message.senderId &&
                 <Option message={message} text={"Edit"} icon={<i className="fa-solid fa-pen"></i>} />
+              }
                 <Option message={message} text={"Reply"} icon={<i className="fa-solid fa-reply"></i>} />
                 <Option message={message} text={"Reaction"} icon={<i className="fa-solid fa-face-surprise"></i>} />
                 <Option text={"Forward"} icon={<i className="fa-solid fa-share"></i>} />
@@ -35,10 +36,12 @@ export default function MoreOptions({ optionsRef, message }) {
                 <hr className="border border-gray-7 my-1.5" />
                 <Option message={{content : message.content}} text={"Copy text"} icon={<i className="fa-solid fa-copy"></i>} />
                 <Option text={"Pin message"} icon={<i className="fa-solid fa-thumbtack"></i>} />
-
+              {userId === message.senderId &&
+                 <>
                 <hr className="border border-gray-7 my-1.5" />
                 <Option message={message} text={"Delete"} red={true} icon={<i className="fa-solid fa-trash"></i>} />
-
+                 </>
+              }
             </div>
         </div>
     )

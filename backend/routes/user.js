@@ -1,5 +1,5 @@
 import express from "express"
-import searchUser, { addUsername } from "../controller/user.js"
+import searchUser, { addUsername, getOnlineUsers } from "../controller/user.js"
 import protectRoute from "../middleware/auth.middleware.js"
 let router = express.Router()
 

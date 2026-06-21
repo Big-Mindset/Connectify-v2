@@ -3,7 +3,7 @@
 import MainInput from "./chatWindow-componenets/main-input";
 import Navbar from "./chatWindow-componenets/navbar";
 import dynamic from "next/dynamic";
-import { useEffect, useRef, useState, } from "react";
+import { useEffect, useRef, } from "react";
 import { chatStore } from "@/store/chat-store";
 let MediaShowcase = dynamic(() => import("./chatWindow-componenets/chat-message-components/media-showcase"))
 import { socketStore } from "@/store/socket";
@@ -11,9 +11,7 @@ import { mediaStore } from "@/store/media-store";
 import ConfirmMessageDeletion from "./chatWindow-componenets/confirm-messageDeletion";
 import { messageSettingsStore } from "@/store/messageSettings-store";
 import { AnimatePresence } from "framer-motion";
-import EmojiPicker from "./chatWindow-componenets/Emoji-Picker";
 import { chatMessageStore } from "@/store/chatMessage-store";
-import { useLoading } from "@/lib/loading_hook";
 let ChatMessage = dynamic(() => import("./chatWindow-componenets/chat-message"))
 export default function ChatWindow({ chatId }) {
     const setOpenMessageOptionId = messageSettingsStore(s => s.setOpenMessageOptionId)
@@ -25,7 +23,6 @@ export default function ChatWindow({ chatId }) {
     const selectedMedia = mediaStore(s => s.selectedMedia)
     const optionsRef = useRef(null)
     const plusRef = useRef(null)
-    const handleMessageSent = chatMessageStore(s => s.handleMessageSent)
     const MessagesContainerRef = useRef(null)
     const editingMessage = messageSettingsStore(s => s.editingMessage)
     const deleteMessage = messageSettingsStore(s => s.deleteMessage)

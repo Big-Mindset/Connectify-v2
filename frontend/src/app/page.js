@@ -35,7 +35,7 @@ export default function Home() {
   if (!session?.data?.user?.username){
     redirect("/input-username")
   }
-
+  
     return (
       <div className="flex text-white flex-1 justify-center relative h-full  ">
        
@@ -48,8 +48,8 @@ export default function Home() {
             <div className="hidden relative lg:block">
               {selectedPage === "friends" ? <FriendsTab /> :
                 selectedChat?.id && (
-                  <div className="flex">
-                    <div className="flex-1">
+                  <div className="flex  h-dvh  ">
+                    <div className="flex-1 min-h-[0]">
 
                       <ChatWindow chatId={selectedChat.id} />
                     </div>

@@ -7,23 +7,7 @@ export class SocketQueries {
 
     }
 
-    async getFriendIds(userId) {
-        let friendIds = await prisma.friendship.findMany({
-            where: {
-                OR: [
-                    { user1Id: userId },
-                    { user2Id: userId }
-                ],
 
-            },
-            select: {
-                user1Id: true,
-                user2Id: true
-            }
-        })
-
-        return friendIds.map((friend) => friend.user1Id === userId ? friend.user2Id : friend.user1Id)
-    }
     async updateToDelivered(statusData) {
     
         try {
@@ -87,7 +71,7 @@ export class SocketQueries {
                     chatId: true
                 }
             })
-          
+          if (!messages.length) return null
 
 
 

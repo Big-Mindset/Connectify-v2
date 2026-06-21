@@ -28,7 +28,6 @@ export class ChatConnection {
             pipeline.sRem(`active-chat:${chatId}`, userId)
             pipeline.get(`user-activeChat:${userId}`)
             let [res , currentActiveChat] = await pipeline.exec()
-            console.log(currentActiveChat , chatId)
             if (currentActiveChat === chatId){
                 await this.redis.del(`user-activeChat:${userId}`)
                 socket.leave(chatId)

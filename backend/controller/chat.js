@@ -48,7 +48,7 @@ export const getChatbyId = async (req, res, next) => {
                     orderBy: {
                         createdAt: "desc"
                     },
-                    take: 20,
+                    take: 30,
                     select: {
                         id: true,
                         chatId: true,

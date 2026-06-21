@@ -49,12 +49,5 @@ export class UserConnection {
         pipeline.expire(`socket-user:${socketId}`, HEARTBEAT_TTL)
         await pipeline.exec()
     }
-    async filterOnline(friendIds) {
-        if (!friendIds.length) return []
-        let pipeline = client.multi()
-        friendIds.forEach((id) => pipeline.exists(`user-socket:${id}`))
-        let result = await pipeline.exec()
-        console.log(result)
-        return friendIds.filter((_, idx) => result[idx] === 1)
-    }
+    
 }

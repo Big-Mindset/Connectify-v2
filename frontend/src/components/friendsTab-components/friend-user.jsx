@@ -10,11 +10,7 @@ export default function FriendUser({data}) {
     let setSelectedPage = navigationStore(s=>s.setSelectedPage)
     let selectedChat = chatStore(s=>s.selectedChat)
     let handleOpenChat = ()=>{
-      
-            getChatById(data.chatId)
-        
-        
-         
+        getChatById(data.chatId , data.userId) 
     }
     return (
         <div className="flex justify-between  p-2 items-center ">

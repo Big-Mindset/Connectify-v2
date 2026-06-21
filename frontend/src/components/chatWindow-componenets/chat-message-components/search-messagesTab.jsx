@@ -31,6 +31,7 @@ export const SearchMessageTab = () => {
             debounceTimeout.current = null
         }
     }, [inputText])
+    
     useEffect(() => {
         queryMessages()
     }, [filters])
@@ -46,7 +47,7 @@ export const SearchMessageTab = () => {
     return (
         <>
             {filterTab && <MessageFilter setFilterTab={setFilterTab} />}
-            <div className="flex-[0.35]  text-sm border-blue-500 p-2">
+            <div className="flex-[0.35] flex flex-col gap-2  min-h-[0]  text-sm border-blue-500 p-2">
 
                 <div className="flex items-center relative z-[200]  focus-within:border-indigo-500  gap-2 border-2 border-gray-7 rounded-lg px-2 py-1">
                     <input onChange={(e) => setInputText(e.target.value)} value={inputText} type="text" className="outline-none w-full placeholder:text-gray-300" placeholder="Search messages here" />
@@ -57,11 +58,14 @@ export const SearchMessageTab = () => {
                         <Search size={15} />
                     </div>
                 </div>
+                <div className="flex-1 min-h-[0] overflow-y-auto bg-reed-200">
+
                 <div className="flex flex-col gap-2  mt-2 p-2 ">
                     {searchResult.map((message)=>{
-                      
-                       return  <SearchedMessage key={message.id}  message={message} />
-            })}
+                        
+                        return  <SearchedMessage key={message.id}  message={message} />
+                    })}
+                    </div>
                 </div>
               
             </div>

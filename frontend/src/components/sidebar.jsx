@@ -48,9 +48,7 @@ export const Sidebar = () => {
                             )}
                         </div>
                     </div>
-                    {/* <div className="flex justify-center mt-3">
-                    <Avatar size={"size-10"} />
-                    </div> */}
+                   
                     <div onClick={handleOpenProfile} className="relative hover:ring-indigo-500 hover:ring-2 duration-100 cursor-pointer rounded-full">
                         <Avatar image={user?.image} />
                         <OnlineStatus isOnline={true}  />

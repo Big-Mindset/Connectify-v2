@@ -6,7 +6,7 @@ import { chatStore } from "@/store/chat-store";
 import { formateTime } from "@/lib/formateTime";
 import { messageStatus } from "@/lib/calculateStatus";
 import { userStore } from "@/store/user-store";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 
 export default function ChatUser({ setChatSettings, chat }) {
     let getChatById = chatStore(s => s.getChatById)
@@ -22,7 +22,6 @@ export default function ChatUser({ setChatSettings, chat }) {
     }
     let status = messageStatus(chat?.lastMessage?.status)
     let typingUsers = useMemo(()=>{
-        console.log("here running")
         let names = []
         let text = ""
         if (typingIndicators){
@@ -43,13 +42,16 @@ export default function ChatUser({ setChatSettings, chat }) {
                 text =  `Many people are typing...`
             }
         }
-        if (chat.id === selectedChat?.id){
-
-            setTypingUsersInfo(text)
-        }
+      
         return text
 
     },[typingIndicators])
+    useEffect(()=>{
+          if (chat.id === selectedChat?.id){
+
+            setTypingUsersInfo(typingUsers)
+        }
+    },[typingUsers , selectedChat?.id , chat?.id])
     return (
         <div onClick={handleGetChat} className={`  relative  ${selectedChat?.id === chat?.id ? "ring-2 ring-indigo-500 bg-gray-600/10" : "ring hover:ring-indigo-500"}  flex px-2.5   group cursor-pointer duration-100 ring-gray-2 py-2 bg-[#00000094] rounded-lg items-center gap-2`}>
             <div onClick={(e) => { e.stopPropagation(), setChatSettings(prev => !prev) }} className="bg-gray-800/30 backdrop-blur-2xl invisible group-hover:visible   absolute -right-5 top-0 p-1.5 duration-100 group-hover:right-0 rounded-full  ">

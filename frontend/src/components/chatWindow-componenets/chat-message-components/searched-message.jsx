@@ -3,10 +3,12 @@ import { messageStatus } from "@/lib/calculateStatus";
 import { Check, CheckCheck } from "lucide-react";
 import { formateTime } from "@/lib/formateTime"
 import { userStore } from "@/store/user-store";
+import { chatStore } from "@/store/chat-store";
 
 export let SearchedMessage = ({ message }) => {
     const session = userStore(s => s.session)
     let currentUserId = session?.user?.id
+    let participants = chatStore(s=>s.participants)
     let status = messageStatus(message.status)
     let sender = currentUserId === message.senderId ? session.user : participants.get(message.senderId)
     let replyToSender;

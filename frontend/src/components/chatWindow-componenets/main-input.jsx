@@ -25,13 +25,13 @@ export default function MainInput({ chatId }) {
     const [thumbnailsUrl, setThumbnailsUrl] = useState({})
     const [isTyping, setIsTyping] = useState(false)
     const participants = chatStore(s => s.participants)
-    let selectedChat = chatStore(s => s.selectedChat)
     const [senderData, setSenderData] = useState(null)
+    let typingUsersInfo = chatStore(s => s.typingUsersInfo)
     let session = userStore(s => s.session)
     let plusOptionsRef = useRef(null)
     let plusRef = useRef(null)
     let textInputRef = useRef(null)
-
+    
     let sendMessage = chatMessageStore(s => s.sendMessage)
     let setInputRef = messageSettingsStore(s => s.setInputRef)
     let replyMessage = messageSettingsStore(s => s.replyMessage)
@@ -193,7 +193,7 @@ export default function MainInput({ chatId }) {
         debounceTimeout.current = setTimeout(() => {
             socket.emit("stop-typing" , { chatId, chatMembersIds, userId: user.id })
             setIsTyping(false)
-        }, 700)
+        }, 400)
     }
 
 
@@ -219,7 +219,7 @@ export default function MainInput({ chatId }) {
 
     return (
         <>
-        fasdfa
+        
             <AnimatePresence>
 
                 {sizeExceeded?.type && <FileSizeExceeded sizeExceeded={sizeExceeded} setSizeExceeded={setSizeExceeded} />
@@ -259,7 +259,10 @@ export default function MainInput({ chatId }) {
                     </div>
                 </motion.div>}
             </AnimatePresence>
-            <div ref={inputRef} className="w-full  shrink-0 p-4">
+            <div ref={inputRef} className="w-full relative   shrink-0 p-4">
+                    {typingUsersInfo &&
+                    <p className="text-[0.7rem] animate-pulse absolute top-0 font-bold text-gray-400">{typingUsersInfo}</p>
+                    }
                 <div className={`  rounded-lg  w-full flex flex-col gap-1  focus-within:ring-indigo-400/40 focus-within:ring-2   ring ring-gray-7    bg-gray-2/80   `}>
                     {replyMessage?.id &&
                         <div className=" pl-3 py-2 flex items-center justify-between text-[0.8rem] border-b border-gray-6 items-baseline bg-gray-4">
@@ -317,6 +320,7 @@ export default function MainInput({ chatId }) {
 
                         </div>
                     }
+                    
                     <div className=" p-1.5 relative pr-2">
                         <div className="flex  h-full items-center gap-2 justify-between">
                             <div className="flex  relative  items-center gap-1">

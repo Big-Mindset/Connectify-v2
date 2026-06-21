@@ -96,6 +96,7 @@ export class SocketConnection extends SocketQueries {
     }
 
     async handleSendMessage(socket, message, participantIds) {
+        
 
 
     }
@@ -194,12 +195,12 @@ export class SocketConnection extends SocketQueries {
         try {
             let InActiveFriends = await this.getInActiveMembers(data.chatId, data.chatMembersIds)
             socket.to(data.chatId).emit(event, { userId: data.userId, chatId: data.chatId })
-            // if (InActiveFriends) {
+            if (InActiveFriends) {
 
-            //     for (let id of InActiveFriends) {
-            //         socket.to(id).emit(event, {userId : data.userId , chatId : data.chatId})
-            //     }
-            // }
+                for (let id of InActiveFriends) {
+                    socket.to(id).emit(event, {userId : data.userId , chatId : data.chatId})
+                }
+            }
         } catch (error) {
             console.log(error)
         }

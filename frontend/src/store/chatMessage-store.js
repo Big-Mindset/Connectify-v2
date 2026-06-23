@@ -18,7 +18,6 @@ export let chatMessageStore = create((set, get) => ({
        
             return [messageData , ...messages]
         })
-        let uploadedFiles = [];
         try {
         if (filePreview.length) {
 

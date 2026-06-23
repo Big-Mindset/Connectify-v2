@@ -19,7 +19,7 @@ export default function ChatWindow({ chatId }) {
     const user = chatStore(s => s.participants.get(selectedChat.userId))
     const messages = chatStore(s => s.messages)
     const socket = socketStore(s => s.socket)
-    const LoadMoreMessage = chatStore(s=>s.LoadMoreMessage)
+    const LoadMoreMessage = chatStore(s => s.LoadMoreMessage)
     const selectedMedia = mediaStore(s => s.selectedMedia)
     const optionsRef = useRef(null)
     const plusRef = useRef(null)
@@ -28,7 +28,7 @@ export default function ChatWindow({ chatId }) {
     const deleteMessage = messageSettingsStore(s => s.deleteMessage)
     const reactMessage = messageSettingsStore(s => s.reactMessage)
     const setReactMessage = messageSettingsStore(s => s.setReactMessage)
-    
+
     const handleReceiveMessage = socketStore(s => s.handleReceiveMessage)
     const handleDeliverMessage = socketStore(s => s.handleDeliverMessage)
     const handleReadMessage = socketStore(s => s.handleReadMessage)
@@ -40,7 +40,7 @@ export default function ChatWindow({ chatId }) {
 
     useEffect(() => {
         if (!socket) return
-        
+
         socket?.on("message-delivered", handleDeliverMessage)
         socket?.on("message-read", handleReadMessage)
         socket?.on("send-message", handleReceiveMessage)
@@ -57,25 +57,25 @@ export default function ChatWindow({ chatId }) {
         }
     }, [socket])
     useEffect(() => {
-        
+
         let prevScrollHeight;
-        let observer = new IntersectionObserver(async (entries)=>{
-            if (entries[0].isIntersecting && !loadingRef.current && fetchMore.current){
-               prevScrollHeight = MessagesContainerRef.current.scrollHeight
-                
-                loadingRef.current = true   
+        let observer = new IntersectionObserver(async (entries) => {
+            if (entries[0].isIntersecting && !loadingRef.current && fetchMore.current) {
+                prevScrollHeight = MessagesContainerRef.current.scrollHeight
+
+                loadingRef.current = true
                 let hasMore = await LoadMoreMessage()
-              
-                if (!hasMore){
+
+                if (!hasMore) {
                     fetchMore.current = false
                 }
                 loadingRef.current = false
             }
-        },{root : MessagesContainerRef.current , rootMargin : "200px"})
+        }, { root: MessagesContainerRef.current, rootMargin: "200px" })
         observer.observe(obserRef.current)
         if (editingMessage?.id) return
         let scrollHeight = MessagesContainerRef.current.scrollHeight
-        
+
         MessagesContainerRef.current.scrollTo({
             top: scrollHeight - (prevScrollHeight || 0),
         })
@@ -92,11 +92,11 @@ export default function ChatWindow({ chatId }) {
             window.removeEventListener("mousedown", handleopenMessageOptionId)
         }
     }, [])
-    useEffect(()=>{
+    useEffect(() => {
         loadingRef.current = ""
         fetchMore.current = true
-    },[chatId])
-  
+    }, [chatId])
+
 
 
     return <div className="flex flex-col   bg-gray-2 h-dvh overflow-hidden  relative">
@@ -118,9 +118,12 @@ export default function ChatWindow({ chatId }) {
             <AnimatePresence>
                 {deleteMessage?.id && <ConfirmMessageDeletion />}
             </AnimatePresence>
-            <div ref={MessagesContainerRef} className="main-content  overflow-y-scroll  min-h-0 flex flex-1 flex-col-reverse gap-3 ">
+            <div ref={MessagesContainerRef} className="[&::-webkit-scrollbar]:w-1.5
+    [&::-webkit-scrollbar-track]:bg-transparent
+    [&::-webkit-scrollbar-thumb]:bg-zinc-700
+    [&::-webkit-scrollbar-thumb]:rounded-full            main-content  overflow-y-scroll scrollbar-thin   min-h-0 flex flex-1 flex-col-reverse gap-3 ">
                 {messages?.map((message) => {
-                    
+
                     return <ChatMessage plusRef={plusRef} key={message.id} message={message} optionsRef={optionsRef} />
                 })}
                 <div ref={obserRef} className="p-1"></div>

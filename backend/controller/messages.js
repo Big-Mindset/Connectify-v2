@@ -195,6 +195,7 @@ export const searchMessages = async (req , res , next )=>{
                 orderBy :{
                     createdAt : order || "desc"
                 },
+                take : 30,
                     select: {
                        id : true,
                         chatId: true,
@@ -243,16 +244,13 @@ export const searchMessages = async (req , res , next )=>{
             
           })
             let decryptedMessages = searched_messages.map((msg) => {
-            if (!msg.encryptedContent) return msg
-            let { encryptedContent, message_security, ...rest } = msg
             if (msg?.replyTo?.id) {
 
-                let { encryptedContent: replyEncryptedContent,message_security, ...restReply } = msg.replyTo
-                let replyToContent = secureMessage.decryptMessage(replyEncryptedContent, message_security)
-                rest.replyTo = { ...restReply, content: replyToContent }
+                let decryptedReplyTo = secureMessage.transformDecryptData(msg.replyTo.encryptedContent, msg.replyTo.message_security,msg.replyTo)
+                msg.replyTo = decryptedReplyTo
             }
-            let content = secureMessage.decryptMessage(encryptedContent, message_security)
-            return { ...rest, content }
+           return secureMessage.transformDecryptData(msg.encryptedContent, msg.message_security , msg)
+           
         })
       
           res.status(200).json({search_result :  decryptedMessages})
@@ -263,20 +261,6 @@ export const searchMessages = async (req , res , next )=>{
 
 
  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 export const generateMediaUrl = async (req, res, next) => {
     let data = req.body
@@ -580,19 +564,19 @@ export const moreMessages = async (req, res, next) => {
                         updatedAt: true
                     }
         })
-        
+
+
         let decryptedMessages = messages.map((msg) => {
-            if (!msg.encryptedContent) return msg
-            let { encryptedContent, message_security, ...rest } = msg
             if (msg?.replyTo?.id) {
 
-                let { encryptedContent: replyEncryptedContent, message_security, ...restReply } = msg.replyTo
-                let replyToContent = secureMessage.decryptMessage(replyEncryptedContent, message_security)
-                rest.replyTo = { ...restReply, content: replyToContent }
+                let decryptedReplyTo = secureMessage.transformDecryptData(msg.replyTo.encryptedContent, msg.replyTo.message_security,msg.replyTo)
+                msg.replyTo = decryptedReplyTo
             }
-            let content = secureMessage.decryptMessage(encryptedContent, message_security)
-            return { ...rest, content }
+           return secureMessage.transformDecryptData(msg.encryptedContent, msg.message_security , msg)
+           
         })
+
+       
 
         res.status(200).json({ messages: decryptedMessages })
     } catch (error) {

@@ -1,13 +1,12 @@
 "use client"
 
 import { chatStore } from "@/store/chat-store";
-import { EqualApproximately, Search } from "lucide-react";
-import { useEffect, useState } from "react";
-import Avatar from "./Avatar";
+import { Search } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+
 import FriendUser from "./friendsTab-components/friend-user";
 import FriendRequest from "./friendsTab-components/friend-request";
 import { Axios } from "@/lib/axiosInstance";
-import { authClient } from "@/lib/auth-client";
 import toast from "react-hot-toast";
 import { userStore } from "@/store/user-store";
 
@@ -58,20 +57,22 @@ export default function FriendsTab() {
 
 
     }, [])
-    let requestSent = []
-    let requestReceived = []
-
-    pendingRequest.forEach((req) => {
-
-        if (req.sender.id === userId) {
-            let { sender, receiver, ...rest } = req
-            requestSent.push({ ...rest, user: { ...receiver } })
-        } else {
-            let { receiver, sender, ...rest } = req
-            requestReceived.push({ ...rest, user: { ...sender } })
-
-        }
-    })
+    let filteredRequests = useMemo(()=>{
+        let sent = []
+        let received = []
+         pendingRequest.forEach((req)=>{
+               if (req.sender.id === userId) {
+                let { sender, receiver, ...rest } = req
+                sent.push({ ...rest, user: { ...receiver } })
+         }else {
+                let { receiver, sender, ...rest } = req
+                received.push({ ...rest, user: { ...sender } })
+                
+            }
+        })
+        return {sent , received}
+    },[pendingRequest])
+   
     return (
         <div className="h-full flex flex-col gap-6 py-1 px-6 gap-2 ">
             <div className="Header  flex flex-col gap-2">
@@ -160,8 +161,8 @@ export default function FriendsTab() {
                         </div>
                     )
                     : (selectedCategory === "pending" &&
-                        requestReceived.length === 0 &&
-                        requestSent.length === 0) ? (
+                        filteredRequests.received.length === 0 &&
+                        filteredRequests.sent.length === 0) ? (
                         <div className="flex flex-col items-center justify-center py-10 text-center">
 
                             <h3 className="mt-4 text-2xl font-semibold text-white">
@@ -182,12 +183,12 @@ export default function FriendsTab() {
                                 <div className="flex font-bold items-center text-sm gap-3">
                                     <p className=" text-gray-300">Received</p>
                                     <span>-</span>
-                                    <span>{requestReceived.length}</span>
+                                    <span>{filteredRequests.received.length}</span>
                                 </div>
 
                                 <div className="flex flex-col gap-4 mt-2">
-                                    {requestReceived.map((req) => {
-                                        return <FriendRequest setPendingRequest={setPendingRequest} key={req.id} data={req} received={true} />
+                                    {filteredRequests.received.map((req) => {
+                                        return <FriendRequest  key={req.id} data={req} received={true} />
 
                                     })}
                                 </div>
@@ -200,11 +201,11 @@ export default function FriendsTab() {
                                 <div className="flex font-bold items-center text-sm gap-3">
                                     <p className="text-gray-300">Sent</p>
                                     <span>-</span>
-                                    <span>{requestSent.length}</span>
+                                    <span>{filteredRequests?.sent.length}</span>
                                 </div>
 
                                 <div className="flex flex-col gap-4 mt-2">
-                                    {requestSent.map((req) => {
+                                    {filteredRequests?.sent.map((req) => {
                                         return <FriendRequest key={req.id} data={req} />
 
                                     })}

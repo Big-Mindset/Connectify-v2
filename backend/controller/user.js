@@ -3,7 +3,7 @@ import { fromNodeHeaders } from "better-auth/node"
 import { auth } from "../lib/auth.js"
 import { prisma } from "../prismaClient.js"
 import { client } from "../lib/redis.js"
-import { filterOnline, getFriendIds } from "../lib/user-queries.js"
+import { filterOnline, getFriendIds } from "../lib/database-queries.js"
 
 export default async function searchUser(req, res, next) {
     let { username } = req.query

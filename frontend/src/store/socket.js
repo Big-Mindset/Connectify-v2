@@ -6,6 +6,7 @@ import { messageSettingsStore } from "./messageSettings-store"
 import { navigationStore } from "./navigation-store"
 import { userStore } from "./user-store"
 import { Axios } from "@/lib/axiosInstance"
+import toast from "react-hot-toast"
 
 export let socketStore = create((set, get) => ({
 
@@ -32,6 +33,10 @@ export let socketStore = create((set, get) => ({
         let participants = chatStore.getState().participants
         let handleMarkAllAsRead = get().handleMarkAllAsRead
         let setOnlineUsers = userStore.getState().setOnlineUsers
+        let handleReceiveFriendRequest =  userStore.getState().handleReceiveFriendRequest
+        let handleRejectCancelRequest = userStore.getState().handleRejectCancelRequest
+        let handleAcceptRequest = userStore.getState().handleAcceptRequest
+        
         let heartbeat = null
         sok.on("connect", async () => {
             set({ connecting: false })
@@ -49,15 +54,15 @@ export let socketStore = create((set, get) => ({
             clearInterval(heartbeat)
             get().disconnectSocket()
         })
-        sok.on("session:conflict", ({ message }) => {
+        // sok.on("session:conflict", ({ message }) => {
 
-            set({ sessionStatus: "session:conflict" })
-        })
-        sok.on("session:terminated", (message) => {
+        //     set({ sessionStatus: "session:conflict" })
+        // })
+        // sok.on("session:terminated", (message) => {
 
-            set({ sessionStatus: "session:terminated" })
-            get().disconnectSocket()
-        })
+        //     set({ sessionStatus: "session:terminated" })
+        //     get().disconnectSocket()
+        // })
         sok.on("mark-asRead", handleMarkAllAsRead)
         sok.on("updateToDelivered", handleUpdateAllToDelivered)
 
@@ -112,6 +117,8 @@ export let socketStore = create((set, get) => ({
             }
         })
 
+        
+
 
 
         sok.on("offline-user", (id) => {
@@ -144,7 +151,9 @@ export let socketStore = create((set, get) => ({
         })
         sok?.on("delete-message", handleDeleteMessageFromUI)
 
-
+        sok.on("friend-request",handleReceiveFriendRequest)
+        sok.on("reject-cancel-request",handleRejectCancelRequest)
+        sok.on("accept-request",handleAcceptRequest)
 
 
 
@@ -236,6 +245,7 @@ export let socketStore = create((set, get) => ({
 
 
     },
+    
     handleUpdateAllToDelivered: (prettyData, payload) => {
         let setMessages = chatStore.getState().setMessages
         let selectedChat = chatStore.getState().selectedChat

@@ -4,7 +4,9 @@ import { SendHorizonal, X } from "lucide-react";
 import { motion } from "framer-motion"
 import { Axios } from "@/lib/axiosInstance";
 import toast from "react-hot-toast";
+import { socketStore } from "@/store/socket";
 export default function Invite({ openInvite, setOpenInvite }) {
+    let socket = socketStore(s=>s.socket)
     const handleRequest = async (e) => {
         e.preventDefault()
         let value = e.target[0].value
@@ -14,10 +16,15 @@ export default function Invite({ openInvite, setOpenInvite }) {
             let res = await Axios.post(`/friendship/send-request`, {
                 username: value
             })
-            toast.success(res.data.message)
+            if (res.status === 201){
+                let {payload , message} = res.data
+                socket.emit("friend-request",payload)
+                toast.success(message)
+            }
             e.target[0].value = ""
 
         } catch (error) {
+            console.log(error.message)
             toast.error(error?.response?.data?.message || "Error sending friend request")
         }
     }

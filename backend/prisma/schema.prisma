@@ -42,7 +42,6 @@ model User {
 
   @@unique([email])
   @@unique([username])
-  @@index([username])
   @@map("user")
 }
 
@@ -159,14 +158,13 @@ model Chat {
   messages                  Message[]
   lastMessage               Message?          @relation(fields: [lastMessageId], references: [id], name: "lastMessage", onDelete: SetNull)
   friendshipId              String            @unique
-  FriendShip                Friendship        @relation(fields: [friendshipId], references: [id])
+  FriendShip                Friendship        @relation(fields: [friendshipId], references: [id],onDelete: Cascade)
   createdAt                 DateTime          @default(now())
   updatedAt                 DateTime          @updatedAt
   pinnedAt                  DateTime?
 
   @@unique([lastMessageId])
   @@index([lastMessageId])
-  @@index([pinnedAt, createdAt(sort: Desc)])
   @@index([friendshipId])
 }
 
@@ -218,6 +216,7 @@ model Message {
   @@index([chatId, senderId, createdAt])
   @@index([senderId])
   @@index([createdAt])
+  @@index([chatId])
   @@index([search_index], type: Gin)
 }
 
@@ -228,7 +227,7 @@ model reaction {
   reactors reactionUsers[]
   messageId String
   message   Message @relation(fields: [messageId], references: [id] , onDelete: Cascade)
-  @@unique([emoji,messageId])
+  @@unique([messageId , emoji])
 }
 model reactionUsers {
   id String @id @default(uuid())

@@ -1,10 +1,9 @@
-import { prisma } from "../prismaClient.js"
 import { client } from "./redis.js"
 import "dotenv/config"
 import { SocketQueries } from "./queries_class.js"
 import { UserConnection } from "./connection_classes/user-connection-class.js"
 import { ChatConnection } from "./connection_classes/chat_connection-class.js"
-import { filterOnline, getFriendIds } from "./user-queries.js"
+import { filterOnline, getFriendIds } from "./database-queries.js"
 
 
 let user_connection = new UserConnection()
@@ -96,7 +95,7 @@ export class SocketConnection extends SocketQueries {
     }
 
     async handleSendMessage(socket, message, participantIds) {
-
+        console.log(participantIds)
         try {
             let InActiveFriends = await this.getInActiveMembers(message.chatId, participantIds)
             socket.to(message.chatId).emit("send-message", message)

@@ -192,11 +192,7 @@ export const createGroup = async (req, res, next) => {
 
             },
             include: {
-                participants: {
-                    omit: {
-                        chatId: true,
-                    }
-                },
+                participants:  true,
                 _count: {
                     select: {
                         participants: true,

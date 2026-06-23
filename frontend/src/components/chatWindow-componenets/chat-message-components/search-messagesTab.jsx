@@ -58,7 +58,10 @@ export const SearchMessageTab = () => {
                         <Search size={15} />
                     </div>
                 </div>
-                <div className="flex-1 min-h-[0] overflow-y-auto bg-reed-200">
+                <div className="flex-1 min-h-[0] [&::-webkit-scrollbar]:w-1.5
+    [&::-webkit-scrollbar-track]:bg-transparent
+    [&::-webkit-scrollbar-thumb]:bg-zinc-700
+    [&::-webkit-scrollbar-thumb]:rounded-full overflow-y-auto bg-reed-200">
 
                 <div className="flex flex-col gap-2  mt-2 p-2 ">
                     {searchResult.map((message)=>{

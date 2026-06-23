@@ -16,6 +16,7 @@ import userRouter from "./routes/user.js";
 import { SocketConnection } from "./lib/socket-class.js";
 import { instrument } from "@socket.io/admin-ui";
 import {rateLimit , ipKeyGenerator} from "express-rate-limit"
+import { client } from "./lib/redis.js";
 
 var app = express();
 let server = createServer(app)
@@ -91,6 +92,22 @@ io.on("connection",async (socket)=>{
   // socket.on("register-peer-socket",async (peerId)=>{
   //   Socket.RegisterPeerConnection(socket, peerId)
   // })
+
+  socket.on("friend-request", (payload)=>{
+ 
+    socket.to(payload.userId).emit("friend-request",payload)
+    
+  })
+  socket.on("reject-cancel-request",(data)=>{
+    socket.to(data.userId).emit("reject-cancel-request",data)
+  })
+  socket.on("accept-request",(data)=>{
+    console.log(data)
+    socket.to(data.userId).emit("accept-request",data)
+  })
+
+
+
   socket.on("join-chat",async (chatId)=>{
      Socket.handleJoinChat(socket , chatId)
   })
@@ -100,6 +117,7 @@ io.on("connection",async (socket)=>{
   socket.on("heartbeat",()=>{
     Socket.handleHeartbeat(socket)
   })
+
   socket.on("send-message", async (participantIds , message)=>{
     Socket.handleSendMessage(socket ,message ,  participantIds )
   })
@@ -129,6 +147,10 @@ io.on("connection",async (socket)=>{
   socket.on("reaction-updates",(data , chatId)=>{
     Socket.handleReactionUpdates(socket,data,chatId)
   })
+
+
+  
+
   socket.on("disconnect",async ()=>{
 
       Socket.handleDisconnection(socket)

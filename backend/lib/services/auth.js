@@ -1,10 +1,10 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import {prisma} from "../prismaClient.js"
+import {prisma} from "../services/prismaClient.js"
 import "dotenv/config"
-import { verificationEmailTemplate } from "./verifications/emailVerification.js";
-import {SendEmail} from "./verifications/sendEmail.js"
-import { passwordResetEmailTemplate } from "./verifications/passwordResetTempelate.js";
+import { verificationEmailTemplate } from "../verifications/emailVerification.js";
+import {SendEmail} from "../verifications/sendEmail.js"
+import { passwordResetEmailTemplate } from "../verifications/passwordResetTempelate.js";
 
 
 export const auth = betterAuth({

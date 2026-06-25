@@ -1,5 +1,5 @@
 
-import { auth } from "../lib/auth.js";
+import { auth } from "../lib/services/auth.js";
 
 import createError from "http-errors"
 export default async function protectRoute(req , res, next){

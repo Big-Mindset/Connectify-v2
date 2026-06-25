@@ -1,10 +1,9 @@
 
 import createError from "http-errors"
-import { prisma } from "../prismaClient.js"
+import {prisma} from "../lib/services/prismaClient.js"
 import { secure_message } from "../lib/security-e2ee/encryptMessage.js"
 import { config } from "dotenv"
-import { client } from "../lib/redis.js"
-import { getChat } from "../lib/database-queries.js"
+import { client } from "../lib/services/redis.js"
 config()
 let secureMessage = new secure_message(Buffer.from(process.env.KEK_KEY, "hex"))
 
@@ -12,11 +11,11 @@ let secureMessage = new secure_message(Buffer.from(process.env.KEK_KEY, "hex"))
 export const getChatbyId = async (req, res, next) => {
     let id = req.params.id
     let user = req.user
-    if (!id) {
-        throw createError(400, { message: "Error opening Chat" })
-    }
-    try {
 
+    try {
+        if (!id) {
+            throw createError(400, { message: "Error opening Chat" })
+        }
 
         let chat = await prisma.chat.findUnique({
             where: {
@@ -98,18 +97,18 @@ export const getChatbyId = async (req, res, next) => {
             }
         })
         if (!chat?.id) {
-            throw createError(500, { message: "Internal Server error please try again" })
+            throw createError(404, { message: "Internal Server error please try again" })
 
         }
         let decryptedMessages = chat.messages.map((msg) => {
             if (!msg.encryptedContent) return msg
             if (msg?.replyTo?.id) {
 
-                let updatedReplyTo = secureMessage.transformDecryptData(msg.replyTo.encryptedContent, msg.replyTo.message_security , msg.replyTo)
+                let updatedReplyTo = secureMessage.transformDecryptData(msg.replyTo.encryptedContent, msg.replyTo.message_security, msg.replyTo)
                 msg.replyTo = updatedReplyTo
             }
-           return  secureMessage.transformDecryptData(msg.encryptedContent, msg.message_security,msg)
-         
+            return secureMessage.transformDecryptData(msg.encryptedContent, msg.message_security, msg)
+
         })
         chat.messages = decryptedMessages
 
@@ -181,6 +180,7 @@ export let get_chats = async (req, res, next) => {
     let user = req.user
     let userId = user.id
     try {
+        
         let allFriends = await prisma.friendship.findMany({
             where: {
 
@@ -251,7 +251,7 @@ export let get_chats = async (req, res, next) => {
 
                 let isOnline = await client.SISMEMBER("online-users", dmUserData.id)
 
-                return { ...chat, isOnline, lastMessage, participants: [{ user: dmUserData }] } 
+                return { ...chat, isOnline, lastMessage, participants: [{ user: dmUserData }] }
             })
         )
 
@@ -267,7 +267,7 @@ export let get_chat = async (req, res, next) => {
     let chatId = req.query.chatId
     let userId = req.user.id
     try {
-        
+        if (!chatId) throw createError(400,{message : "chatId is required"})
         let chat = await prisma.chat.findUnique({
             where: {
                 id: chatId
@@ -291,10 +291,10 @@ export let get_chat = async (req, res, next) => {
         })
         if (!chat?.id) {
 
-            throw createError(404,{message : "Chat not found"})
+            throw createError(404, { message: "Chat not found" })
         }
 
-        
+
         let { user } = chat.participants.find(({ user }) => user.id !== userId)
 
         let dmUserData = await prisma.user.findUnique({
@@ -314,9 +314,9 @@ export let get_chat = async (req, res, next) => {
 
         let isOnline = await client.SISMEMBER("online-users", dmUserData.id)
 
-        let returnResopnse =   { id : chat.id, lastMessagse: null,unread_messageCount : 0  , userData : {...dmUserData , isOnline} }
-        console.log(returnResopnse)
-        return res.status(200).json({ chat : returnResopnse})
+        let returnResopnse = { id: chat.id, lastMessagse: null, unread_messageCount: 0, userData: { ...dmUserData, isOnline } }
+
+        return res.status(200).json({ chat: returnResopnse })
     } catch (error) {
         next(error)
     }
@@ -363,7 +363,7 @@ export let get_unreadedChats = async (req, res, next) => {
 export const changeChatName = async (req, res, next) => {
     let { chatId, name } = req.body
     if (!name || !chatId) {
-        throw createError(400, { message: "wrong input - please select a chat" })
+        throw createError(400, { message: "Invalid information" })
     }
     try {
         let chatId = await prisma.chat.update({
@@ -526,13 +526,12 @@ export let handleGetUserdata = async (req, res, next) => {
             }
         })
 
-        if (!friendData?.chat?.id) return res.status(400).json(null)
+        if (!friendData?.chat?.id) throw createError(404,{message :"Chat not found " })
         let userData = friendData.user1.id === user.id ? friendData.user2 : friendData.user1
 
         return res.status(200).json({ userData: { ...userData, chatId: friendData.chat.id } })
 
     } catch (error) {
         next(error)
-        console.log(error.message)
     }
 }

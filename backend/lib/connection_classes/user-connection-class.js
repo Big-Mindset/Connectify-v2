@@ -1,4 +1,4 @@
-import { client } from "../redis.js";
+import { client } from "../services/redis.js";
 
 let HEARTBEAT_TTL = 120
 let HEARTBEAT_INTERVAL = 15

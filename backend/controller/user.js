@@ -1,15 +1,14 @@
 
-import { fromNodeHeaders } from "better-auth/node"
-import { auth } from "../lib/auth.js"
-import { prisma } from "../prismaClient.js"
-import { client } from "../lib/redis.js"
+import createError from "http-errors"
+
+import {prisma} from "../lib/services/prismaClient.js"
 import { filterOnline, getFriendIds } from "../lib/database-queries.js"
 
 export default async function searchUser(req, res, next) {
     let { username } = req.query
 
     if (!username || !username.trim()) {
-        return res.status(400).json({ message: "Please enter username" })
+        throw createError(400 , {message : "username is required"})
     }
     try {
         let user = await prisma.user.findUnique({
@@ -27,6 +26,9 @@ export default async function searchUser(req, res, next) {
 }
 
 export async function isAuthenticated(req, res) {
+    if (req.user === null){
+        throw createError(401,{message : "Unauthenticated"})
+    }
     return res.status(200).json({ user: req?.user || null })
 
 }
@@ -34,6 +36,9 @@ export async function isAuthenticated(req, res) {
 export async function addUsername(req, res, next) {
     let user = req.user
     let { username } = req.body
+    if (!username){
+        throw createError(400,{message : "username is required"})
+    }
     try {
         await prisma.user.update({
             where: {

@@ -1,18 +1,16 @@
 
-import { prisma } from "../prismaClient.js"
+import {prisma} from "../lib/services/prismaClient.js"
 import createError from "http-errors"
-import { getChat } from "../lib/database-queries.js"
-import { getMessageData } from "./chat.js"
-import { client } from "../lib/redis.js"
+import { client } from "../lib/services/redis.js"
 
 export let send_friendrequest = async (req, res, next) => {
     let senderId = req.user.id
     let username = req.body.username
-    if (username === req.user.username) {
-        return res.status(400).json({ message: "Please enter a correct username" })
-
-    }
     try {
+         if (username === req.user.username) {
+            throw createError(400,{message : "Invalid username"})        
+    
+        }
         let user = await prisma.user.findUnique({
             where: {
                 username
@@ -22,7 +20,7 @@ export let send_friendrequest = async (req, res, next) => {
             }
         })
         if (!user?.id) {
-            return res.status(404).json({ message: "User doesn't exist with this username" })
+            throw createError(404,{ message: "User doesn't exist with this username" })
         }
         let receiverId = user.id
         let request = await prisma.request.findFirst({
@@ -37,7 +35,6 @@ export let send_friendrequest = async (req, res, next) => {
                 status: true
             }
         })
-        console.log(request)
         if (request && request?.id) {
             if (request.status === "Accepted") throw createError(409, { message: "The user is already your friend" })
             if (request.status === "Rejected") {
@@ -59,7 +56,7 @@ export let send_friendrequest = async (req, res, next) => {
             throw createError(409, { message: "can't send multiple request to one user" })
         }
         if (senderId === receiverId) {
-            throw createError(400, "Invalid request")
+            throw createError(400, {message : "Invalid request"})
         }
 
 
@@ -72,10 +69,7 @@ export let send_friendrequest = async (req, res, next) => {
                 id: true
             }
         })
-        console.log(new_request)
-        if (!new_request?.id) {
-            throw createError(500, { message: "Internal server Error" })
-        }
+    
         let payload = {
             requestId: new_request.id,
             userId: receiverId,
@@ -197,7 +191,7 @@ export let accept_friendrequest = async (req, res, next) => {
      
 
         return res.status(201).json({ message: "friend request accepted", 
-            friendshipId: result.friendship.id, chat: { ...chat, lastMessagse: null,unread_messageCount : 0  , userData : {...dmUserData , isOnline}} })
+            requestId: result.request.id, chat: { ...chat, lastMessagse: null,unread_messageCount : 0  , userData : {...dmUserData , isOnline}} })
 
     } catch (error) {
         next(error)
@@ -223,9 +217,9 @@ export let reject_friendrequest = async (req, res, next) => {
         if (request && request.id) {
             if (request.status === "Accepted") throw createError(409, { message: "The user is already your friend" })
         } else {
-            throw createError(400, { message: "Request doesn't exist" })
+            throw createError(404, { message: "Request doesn't exist" })
         }
-        let req = await prisma.request.update({
+        await prisma.request.update({
             where: {
                 id: requestId
             },
@@ -236,9 +230,7 @@ export let reject_friendrequest = async (req, res, next) => {
                 id: true
             }
         })
-        if (!req.id) {
-            throw createError(500, { message: "Error accepting request" })
-        }
+       
         return res.status(200).json({ message: "request rejected" })
     } catch (error) {
         next(error)
@@ -259,9 +251,10 @@ export const cancel_request = async (req, res, next) => {
             }
         })
         if (reqeust.status !== "Pending") {
-            return res.status(400).json({ message: "Error canceling request" })
+             throw createError(409,{ message: "Error canceling request" })
+            
         }
-        let deletedRequest = await prisma.request.delete({
+         await prisma.request.delete({
             where: {
                 id: requestId
             },
@@ -269,7 +262,6 @@ export const cancel_request = async (req, res, next) => {
                 id: true
             }
         })
-        if (!deletedRequest.id) return res.status(500).json({ message: "Error canceling request" })
         return res.status(200).json({ message: "Request canceled" })
     } catch (error) {
         next(error)
@@ -346,7 +338,7 @@ export let get_friendrequest = async (req, res, next) => {
             }
         })
 
-        if (!request?.id) throw createError(400, { message: "Request doesn't exist" })
+        if (!request?.id) throw createError(404, { message: "Request doesn't exist" })
         return res.status(200).json({ request })
     } catch (error) {
         next(error)

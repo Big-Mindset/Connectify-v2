@@ -4,7 +4,7 @@ import cookieParser from "cookie-parser";
 import logger from "morgan";
 import friendRequest from "./routes/friend-request.js"
 import {createServer} from "node:http"
-import { auth } from "./lib/auth.js";
+import { auth } from "./lib/services/auth.js";
 import cors from "cors"
 import { toNodeHandler } from "better-auth/node";
 import chatRouter from "./routes/chat.js";
@@ -16,7 +16,6 @@ import userRouter from "./routes/user.js";
 import { SocketConnection } from "./lib/socket-class.js";
 import { instrument } from "@socket.io/admin-ui";
 import {rateLimit , ipKeyGenerator} from "express-rate-limit"
-import { client } from "./lib/redis.js";
 
 var app = express();
 let server = createServer(app)
@@ -102,7 +101,6 @@ io.on("connection",async (socket)=>{
     socket.to(data.userId).emit("reject-cancel-request",data)
   })
   socket.on("accept-request",(data)=>{
-    console.log(data)
     socket.to(data.userId).emit("accept-request",data)
   })
 

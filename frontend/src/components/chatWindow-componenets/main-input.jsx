@@ -102,7 +102,7 @@ export default function MainInput({ chatId }) {
 
 
         setFilePreview([])
-        let res = await sendMessage(messageData, filePreview)
+        let res = await sendMessage(messageData)
 
         if (res?.status === 429) {
             setSizeExceeded({ type: "message-limit" })

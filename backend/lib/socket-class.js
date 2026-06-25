@@ -1,4 +1,4 @@
-import { client } from "./redis.js"
+import { client } from "./services/redis.js"
 import "dotenv/config"
 import { SocketQueries } from "./queries_class.js"
 import { UserConnection } from "./connection_classes/user-connection-class.js"
@@ -95,7 +95,7 @@ export class SocketConnection extends SocketQueries {
     }
 
     async handleSendMessage(socket, message, participantIds) {
-        console.log(participantIds)
+  
         try {
             let InActiveFriends = await this.getInActiveMembers(message.chatId, participantIds)
             socket.to(message.chatId).emit("send-message", message)
@@ -113,9 +113,9 @@ export class SocketConnection extends SocketQueries {
 
     }
     async getInActiveMembers(chatId, participantIds) {
-        const t0 = performance.now();
+     
         let activeUserIds = new Set(await client.SMEMBERS(`active-chat:${chatId}`))
-        console.log('smembers took', performance.now() - t0);
+     
       
         let inActiveIds = participantIds.filter((id) => !activeUserIds.has(id))
 
@@ -198,7 +198,6 @@ export class SocketConnection extends SocketQueries {
     }
     async handleTyping(socket, data, event) {
         try {
-            console.log(data)
             let InActiveFriends = await this.getInActiveMembers(data.chatId, data.chatMembersIds)
             socket.to(data.chatId).emit(event, { userId: data.userId, chatId: data.chatId })
             if (InActiveFriends) {

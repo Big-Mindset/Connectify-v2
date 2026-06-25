@@ -1,6 +1,4 @@
-import { prisma } from "../prismaClient.js"
-import { client } from "./redis.js"
-import { secure_message } from "./security-e2ee/encryptMessage.js"
+import {prisma} from "../lib/services/prismaClient.js"
 
 export class SocketQueries {
     constructor() {

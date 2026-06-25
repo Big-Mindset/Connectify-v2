@@ -1,11 +1,7 @@
-import { prisma } from "../prismaClient.js"
-import { config } from "dotenv"
+import {prisma} from "../lib/services/prismaClient.js"
+
 import { secure_message } from "../lib/security-e2ee/encryptMessage.js"
 import createError from "http-errors"
-import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3"
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
-import { s3 } from "../lib/s3-client.js"
-import { client } from "../lib/redis.js"
 let secureMessage = new secure_message(Buffer.from(process.env.KEK_KEY, "hex"))
 
 export const createMessage = async (req, res, next) => { 
@@ -262,44 +258,44 @@ export const searchMessages = async (req , res , next )=>{
 
  
 
-export const generateMediaUrl = async (req, res, next) => {
-    let data = req.body
+// export const generateMediaUrl = async (req, res, next) => {
+//     let data = req.body
 
-    try {
-
-
-        let objectKey = `/media/${data.chatId}/${crypto.randomUUID()}`
-        let command = new PutObjectCommand({
-            Bucket: process.env.BUCKET_KEY,
-            Key: objectKey,
-            ContentType: data.type,
-            ServerSideEncryption: "AES256"
-        })
-
-        let uploadUrl = new getSignedUrl(s3, command, { expiresIn: 60 * 5 })
-
-        return res.status(201).json({ uploadUrl, objectKey })
-
-    } catch (error) {
-        next(error)
-    }
-}
-
-export const getMediaUrl = async (req, res, next) => {
-    let data = req.body
-    try {
+//     try {
 
 
-        let command = new GetObjectCommand({
-            Bucket: process.env.BUCKET_AWS,
-            Key: data.objectKey
-        })
-        let preSignedUrl = await getSignedUrl(s3, command, { expiresIn: 60 * 60 * 3 })
-        return res.status(201).json({ url: preSignedUrl })
-    } catch (error) {
-        next(error)
-    }
-}
+//         let objectKey = `/media/${data.chatId}/${crypto.randomUUID()}`
+//         let command = new PutObjectCommand({
+//             Bucket: process.env.BUCKET_KEY,
+//             Key: objectKey,
+//             ContentType: data.type,
+//             ServerSideEncryption: "AES256"
+//         })
+
+//         let uploadUrl = new getSignedUrl(s3, command, { expiresIn: 60 * 5 })
+
+//         return res.status(201).json({ uploadUrl, objectKey })
+
+//     } catch (error) {
+//         next(error)
+//     }
+// }
+
+// export const getMediaUrl = async (req, res, next) => {
+//     let data = req.body
+//     try {
+
+
+//         let command = new GetObjectCommand({
+//             Bucket: process.env.BUCKET_AWS,
+//             Key: data.objectKey
+//         })
+//         let preSignedUrl = await getSignedUrl(s3, command, { expiresIn: 60 * 60 * 3 })
+//         return res.status(201).json({ url: preSignedUrl })
+//     } catch (error) {
+//         next(error)
+//     }
+// }
 
 
 export const updateMessage = async (req, res, next) => {
@@ -369,7 +365,8 @@ export const deleteMessage = async (req, res, next) => {
 
     let {messageId , senderId , chatId} = req.body
     if (senderId !== req.user.id){
-        res.status(400).json({message : "you don't have permission to delete this message"})
+        throw Error(400,{message : "you don't have permission to delete this message"})
+      
     }
     try {
         let deletedmessage = await prisma.message.delete({
@@ -460,7 +457,7 @@ export const removeReaction = async (req , res , next)=>{
                 reactionId : true
             }
         })
-        if (removedReaction.reactionId) return res.status(200).json({reactionId : removedReaction.reactionId})
+            return res.status(200).json({reactionId : removedReaction.reactionId})
     } catch (error) {
         next(error)
     }
@@ -478,7 +475,6 @@ export const addReaction =  async (req ,res ,next)=>{
                 reactionId : true
             }
         })
-        if (!addReaction.reactionId) return res.status(500).json({message : "Error adding reaction"})
             return res.status(201).json({reactionId : addReaction.reactionId})
 
     } catch (error) {

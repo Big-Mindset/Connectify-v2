@@ -1,4 +1,4 @@
-import { prisma } from "../prismaClient.js"
+import {prisma} from "../lib/services/prismaClient.js"
 import createError from "node:http"
 
 export const getGroups = async (req, res, next) => {
@@ -63,7 +63,7 @@ export const changeGroupData = async (req, res, next) => {
             }
         })
         if (isAdmin.role !== "ADMIN") {
-            throw createError(400, { message: "Only admin can change roles" })
+            throw createError(403, { message: "Only admin can change roles" })
         }
         let updatedGroup = await prisma.chat.update({
             where: {
@@ -108,7 +108,7 @@ export const changeUserRole = async (req, res, next) => {
             }
         })
         if (userRole.role === "MEMBER") {
-            throw createError(400, { message: "Only owner or admin can change roles" })
+            throw createError(403, { message: "Only owner or admin can change roles" })
         }
         let parti = await prisma.chatParticipant.findUnique({
             where: {
@@ -119,7 +119,7 @@ export const changeUserRole = async (req, res, next) => {
             }
         })
         if (parti.role === "OWNER") {
-            throw createError(400, { message: "Admin can't change owner-role" })
+            throw createError(403, { message: "Admin can't change owner-role" })
 
         }
         if (userRole.role === "OWNER" && role === "OWNER" && participantId !== userRole.id) {
@@ -222,8 +222,11 @@ export const leaveGroup = async (req, res, next) => {
                 id: true
             }
         })
+        if (!userRole.id){
+            throw createError(404,{message : "chat-participant not found"})
+        }
         if (userRole === "OWNER") {
-            let [deletedOwner, newOwner] = await prisma.$transaction([
+            let [_, newOwner] = await prisma.$transaction([
                 prisma.chatParticipant.delete({
                     where: {
                         id: userRole.id

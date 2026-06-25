@@ -1,4 +1,4 @@
-import {client} from "../redis.js"
+import {client} from "../services/redis.js"
 export class ChatConnection {
     constructor(redisClient = client){
         this.redis = redisClient

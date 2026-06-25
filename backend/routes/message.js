@@ -1,6 +1,6 @@
 import express from "express"
 import protectRoute from "../middleware/auth.middleware.js"
-import { addReaction, clearMessages, createMessage, createReaction, deleteMessage, deleteReaction, generateMediaUrl, markAsRead, moreMessages, removeReaction, searchMessages, updateMessage } from "../controller/messages.js"
+import { addReaction, clearMessages, createMessage, createReaction, deleteMessage, deleteReaction, markAsRead, moreMessages, removeReaction, searchMessages, updateMessage } from "../controller/messages.js"
 import rateLimit from "express-rate-limit"
 
 let router = express.Router()
@@ -15,7 +15,6 @@ let messageRateLimiter = rateLimit({
 router.post("/create-message",messageRateLimiter,createMessage)
 router.post("/search",searchMessages)
 router.put("/mark-asread",markAsRead)
-router.post("/generate-bucketUploadUrl",generateMediaUrl)
 router.put("/edit-message",updateMessage)
 router.delete("/delete-message",deleteMessage)
 router.post("/create-reaction",createReaction)

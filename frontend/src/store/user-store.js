@@ -47,7 +47,7 @@ export const userStore = create((set, get) => ({
         }
     },
     handleRejectCancelRequest: (data) => {
-        console.log(data)
+   
         let selectedPage = navigationStore.getState().selectedPage
         let setPendingRequest = get().setPendingRequest
 
@@ -65,15 +65,14 @@ export const userStore = create((set, get) => ({
         }
     },
     handleAcceptRequest: async (data) => {
-        console.log(data)
-        console.log("running the func")
+      
         let selectedPage = navigationStore.getState().selectedPage
         let setPendingRequest = get().setPendingRequest
         let setChats = chatStore.getState().setChats
         let chatMembersIds = chatStore.getState().chatMembersIds
         let participants = chatStore.getState().participants
         let res = await Axios.get(`/chat/chatinfo?chatId=${data.chatId}`)
-        console.log(res)
+  
         if (res.status === 200) {
             let chat = res.data.chat
             let dmUser = chat.userData

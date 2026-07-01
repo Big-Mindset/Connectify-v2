@@ -1,6 +1,6 @@
 import { Axios } from "@/lib/axiosInstance"
 import { useLoading } from "@/lib/loading_hook"
-import { chatStore } from "@/store/chat-store"
+import { chatStore } from "@/store/Chat-store"
 import "@livekit/components-styles"
 import { userStore } from "@/store/user-store"
 import { LiveKitRoom, ParticipantTile, RoomAudioRenderer , useParticipantInfo, useTracks, VideoConference } from "@livekit/components-react"

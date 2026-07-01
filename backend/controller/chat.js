@@ -1,6 +1,6 @@
 
 import createError from "http-errors"
-import {prisma} from "../lib/services/prismaClient.js"
+import { prisma } from "../lib/services/prismaClient.js"
 import { secure_message } from "../lib/security-e2ee/encryptMessage.js"
 import { config } from "dotenv"
 import { client } from "../lib/services/redis.js"
@@ -24,7 +24,17 @@ export const getChatbyId = async (req, res, next) => {
 
             select: {
                 id: true,
+                isGroup: true,
                 participants: {
+                    where: {
+                        userId: {
+                            not: user.id
+                        },
+                        chat: {
+                            isGroup: true
+                        }
+
+                    },
                     select: {
                         user: {
                             select: {
@@ -33,7 +43,7 @@ export const getChatbyId = async (req, res, next) => {
                                 name: true,
                                 image: true,
                                 username: true,
-                                lastseen: true
+
                             },
                         },
 
@@ -121,7 +131,13 @@ export const getMessageData = (userId) => {
     let selectData = {
         id: true,
         isGroup: true,
-        image: true,
+        image: {
+            select: {
+                id: true,
+                publicId: true,
+                url: true,
+            }
+        },
         name: true,
         description: true,
         lastMessage: {
@@ -147,10 +163,20 @@ export const getMessageData = (userId) => {
             }
         },
         participants: {
+            where: {
+                chat: {
+                    isGroup: false
+                }
+            },
             select: {
+
                 user: {
                     select: {
                         id: true,
+                        name: true,
+                        image: true,
+                        username: true,
+                        lastseen: true
                     }
                 }
             }
@@ -180,27 +206,21 @@ export let get_chats = async (req, res, next) => {
     let user = req.user
     let userId = user.id
     try {
-        
-        let allFriends = await prisma.friendship.findMany({
-            where: {
 
-                OR: [
-                    { user1Id: user.id },
-                    { user2Id: user.id }
-                ],
+        let Chats = await prisma.chat.findMany({
+            where: {
+                participants: {
+                    some: {
+                        userId
+                    }
+                }
             },
             orderBy: [
                 {
+                    lastMessage: {
 
-
-                    chat: {
-
-                        lastMessage: {
-
-                            createdAt: "desc",
-                        },
-
-                    }
+                        createdAt: "desc",
+                    },
                 },
 
                 { createdAt: "desc" }
@@ -208,16 +228,13 @@ export let get_chats = async (req, res, next) => {
 
             ,
             take: 20,
-            select: {
-                chat: {
-                    select: getMessageData(user.id)
+            select: getMessageData(userId)
 
-                },
-            }
+
+
         })
-
-        let friendsWithStatus = await Promise.all(
-            allFriends.map(async ({ chat }) => {
+        let AllChats = await Promise.all(
+            Chats.map(async (chat) => {
 
 
 
@@ -225,38 +242,25 @@ export let get_chats = async (req, res, next) => {
 
                 if (lastMessage && lastMessage.encryptedContent) {
 
-                    let content = secureMessage.decryptMessage(lastMessage.encryptedContent, lastMessage.message_security)
-                    let { encryptedContent, message_security, ...rest } = lastMessage
-                    lastMessage = { ...rest, content }
+                    lastMessage = secureMessage.transformDecryptData(lastMessage.encryptedContent, lastMessage.message_security, lastMessage)
+
 
 
                 }
-                if (chat.isGroup) return chat
+                if (chat.isGroup) return { ...chat, lastMessage }
                 let { user } = chat.participants.find(({ user }) => user.id !== userId)
 
-                let dmUserData = await prisma.user.findUnique({
-                    where: {
-                        id: user.id
-
-                    },
-                    select: {
-                        id: true,
-                        name: true,
-                        image: true,
-                        username: true,
-                        lastseen: true
-                    }
-                })
 
 
-                let isOnline = await client.SISMEMBER("online-users", dmUserData.id)
 
-                return { ...chat, isOnline, lastMessage, participants: [{ user: dmUserData }] }
+                let isOnline = await client.SISMEMBER("online-users", user.id)
+
+                return { ...chat, isOnline, lastMessage, userData: user }
             })
         )
 
 
-        return res.status(200).json({ allFriends: friendsWithStatus })
+        return res.status(200).json({ chats: AllChats })
 
     } catch (error) {
         next(error)
@@ -267,54 +271,37 @@ export let get_chat = async (req, res, next) => {
     let chatId = req.query.chatId
     let userId = req.user.id
     try {
-        if (!chatId) throw createError(400,{message : "chatId is required"})
+        if (!chatId) throw createError(400, { message: "chatId is required" })
         let chat = await prisma.chat.findUnique({
             where: {
                 id: chatId
             },
-            select: {
-                id: true,
-                isGroup: true,
-                image: true,
-                name: true,
-                description: true,
-                participants: {
-                    select: {
-                        user: {
-                            select: {
-                                id: true,
-                            }
-                        }
-                    }
-                }
-            }
+            select: getMessageData(userId)
         })
         if (!chat?.id) {
 
             throw createError(404, { message: "Chat not found" })
         }
+        let lastMessage = chat.lastMessage
+
+        if (lastMessage && lastMessage.encryptedContent) {
+
+            lastMessage = secureMessage.transformDecryptData(lastMessage.encryptedContent, lastMessage.message_security, lastMessage)
 
 
+
+        }
+        if (chat.isGroup) return res.status(200).json({chat : { ...chat, lastMessage }})
         let { user } = chat.participants.find(({ user }) => user.id !== userId)
 
-        let dmUserData = await prisma.user.findUnique({
-            where: {
-                id: user.id
-
-            },
-            select: {
-                id: true,
-                name: true,
-                image: true,
-                username: true,
-                lastseen: true
-            }
-        })
 
 
-        let isOnline = await client.SISMEMBER("online-users", dmUserData.id)
 
-        let returnResopnse = { id: chat.id, lastMessagse: null, unread_messageCount: 0, userData: { ...dmUserData, isOnline } }
+        let isOnline = await client.SISMEMBER("online-users", user.id)
+
+     
+
+        let returnResopnse = { id: chat.id, lastMessagse, unread_messageCount: 0, userData: { ...user, isOnline } }
 
         return res.status(200).json({ chat: returnResopnse })
     } catch (error) {
@@ -432,6 +419,7 @@ export const blockedChat = async (req, res, next) => {
 }
 export let getAllFriends = async (req, res, next) => {
     let user = req.user
+ 
     try {
         let allFriends = await prisma.friendship.findMany({
             where: {
@@ -526,7 +514,7 @@ export let handleGetUserdata = async (req, res, next) => {
             }
         })
 
-        if (!friendData?.chat?.id) throw createError(404,{message :"Chat not found " })
+        if (!friendData?.chat?.id) throw createError(404, { message: "Chat not found " })
         let userData = friendData.user1.id === user.id ? friendData.user2 : friendData.user1
 
         return res.status(200).json({ userData: { ...userData, chatId: friendData.chat.id } })

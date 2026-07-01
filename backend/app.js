@@ -104,6 +104,9 @@ io.on("connection",async (socket)=>{
     socket.to(data.userId).emit("accept-request",data)
   })
 
+  socket.on("group-created",(data)=>{
+    Socket.handleGroupCreated(socket , data)
+  })
 
 
   socket.on("join-chat",async (chatId)=>{
@@ -116,8 +119,8 @@ io.on("connection",async (socket)=>{
     Socket.handleHeartbeat(socket)
   })
 
-  socket.on("send-message", async (participantIds , message)=>{
-    Socket.handleSendMessage(socket ,message ,  participantIds )
+  socket.on("send-message", async (message)=>{
+    Socket.handleSendMessage(socket ,message)
   })
   socket.on("typing",(data)=>{
     Socket.handleTyping(socket,data , "typing")
@@ -139,8 +142,8 @@ io.on("connection",async (socket)=>{
    Socket.markAllAsRead(socket , statusData)
 
   })
-  socket.on("delete-message",(message , membersIds)=>{
-    Socket.handleDeleteMessage(socket ,message , membersIds)
+  socket.on("delete-message",(message)=>{
+    Socket.handleDeleteMessage(socket ,message)
   })
   socket.on("reaction-updates",(data , chatId)=>{
     Socket.handleReactionUpdates(socket,data,chatId)

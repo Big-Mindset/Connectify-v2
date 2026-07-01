@@ -5,7 +5,7 @@ import { Check, CheckCheck } from "lucide-react"
 import MoreOptions from "./more-options"
 import { AnimatePresence } from "framer-motion"
 import { memo, useEffect, useMemo, useRef, useState } from "react"
-import { chatStore } from "@/store/chat-store"
+import { chatStore } from "@/store/Chat-store"
 import { formateTime } from "@/lib/formateTime"
 import dynamic from "next/dynamic"
 let RenderAudio = dynamic(() => import("../chat-components/renderAudioes"))
@@ -19,6 +19,7 @@ import EmojiPicker from "./Emoji-Picker"
 import { userStore } from "@/store/user-store"
 import { chatMessageStore } from "@/store/chatMessage-store"
 import { messageStatus } from "@/lib/calculateStatus"
+import ResendMessage from "./chat-message-components/resend-message"
 
 function ChatMessage({ optionsRef, message, plusRef, key }) {
 
@@ -71,13 +72,18 @@ function ChatMessage({ optionsRef, message, plusRef, key }) {
     let currentUserId = session?.user?.id
 
     let status = messageStatus(message.status)
-    let sender = currentUserId === message.senderId ? session.user : participants.get(message.senderId)
+    
+    let sender = useMemo(()=>{
+        return currentUserId === message.senderId ? session.user : participants.get(message.senderId)
+        
+    },[])
     let replyToSender;
     if (message.replyTo !== null) {
         replyToSender = currentUserId === message.replyTo.senderId ? session.user : participants.get(message.replyTo.senderId)
     }
+  
     return (
-        <div ref={MessageRef} key={key} className="relative" >
+        <div ref={MessageRef} key={key} className=" relative"  >
             {message.id === reactMessage?.id &&
                 <div ref={(e) => {
 
@@ -103,7 +109,7 @@ function ChatMessage({ optionsRef, message, plusRef, key }) {
                 {
                     message?.replyTo !== null &&
                     <div className="flex items-center w-full ">
-                                     <div className="shrink-0 ml-4 w-12 h-4 mt-2 border-l-2 border-t-2 border-gray-500 rounded-tl-lg group/reply1 hover:border-indigo-200 duration-200" />
+                        <div className="shrink-0 ml-4 w-12 h-4 mt-2 border-l-2 border-t-2 border-gray-500 rounded-tl-lg group/reply1 hover:border-indigo-200 duration-200" />
 
                         <div className="flex items-center gap-2 min-w-0 flex-1 px-2 py-1 rounded-lg">
 
@@ -148,9 +154,10 @@ function ChatMessage({ optionsRef, message, plusRef, key }) {
                 }
 
                 <div className={`flex   w-full gap-4`}>
-                    {(messageHover || message.id === openMessageOptionId || reactMessage?.id === message.id) &&
+                    {((messageHover || message.id === openMessageOptionId || reactMessage?.id === message.id) && (status && status !== "failed")) &&
                         <MessageSettings userId={session.user.id} handleMoreOptions={handleMoreOptions} plusRef={plusRef} message={message} />
                     }
+                    {status === "failed" && <ResendMessage message={message} />}
 
 
                     <div className="relative">
@@ -158,7 +165,8 @@ function ChatMessage({ optionsRef, message, plusRef, key }) {
                         <Avatar size={"size-11"} textSize={"text-[1.5rem]"} image={sender?.image} />
                     </div>
 
-                    <div className="w-full  pt-1 ">
+                    <div className="w-full   pt-1 ">
+
                         <div className="flex items-baseline   gap-2 w-full">
                             <h1 className="font-medium text-gray-300 font-semibold text-md min-w-0">
                                 {sender?.name}
@@ -173,10 +181,12 @@ function ChatMessage({ optionsRef, message, plusRef, key }) {
                                 }
                             </div>
                         </div>
+
+
                         {message.media.length > 0 &&
                             <div className="flex flex-col gap-1 ">
                                 {
-                                    message.status === "PENDING" ?
+                                    !status  ?
                                         <div className="w-[300px] rounded-xl bg-zinc-900 p-3 shadow-lg">
                                             <div className="w-full h-2 bg-zinc-700 rounded-full overflow-hidden">
                                                 <div
@@ -210,8 +220,10 @@ function ChatMessage({ optionsRef, message, plusRef, key }) {
 
                             </div>
                         }
+
+
                         {(editMessage?.id === message.id) ? <EditMessage /> :
-                            <div className={` ${message?.status === "PENDING" ? "text-gray-300/60  font-semibold" : "text-gray-300/90 "}   text-[0.95em]`}>
+                            <div className={` ${!status ?  "text-gray-300/60  font-semibold" : status === "failed" ? "text-red-300" :  "text-gray-300/90 "}   break-words  text-[0.95em]`}>
                                 {message.content}
                                 {message.createdAt !== message.updatedAt &&
                                     <span className="text-[0.75rem] text-gray-400 ml-1">(edited)</span>
@@ -256,10 +268,14 @@ function ChatMessage({ optionsRef, message, plusRef, key }) {
                 )}
 
             </div>
-            <AnimatePresence>
-                {openMessageOptionId === message.id &&
 
-                    <MoreOptions optionsRef={optionsRef} message={message} userId={session.user.id} />}
+
+            <AnimatePresence>
+                {(openMessageOptionId === message.id && status !== "failed") &&
+
+                    <MoreOptions optionsRef={optionsRef} message={message} userId={session.user.id} />
+                }
+
             </AnimatePresence>
         </div>
 

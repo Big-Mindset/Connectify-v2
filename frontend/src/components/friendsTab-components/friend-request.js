@@ -3,7 +3,7 @@ import Avatar from "../Avatar";
 import toast from "react-hot-toast";
 import { socketStore } from "@/store/socket";
 import { userStore } from "@/store/user-store";
-import { chatStore } from "@/store/chat-store";
+import { chatStore } from "@/store/Chat-store";
 import { useLoading } from "@/lib/loading_hook";
 import { Loader2 } from "lucide-react";
 export default function FriendRequest({ data, received }) {
@@ -78,7 +78,6 @@ export default function FriendRequest({ data, received }) {
             setLoading("")
         }
     }
-    console.log(data)
     return (
         <div className="flex justify-between  p-2 items-center ">
 

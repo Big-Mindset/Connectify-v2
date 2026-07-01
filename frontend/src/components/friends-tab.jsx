@@ -1,6 +1,6 @@
 "use client"
 
-import { chatStore } from "@/store/chat-store";
+import { chatStore } from "@/store/Chat-store";
 import { Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 

@@ -1,14 +1,16 @@
+import { TruckElectric } from "lucide-react";
+
 let within24Hours = (datetime)=>{
-    const date = new Date(datetime);
-    let diff = new Date() - date
-    let within = diff / (1000 * 60 * 60)
-    return within <=24
+   let today = new Date()
+  return today.getFullYear() === datetime.getFullYear() && today.getMonth() === datetime.getMonth() && today.getDate() === datetime.getDate()
+
 }
 let isYesturday = (datetime)=>{
-     const date = new Date(datetime);
-    let diff = new Date() - date
-    let within = diff / (1000 * 60 * 60)
-    return within <=48
+    let yestruday = new Date()
+    yestruday.setDate(yestruday.getDate() - 1)
+     return  yestruday.getFullYear() === datetime.getFullYear() && yestruday.getMonth() === datetime.getMonth() && yestruday.getDate() === datetime.getDate()
+
+
 }
 export const formateTime = (datetime)=>{
     if (!datetime) return null

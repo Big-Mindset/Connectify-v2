@@ -1,10 +1,7 @@
-import { getMessageData } from "../controller/chat.js"
-import {prisma} from "../lib/services/prismaClient.js"
+import { prisma } from "../lib/services/prismaClient.js"
 import { client } from "./services/redis.js"
-import { secure_message } from "./security-e2ee/encryptMessage.js"
 import dotenv from "dotenv"
 dotenv.config()
-let secureMessage = new secure_message(Buffer.from(process.env.KEK_KEY, "hex"))
 
 export async function getFriendIds(userId) {
     let friendIds = await prisma.friendship.findMany({
@@ -28,8 +25,72 @@ export async function getFriendIds(userId) {
 export async function filterOnline(friendIds) {
     if (!friendIds.length) return []
     let pipeline = client.multi()
-    friendIds.forEach((id) => pipeline.exists(`user-socket:${id}`))
+    friendIds.forEach((userId) => pipeline.exists(`user-socket:${userId}`))
     let result = await pipeline.exec()
 
     return friendIds.filter((_, idx) => result[idx] === 1)
+}
+
+export async function getOlderMessages({ messageId, limit=30 , order="desc" , chatId , userId }) {
+    try {
+        let messages = await prisma.message.findMany({
+            where: {
+                chatId
+            },
+            cursor: {
+                id: messageId
+            },
+            skip: 1,
+            take: limit,
+            orderBy: {
+                createdAt: order
+            },
+            select: {
+                id: true,
+                chatId: true,
+                media: true,
+                reactions: {
+                    include: {
+                        reactors: {
+                            select: {
+                                userId: true,
+                                id: true,
+                            }
+                        }
+                    }
+                },
+                senderId: true,
+                replyTo: {
+                    select: {
+                        id: true,
+                        encryptedContent: true,
+                        senderId: true,
+                        message_security: true,
+
+                    }
+                },
+                encryptedContent: true,
+
+
+                _count: {
+                    select: {
+                        replies: true,
+                    }
+                },
+                status: {
+                    where: {
+                        userId: {
+                            not: userId
+                        }
+                    }
+                },
+                message_security: true,
+                createdAt: true,
+                updatedAt: true
+            }
+        })
+        return messages
+    } catch (error) {
+        console.log(error.message)
+    }
 }

@@ -2,7 +2,7 @@
 
 import { BellOff,  Camera, ChevronDown, DoorClosed, EllipsisVerticalIcon, Flag, PhoneCall, Search, Timer, Trash, Trash2, UserX } from "lucide-react";
 import Avatar from "../Avatar";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import OptionButton from "../option-button";
 import MuteNotifications from "./navbar-components/mute-notifications";
 import DisappearingMessages from "./navbar-components/disappearing-messages";
@@ -10,9 +10,9 @@ import { formateTime } from "@/lib/formateTime";
 import { AnimatePresence , motion } from "framer-motion";
 import { socketStore } from "@/store/socket";
 import { navigationStore } from "@/store/navigation-store";
-import { chatStore } from "@/store/chat-store";
+import { chatStore } from "@/store/Chat-store";
 
-export default function Navbar({receiverInfo}) {
+export default function Navbar() {
     const [calltype, setCallType] = useState(false)
     const callRef = useRef()
     const [navOptions, setNavOptions] = useState(false)
@@ -24,7 +24,8 @@ export default function Navbar({receiverInfo}) {
     const searchTab = navigationStore(s=>s.searchTab)
     const setFilters = navigationStore(s => s.setFilters)
     const handleCloseChat = chatStore(s=>s.handleCloseChat)
-    
+    const selectedChat = chatStore(s=>s.selectedChat)
+    const participants = chatStore(s=>s.participants)
     useEffect(() => {
         let handleCallMenu = (e) => {
             if (callRef.current && !callRef.current.contains(e.target)) {
@@ -69,8 +70,14 @@ export default function Navbar({receiverInfo}) {
         setFilters(()=>({}))
         setSearchTab(false)
         
-        
     }
+   let chatdata = useMemo(()=>{
+    if (selectedChat.isGroup){
+        return selectedChat
+    }
+    return participants.get(selectedChat.userId)
+
+   },[participants , selectedChat])
     return (
         <>
     
@@ -78,10 +85,12 @@ export default function Navbar({receiverInfo}) {
                 <div className="py-2 px-5">
                     <div className="flex justify-between items-center">
                         <div className="flex items-center gap-2">
-                            <Avatar image={receiverInfo.image}  size={"size-12"} />
+                            <Avatar image={chatdata.image} content={chatdata?.name[0]}  size={"size-12"} />
                             <div className="">
-                                <p className="font-bold text-[0.96rem]">{receiverInfo?.name}</p>
-                                <p className=" text-[0.8rem] text-gray-300 text-sm ">{receiverInfo.isOnline ? <span className="text-[0.7rem] uppercase font-bold tracking-wider">online</span> : formateTime(receiverInfo?.lastseen)}</p>
+                                <p className="font-bold text-[0.96rem]">{chatdata?.name}</p>
+                                {selectedChat.isGroup ? <p className="text-[0.8rem] text-gray-400 text-sm  tracking-wider font-bold">{selectedChat.total_members} Members </p> :  
+                                <p className=" text-[0.8rem] text-gray-300 text-sm ">{chatdata?.isOnline ? <span className="text-[0.7rem] uppercase font-bold tracking-wider">online</span> : formateTime(chatdata?.lastseen)}</p>
+}
                             </div>
                         </div>
                         <div className="flex items-center gap-4">

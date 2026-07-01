@@ -73,10 +73,12 @@ export class secure_message {
         }
     }
     content_ngrams(content) {
-        let normalizeText = content.toLowerCase().trim().split(" ")
+        let normalizeText = content.toLowerCase().split(" ")
+       
         let n_grams = new Set()
         for (let word of normalizeText) {
-            if (word && word.length > 1) {
+            
+            if (word && word.length > 0) {
                 n_grams.add(this.hmac(word))
             }
 

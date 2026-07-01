@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { chatMessageStore } from "./chatMessage-store";
 import { userStore } from "./user-store";
-import { chatStore } from "./chat-store";
+import { chatStore } from "./Chat-store";
 
 export let messageSettingsStore = create((set, get) => ({
     selectedMedia: null,
@@ -17,8 +17,9 @@ export let messageSettingsStore = create((set, get) => ({
             return { openMessageOptionId: func(prev.openMessageOptionId) }
         })
     },
-    inputRef: null,
-    setInputRef: (inputRef) => set({ inputRef }),
+    inputRef : null,
+    
+    setInputRef : (inputRef)=>set({inputRef}),
     setEditMessage: (editMessage) => set({ editMessage }),
     deleteMessage: null,
     setDeleteMessage: (deleteMessage) => set({ deleteMessage }),

@@ -3,119 +3,13 @@ import { create } from "zustand"
 import { userStore } from "./user-store"
 import { socketStore } from "./socket"
 import { navigationStore } from "./navigation-store"
-import { useLoading } from "@/lib/loading_hook"
-// const messages = [
-//   {
-//     id: "m1",
-//     senderId: "user1",
-//     chatId: "dm1",
-//     content: "Hey Ahmed, are you free today?",
-//     replyToId: null,
-//     replyTo: null,
-//     replies: [],
-//     sender: { id: "user1", name: "Ali", email: "ali@example.com" },
-//     chat: { id: "dm1" },
-//     createdAt: new Date("2026-02-15T09:00:00Z"),
-//     updatedAt: new Date("2026-02-15T09:00:00Z"),
-//     media: [],
-//     status: "READ"
-//   },
-//   {
-//     id: "m2",
-//     senderId: "user2",
-//     chatId: "dm1",
-//     content: "Yeah bro, what's up?",
-//     replyToId: "m1",
-//     replyTo: {
-//       id: "m1",
-//       content: "Hey Ahmed, are you free today?",
-//       sender: { name: "Ali" },
-//       media: [] // no media in original message
-//     },
-//     replies: [],
-//     sender: { id: "user2", name: "Ahmed", email: "ahmed@example.com" },
-//     chat: { id: "dm1" },
-//     createdAt: new Date("2026-02-15T09:02:00Z"),
-//     updatedAt: new Date("2026-02-15T09:02:00Z"),
-//     media: [],
-//     status: "READ"
-//   },
-//   {
-//     id: "m3",
-//     senderId: "user1",
-//     chatId: "dm1",
-//     content: "Can we meet at 6 PM?",
-//     replyToId: null,
-//     replyTo: null,
-//     replies: [],
-//     sender: { id: "user1", name: "Ali" },
-//     chat: { id: "dm1" },
-//     createdAt: new Date("2026-02-15T09:05:00Z"),
-//     updatedAt: new Date("2026-02-15T09:05:00Z"),
-//     media: [],
-//     status: "DELIVERED"
-//   },
-//   {
-//     id: "m4",
-//     senderId: "user2",
-//     chatId: "dm1",
-//     content: "Sure 👍",
-//     replyToId: "m3",
-//     replyTo: {
-//       id: "m3",
-//       content: "Can we meet at 6 PM?",
-//       sender: { name: "Ali" },
-//       media: [] // no media in original message
-//     },
-//     replies: [],
-//     sender: { id: "user2", name: "Ahmed" },
-//     chat: { id: "dm1" },
-//     createdAt: new Date("2026-02-15T09:06:00Z"),
-//     updatedAt: new Date("2026-02-15T09:06:00Z"),
-//     media: [],
-//     status: "READ"
-//   },
-//   {
-//     id: "m5",
-//     senderId: "user1",
-//     chatId: "dm1",
-//     content: null,
-//     replyToId: null,
-//     replyTo: null,
-//     replies: [],
-//     sender: { id: "user1", name: "Ali" },
-//     chat: { id: "dm1" },
-//     createdAt: new Date("2026-02-15T09:10:00Z"),
-//     updatedAt: new Date("2026-02-15T09:10:00Z"),
-//     media: [
-//       { id: "media1", type: "IMAGE", url: "https://example.com/meeting-location.jpg" }
-//     ],
-//     status: "SENT"
-//   },
-//   {
-//     id: "m6",
-//     senderId: "user2",
-//     chatId: "dm1",
-//     content: "Nice location 🔥",
-//     replyToId: "m5",
-//     replyTo: {
-//       id: "m5",
-//       content: null,
-//       sender: { name: "Ali" },
-//       media: [{ type: "IMAGE" }] // added media type info
-//     },
-//     replies: [],
-//     sender: { id: "user2", name: "Ahmed" },
-//     chat: { id: "dm1" },
-//     createdAt: new Date("2026-02-15T09:12:00Z"),
-//     updatedAt: new Date("2026-02-15T09:12:00Z"),
-//     media: [],
-//     status: "READ"
-//   }
-// ];
+import { dbMessage } from "@/indexdb/indexdb-messagesRetry"
+import axios from "axios"
 
 
+let indexDb = new dbMessage()
 export const chatStore = create((set, get) => ({
+
     replyingTo: {
         id: null,
         name: null
@@ -130,8 +24,6 @@ export const chatStore = create((set, get) => ({
     setParticipants: (userId, data) => set(state => ({
         participants: new Map(state.participants).set(userId, data)
     })),
-    chatMembersIds: new Map(),
-    setChatMembersIds: (chatMembersIds) => set({ chatMembersIds }),
     setChats: (func) => {
         set((prev) => ({ chats: func(prev.chats) }))
     },
@@ -154,38 +46,78 @@ export const chatStore = create((set, get) => ({
             messages: func(prev.messages)
         }))
     },
-    typingIndicators : new Map(),
-    setTypingIndicators : (func)=>{
-      set((state)=>({typingIndicators : func(state.typingIndicators)}))
+    typingIndicators: new Map(),
+    setTypingIndicators: (func) => {
+        set((state) => ({ typingIndicators: func(state.typingIndicators) }))
     },
-    typingUsersInfo : "",
-    setTypingUsersInfo : (typingUsersInfo)=>{set({typingUsersInfo})},
+     loading: false,
+    setLoading: (loading) => set({ loading }),
+    typingUsersInfo: "",
+    setTypingUsersInfo: (typingUsersInfo) =>  set({ typingUsersInfo }) ,
+    handleCreateGroup: async (data) => {
+        let socket = socketStore.getState().socket
+        let media = data.media
+        let setChats = get().setChats
+        let imageData = null
+
+        try {
+
+
+            if (media) {
+
+                let formData = new FormData()
+                formData.append("file", media)
+                formData.append("upload_preset", "group-pfp")
+                formData.append("folder", data.chatId)
+                const res = await axios.post("https://api.cloudinary.com/v1_1/dsnrck9gn/auto/upload", formData)
+
+                if (res.status === 200) {
+                    let data = res.data
+
+                    let secureUrl = data.secure_url
+                    let publicId = data.public_id
+                    imageData = { url: secureUrl, publicId, type: media.type, filename: media.name, size: media.size }
+
+                }
+
+            }
+            let res = await Axios.post("/group/create", { ...data, media: imageData })
+
+            if (res.status === 201) {
+                let group = res.data.group
+                setChats((prev) => {
+                    return [group, ...prev]
+                })
+                socket.emit("group-created", { participantIds: data.participantIds, chatId: data.chatId })
+            }
+        } catch (error) {
+            console.log(error?.response.data?.message || error.message)
+        }
+    },
     getChats: async () => {
         try {
             let res = await Axios.get("/chat/chats")
+            let participants = get().participants
 
             if (res.status === 200) {
 
-                let AllChats = res.data.allFriends
+                let AllChats = res.data.chats
                 let updatedData = AllChats.map((chat) => {
-                    let chatMembersIds = get().chatMembersIds
-                    let participants = get().participants
-
-                    chatMembersIds.set(chat.id, chat.participants.map(({ user }) => user.id))
 
                     if (chat.isGroup) {
                         return chat
                     } else {
-                        let dmUser = chat.participants[0].user
+                        let dmUser = chat.userData
+
                         dmUser.isOnline = chat.isOnline
+
                         participants.set(dmUser.id, dmUser)
                         let data = {
                             id: chat.id,
                             userId: dmUser.id,
-                            name: dmUser.name,
                             lastMessage: chat.lastMessage,
                             unread_messageCount: chat._count.messages,
-                           
+
                         }
                         return data
                     }
@@ -196,29 +128,63 @@ export const chatStore = create((set, get) => ({
             console.log(error.message)
         }
     },
-    getChatById: async (chatId, userId) => {
-        
+    getChatById: async (chatInfo) => {
+
         try {
+            set({loading : true})
+            let { chatId, userId, isGroup, fetchAgain , containerRef } = chatInfo
 
             let socket = socketStore.getState().socket
             let setChats = get().setChats
             let selectedPage = navigationStore.getState().selectedPage
             let setSelectedPage = navigationStore.getState().setSelectedPage
-            if (selectedPage === "friends"){
+            let participants = get().participants
+
+            if (selectedPage === "friends") {
                 setSelectedPage("main")
             }
             let selectedChat = get().selectedChat
-            if (selectedChat?.id === chatId) return
-            set({ selectedChat: { id: chatId, userId: userId } })
-            set({messages : []})
+            if (selectedChat?.id === chatId && !fetchAgain) return
+
+
+
+            if (!fetchAgain){
+
+                set({ messages: [] })
+            }
             let res = await Axios.get(`/chat/${chatId}`)
- 
+
             if (res.status === 200) {
-                let { messages, id } = res.data.chat
-                socket.emit("join-chat", chatId)
-                set({ messages: messages })
+
+                let { messages, participants: Participants } = res.data.chat
+                if (!fetchAgain) {
+
+                    if (isGroup) {
+
+
+                        set({ selectedChat: { id: chatId, name: chatInfo.name, image: chatInfo?.image?.url, isGroup, total_members: Participants.length + 1 } })
+
+
+                        Participants.forEach(({ user }) => {
+                            if (!participants.has(user.id)) {
+
+                                participants.set(user.id, user)
+                            }
+
+                        })
+                    } else {
+                        set({ selectedChat: { id: chatId, isGroup, userId } })
+                    }
+                    socket.emit("join-chat", chatId)
+                }
+
+                
+                let failedMessages = await indexDb.getAllMessages(chatId)
+                messages.reverse()
+                set({ messages: [...messages, ...failedMessages] })
+                
                 let updateStatus = await Axios.put(`/message/mark-asread?chatId=${chatId}`)
-               
+
                 if (updateStatus.status === 200) {
                     setChats((chats) => {
                         return chats.map((chat) => {
@@ -232,12 +198,14 @@ export const chatStore = create((set, get) => ({
                     if (data === null) return
                     if (data.count > 0) {
                         let statusData = updateStatus.data
-                        socket.emit("mark-asRead", {  chatId, readAt: statusData.readAt })
+                        socket.emit("mark-asRead", { chatId, readAt: statusData.readAt })
                     }
                 }
             }
         } catch (error) {
             console.log(error?.message || error?.response?.data?.message)
+        }finally{
+            set({loading : false})
         }
     },
     getParticipants: () => {
@@ -260,37 +228,82 @@ export const chatStore = create((set, get) => ({
         })
         return [userData, ...ChatMemberData]
     },
-    LoadMoreMessage : async ()=>{
+    LoadMoreMessage: async (order, fetchLatest, fetchOlder) => {
         // if (!messageId) return
-        let messages = get().messages
-        let msgId = messages[messages.length - 1]?.id
-        if (!msgId) return
-        let setMessages = get().setMessages
+        let MESSAGE_WINDOW = 60
         try {
-            let res = await Axios.get(`/message/get-moreMessages?messageId=${msgId}`)
-          
-            if (res.status === 200){
-                let {messages} = res.data
-                if (!messages.length){
+            let Messages = get().messages
+            let chatId = get().selectedChat.id
 
-                    return false
+            let msgId = order === "desc" ? Messages[0]?.id : Messages[Messages.length - 1]?.id
+
+            if (Messages.length < 30) return false
+            if (!msgId || !chatId) return true
+            let setMessages = get().setMessages
+            let res = await Axios.get(`/message/get-moreMessages?messageId=${msgId}&chatId=${chatId}&order=${order}`)
+
+            if (get().selectedChat.id !== chatId) return
+           
+            if (res.status !== 200) return
+            let { messages } = res.data
+            if (!messages.length) {
+                if (order === "desc") {
+                    fetchOlder.current = false
+                } else {
+                    fetchLatest.current = false
                 }
-                setMessages(prev=>{
-                    return [...prev , ...messages]
-                })
-                return true
+                return
             }
+            if (order === "desc") {
+                setMessages(prev => {
+                    messages.reverse()
+                    let merged = [...messages, ...prev]
+                    if (merged.length > MESSAGE_WINDOW) {
+                        merged = merged.slice(0, MESSAGE_WINDOW)
+                        fetchLatest.current = true
+                    }
+                    return merged
+                })
+            }
+            else {
+                setMessages(prev => {
+                    let merged = [...prev, ...messages]
+                   
+                    if (merged.length > MESSAGE_WINDOW) {
+                        merged = merged.slice(merged.length - MESSAGE_WINDOW)
+                   
+                        fetchOlder.current = true
+
+                    }
+                    return merged
+                })
+            }
+
         } catch (error) {
             console.log(error.message)
         }
     },
-    handleCloseChat : ()=>{
+    handleCloseChat: () => {
         try {
             let socket = socketStore.getState().socket
             let selectedChat = get().selectedChat
-            socket.emit("leave-chat",selectedChat.id)
-            set({selectedChat : null})
-            set({messages : []})
+            socket.emit("leave-chat", selectedChat.id)
+            set({ selectedChat: null })
+            set({ messages: [] })
+        } catch (error) {
+            console.log(error.message)
+        }
+    },
+    handleGroupCreated: async (chatId) => {
+        const setChats = get().setChats
+        try {
+            let res = await Axios.get(`/chat/chatinfo?chatId=${chatId}`)
+            if (res.status === 200) {
+                let group = res.data.chat
+                setChats((prev) => {
+                    return [group, ...prev]
+                })
+            }
         } catch (error) {
             console.log(error.message)
         }

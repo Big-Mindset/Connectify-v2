@@ -2,6 +2,7 @@ import {prisma} from "../lib/services/prismaClient.js"
 
 import { secure_message } from "../lib/security-e2ee/encryptMessage.js"
 import createError from "http-errors"
+import { getOlderMessages } from "../lib/database-queries.js"
 let secureMessage = new secure_message(Buffer.from(process.env.KEK_KEY, "hex"))
 
 export const createMessage = async (req, res, next) => { 
@@ -163,6 +164,7 @@ export const searchMessages = async (req , res , next )=>{
         let where  = {chatId}
         if (content){
              let {n_grams} = secureMessage.content_ngrams(content)
+             
              where.search_index = {
                 hasEvery : n_grams
                }
@@ -170,12 +172,15 @@ export const searchMessages = async (req , res , next )=>{
          }
        let conditions = []
             if (from){
-                conditions.push({createdAt : {gte : new Date(from) }})
+                const [year, month, day] = from.split("-");
+                let correctedDate = new Date(Number(year),Number(month)-1,day)
+                conditions.push({createdAt : {gte : correctedDate }})
             }
             if (to){
-                let endDate = new Date(to)
-                endDate.setDate(endDate.getDate() + 1)
-                conditions.push({createdAt : {lte :endDate  }}) 
+                const [year, month, day] = to.split("-");
+                let correctedDate = new Date(Number(year),Number(month)-1,day+1)
+
+                conditions.push({createdAt : {lte :correctedDate  }}) 
             }
       if (conditions.length > 0){
         where.AND = conditions
@@ -195,7 +200,7 @@ export const searchMessages = async (req , res , next )=>{
                     select: {
                        id : true,
                         chatId: true,
-                        media: true,
+                        
                         reactions: {
                             include : {
                                 reactors : {
@@ -222,6 +227,7 @@ export const searchMessages = async (req , res , next )=>{
                         _count: {
                             select: {
                                 replies: true,
+                                media : true
                             }
                         },
                         status: {
@@ -501,65 +507,13 @@ export const deleteReaction = async (req, res, next) => {
 
 
 export const moreMessages = async (req, res, next) => {
-    let { messageId } = req.query
+    let { messageId , chatId , order } = req.query
     let user = req.user
     if (!messageId) {
         throw createError(400, { message: "messageId is required to get more messages" })
     }
     try {
-        let messages = await prisma.message.findMany({
-            cursor: {
-                id: messageId
-            },
-            skip: 1,
-            take: 40,
-            orderBy : {
-                createdAt :"desc"
-            },
-            select: {
-                       id : true,
-                        chatId: true,
-                        media: true,
-                        reactions: {
-                            include: {
-                                reactors: {
-                                    select: {
-                                        userId: true,
-                                        id: true,
-                                    }
-                                }
-                            }
-                        },
-                        senderId: true,
-                        replyTo: {
-                            select: {
-                                id: true,
-                                encryptedContent: true,
-                                senderId: true,
-                                message_security: true,
-
-                            }
-                        },
-                        encryptedContent: true,
-
-
-                        _count: {
-                            select: {
-                                replies: true,
-                            }
-                        },
-                        status: {
-                            where: {
-                                userId: {
-                                    not: user.id
-                                }
-                            }
-                        },
-                        message_security: true,
-                        createdAt: true,
-                        updatedAt: true
-                    }
-        })
+      let messages = await getOlderMessages({messageId , chatId ,order , userId : user.id })
 
 
         let decryptedMessages = messages.map((msg) => {

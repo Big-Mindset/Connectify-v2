@@ -8,10 +8,11 @@ export default function MoreOptions({ optionsRef, message , userId }) {
     let inputRef = messageSettingsStore(s => s.inputRef)
     const [isTouching , setIsTouching] = useState(null)
     useLayoutEffect(() => {
-
+      
         if (inputRef?.current && optionsRef?.current) {
 
             let rect1 = inputRef.current.getBoundingClientRect()
+       
             let rect2 = optionsRef.current.getBoundingClientRect()
             const isTouching =
                 rect1.bottom >= rect2.top &&
@@ -24,7 +25,7 @@ export default function MoreOptions({ optionsRef, message , userId }) {
     return (
         <div
             ref={optionsRef}
-            className={`absolute z-40 ${isTouching ? "bottom-full" : "top-[9%]"} border border-gray-7  right-17 rounded-sm  bg-gray-5 w-[200px] p-2  `}>
+            className={`absolute z-40 ${isTouching ? "bottom-full" : "top-[9%]"} border border-gray-7  right-18 rounded-sm  bg-gray-5 w-[200px] p-2  `}>
             <div className="flex flex-col gap-0.5 text-[0.8rem]">
               {userId === message.senderId &&
                 <Option message={message} text={"Edit"} icon={<i className="fa-solid fa-pen"></i>} />
@@ -47,7 +48,7 @@ export default function MoreOptions({ optionsRef, message , userId }) {
     )
 }
 
-function Option({ text, icon, red, message }) {
+export function Option({ text, icon, red, message }) {
     let setOpenMessageOptionId = messageSettingsStore(s => s.setOpenMessageOptionId)
     let handleEditMessage = messageSettingsStore(s => s.handleEditMessage)
     let handleReplyMessage = messageSettingsStore(s => s.handleReplyMessage)

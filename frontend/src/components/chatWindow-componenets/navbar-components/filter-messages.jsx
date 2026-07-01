@@ -1,4 +1,4 @@
-import { chatStore } from "@/store/chat-store";
+import { chatStore } from "@/store/Chat-store";
 import { navigationStore } from "@/store/navigation-store";
 import { Search, RotateCcw, Plus, X, Check } from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useState } from "react";

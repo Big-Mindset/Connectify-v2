@@ -80,7 +80,6 @@ export class SocketConnection extends SocketQueries {
         let friendIds = await getFriendIds(userId)
         if (friendIds?.length > 0) {
             let activeFriends = await filterOnline(friendIds)
-
             for (const id of activeFriends) {
                 socket.to(id).emit(event, userId);
             }
@@ -94,15 +93,18 @@ export class SocketConnection extends SocketQueries {
 
     }
 
-    async handleSendMessage(socket, message, participantIds) {
+    async handleSendMessage(socket, message) {
   
         try {
-            let InActiveFriends = await this.getInActiveMembers(message.chatId, participantIds)
+            let userId = socket.handshake.auth.userId
+            let participantIds = await this.getChatParticipants(message.chatId ,userId)
+          
             socket.to(message.chatId).emit("send-message", message)
+            let InActiveFriends = await this.getInActiveMembers(message.chatId, participantIds)
             if (InActiveFriends) {
 
-                for (let id of InActiveFriends) {
-                    socket.to(id).emit("message-notification", message)
+                for (let userId of InActiveFriends) {
+                    socket.to(userId).emit("message-notification", message)
                 }
             }
 
@@ -117,8 +119,8 @@ export class SocketConnection extends SocketQueries {
         let activeUserIds = new Set(await client.SMEMBERS(`active-chat:${chatId}`))
      
       
-        let inActiveIds = participantIds.filter((id) => !activeUserIds.has(id))
-
+        let inActiveIds = participantIds.filter((userId) => !activeUserIds.has(userId))
+       
         if (inActiveIds.length > 0) {
             let inActiveChatUser = await filterOnline(inActiveIds)
             return inActiveChatUser
@@ -170,13 +172,15 @@ export class SocketConnection extends SocketQueries {
         socket.to(chatId).emit("reaction-updates", data)
 
     }
-    async handleDeleteMessage(socket, message, membersIds) {
-        if (message.isLastMessage) {
+    async handleDeleteMessage(socket, message) {
 
+        if (message.isLastMessage) {
+            let userId = socket.handshake.auth.userId
+            let membersIds = await this.getChatParticipants(message.chatId ,userId )
             let inActiveIds = await this.getInActiveMembers(message.chatId, membersIds)
             if (inActiveIds) {
-                for (let id of inActiveIds) {
-                    socket.to(id).emit("delete-message", message)
+                for (let userId of inActiveIds) {
+                    socket.to(userId).emit("delete-message", message)
                 }
             }
         }
@@ -198,16 +202,24 @@ export class SocketConnection extends SocketQueries {
     }
     async handleTyping(socket, data, event) {
         try {
-            let InActiveFriends = await this.getInActiveMembers(data.chatId, data.chatMembersIds)
-            socket.to(data.chatId).emit(event, { userId: data.userId, chatId: data.chatId })
+          
+            let membersIds = await this.getChatParticipants(data.chatId ,data.userId )
+            let InActiveFriends = await this.getInActiveMembers(data.chatId, membersIds)
+            socket.to(data.chatId).emit(event, {  chatId: data.chatId , name : data.name })
             if (InActiveFriends) {
 
-                for (let id of InActiveFriends) {
-                    socket.to(id).emit(event, { userId: data.userId, chatId: data.chatId })
+                for (let userId of InActiveFriends) {
+                    socket.to(userId).emit(event, {  chatId: data.chatId , name : data.name })
                 }
             }
         } catch (error) {
             console.log(error)
+        }
+    }
+    async handleGroupCreated(socket , data){
+        let onlineParticipants = await filterOnline(data.participantIds)
+        for (let id of onlineParticipants){
+            socket.to(id).emit("group-created",data.chatId)
         }
     }
 

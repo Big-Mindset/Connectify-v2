@@ -1,3 +1,4 @@
+import { DiagConsoleLogger } from "@opentelemetry/api"
 import {prisma} from "../lib/services/prismaClient.js"
 
 export class SocketQueries {
@@ -40,6 +41,7 @@ export class SocketQueries {
         }
     }
     async allMessagesDelivered(userId) {
+        
         try {
             let messages = await prisma.message.findMany({
 
@@ -74,10 +76,10 @@ export class SocketQueries {
 
 
 
-
+          
 
             let deliveredAt = new Date()
-            await prisma.status.createMany({
+            let res = await prisma.status.createMany({
                 data : messages.map((msg)=>({
                     userId ,
                     messageId : msg.id,
@@ -118,7 +120,7 @@ export class SocketQueries {
                     userId : true
                 }
             })
-            return participants
+            return participants.map(({userId})=>userId)
         } catch (error) {
             console.log(error.message)
         }

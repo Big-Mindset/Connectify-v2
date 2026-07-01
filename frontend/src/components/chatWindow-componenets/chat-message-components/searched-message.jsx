@@ -1,9 +1,9 @@
 import Avatar from "@/components/Avatar";
 import { messageStatus } from "@/lib/calculateStatus";
-import { Check, CheckCheck } from "lucide-react";
+import { Check, CheckCheck, ImageIcon } from "lucide-react";
 import { formateTime } from "@/lib/formateTime"
 import { userStore } from "@/store/user-store";
-import { chatStore } from "@/store/chat-store";
+import { chatStore } from "@/store/Chat-store";
 
 export let SearchedMessage = ({ message }) => {
     const session = userStore(s => s.session)
@@ -55,7 +55,7 @@ export let SearchedMessage = ({ message }) => {
                     <Avatar size={"size-11"} image={sender?.image} />
                 </div>
 
-                <div className="w-full pt-1">
+                <div className=" flex-1 min-w-[0] pt-1 ">
                     <div className="flex items-baseline gap-2 w-full">
                         <h1 className="font-medium text-gray-300 font-semibold text-md min-w-0">
                             {sender?.name}
@@ -70,8 +70,12 @@ export let SearchedMessage = ({ message }) => {
                         </div>
                     </div>
 
-                    <div className={`${message?.status === "PENDING" ? "text-gray-300/60 font-semibold" : "text-gray-300/90"} text-[0.95em]`}>
-                        {message.content}
+                    <div className={`mb-2 ${message?.status === "PENDING" ? "text-gray-300/60 font-semibold" : "text-gray-300/90"} min-w-0 whitespace-pre-wrap break-all text-[0.95em]`}>
+                        {message.content} {message._count.media > 0 && <span className="flex items-center">
+                                <ImageIcon size={15} />
+                                <p>{message._count.media}</p>
+                                
+                        </span>} 
                         {message.createdAt !== message.updatedAt &&
                             <span className="text-[0.75rem] text-gray-400 ml-1">(edited)</span>
                         }

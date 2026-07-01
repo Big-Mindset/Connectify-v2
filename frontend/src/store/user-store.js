@@ -1,7 +1,7 @@
 import { Axios } from "@/lib/axiosInstance";
 import { navigationStore } from "./navigation-store";
 import toast from "react-hot-toast";
-import { chatStore } from "./chat-store";
+import { chatStore } from "./Chat-store";
 
 const { create } = require("zustand");
 
@@ -69,14 +69,12 @@ export const userStore = create((set, get) => ({
         let selectedPage = navigationStore.getState().selectedPage
         let setPendingRequest = get().setPendingRequest
         let setChats = chatStore.getState().setChats
-        let chatMembersIds = chatStore.getState().chatMembersIds
         let participants = chatStore.getState().participants
         let res = await Axios.get(`/chat/chatinfo?chatId=${data.chatId}`)
   
         if (res.status === 200) {
             let chat = res.data.chat
             let dmUser = chat.userData
-            chatMembersIds.set(chat.id, [dmUser.id])
             participants.set(dmUser.id, dmUser)
             let chatData = {
                 id: chat.id,

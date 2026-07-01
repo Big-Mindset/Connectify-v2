@@ -75,7 +75,7 @@ export default function ResetPassword() {
                         <label htmlFor="confirm-password" className="text-sm text-gray-400  font-bold">Confirm Password</label>
                     </div>
                     <div>
-                        <div className="relative bg-red-100">
+                        <div className="relative">
 
                             <input {...register("confirmPassword")} type={showPassword.confirmPassword ? "text" :"password"} id="confirmPassword" placeholder="Confirm the password" className="w-full placeholder:text-sm focus:bg-[#181818] hover:bg-[#181818] bg-[#1b1b1b] duration-200  rounded-lg p-2 focus:border-border-accent border outline-none" />
                             <div className="absolute text-gray-400  cursor-pointer right-0 -translate-1/2  top-1/2 " onClick={() => setShowPassword(prev => ({ ...prev, confirmPassword: !prev.confirmPassword }))}>

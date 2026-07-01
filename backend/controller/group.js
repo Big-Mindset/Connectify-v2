@@ -1,5 +1,6 @@
-import {prisma} from "../lib/services/prismaClient.js"
+import { prisma } from "../lib/services/prismaClient.js"
 import createError from "node:http"
+import { getMessageData } from "./chat.js"
 
 export const getGroups = async (req, res, next) => {
     let selectData = {
@@ -167,44 +168,48 @@ export const changeUserRole = async (req, res, next) => {
 
 
 export const createGroup = async (req, res, next) => {
-    let { name, description, participants, media } = req.body
+    let userId = req.user.id
+    let { name, description, participantIds, media, chatId } = req.body
     try {
+
+
         if (!name.trim()) {
             throw createError(400, { message: "Group-name is required" })
         }
-        if (!participants.length) {
+        if (!participantIds.length) {
             throw createError(400, { message: "Choose participants to create a group" })
-
         }
-        if (!media.media_objectKey) {
-            // todo - add user avatar
-        }
-        let createGroup = await prisma.chat.create({
-            data: {
-                name,
-                description,
-                participants: { participants },
-                isGroup: true,
-
-                pfp: {
-                    create: media
-                },
-
-            },
-            include: {
-                participants:  true,
-                _count: {
-                    select: {
-                        participants: true,
-                    }
-                },
+        participantIds.push(userId)
+        let image = media?.url ?  {
+            create: {
+                publicId: media.publicId,
+                url: media.url,
 
             }
+        } : null
+        
+        let newGroup = await prisma.chat.create({
+            data: {
+                id: chatId,
+                name,
+                description,
+                participants: {
+                    createMany: {
+                        data: participantIds.map((id) => {
+                            if (id === userId) return { userId: id, role: "OWNER" }
+                            return { userId: id , role : "MEMBER" }
+                        })
+                    }
+                },
+                isGroup: true,
+                ...(image && { image }),
+        },
+            select : getMessageData(userId)
         })
-        return res.status(201).json({ createGroup })
-    } catch (error) {
-        next(error)
-    }
+    return res.status(201).json({ group: newGroup })
+} catch (error) {
+    next(error)
+}
 }
 
 
@@ -222,8 +227,8 @@ export const leaveGroup = async (req, res, next) => {
                 id: true
             }
         })
-        if (!userRole.id){
-            throw createError(404,{message : "chat-participant not found"})
+        if (!userRole.id) {
+            throw createError(404, { message: "chat-participant not found" })
         }
         if (userRole === "OWNER") {
             let [_, newOwner] = await prisma.$transaction([
@@ -320,13 +325,13 @@ export const inviteUser = async (req, res, next) => {
             throw createError(400, { message: "Member can't invite users" })
         }
         let new_participants = await prisma.chatParticipant.createMany({
-            data: userIds.map((id)=>({
+            data: userIds.map((id) => ({
                 chatId,
-                userId : id
+                userId: id
             })),
-            skipDuplicates : true,
+            skipDuplicates: true,
         })
-        
+
         res.status(200).json({ new_participants })
     } catch (error) {
         next(error)

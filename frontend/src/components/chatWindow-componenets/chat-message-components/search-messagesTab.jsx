@@ -6,7 +6,7 @@ import MessageFilter from "../navbar-components/filter-messages"
 import { navigationStore } from "@/store/navigation-store"
 import { Axios } from "@/lib/axiosInstance"
 import { SearchedMessage } from "./searched-message"
-import { chatStore } from "@/store/chat-store"
+import { chatStore } from "@/store/Chat-store"
 export const SearchMessageTab = () => {
     const filters = navigationStore(s => s.filters)
     const setFilters = navigationStore(s => s.setFilters)
@@ -19,7 +19,7 @@ export const SearchMessageTab = () => {
         clearInterval(debounceTimeout.current)
         debounceTimeout.current = null
         debounceTimeout.current = setTimeout(() => {
-            if (inputText.trim().length > 0 && inputText.trim() !== (filters?.content?.trim() || "")) {
+            if (inputText.trim() !== (filters?.content?.trim() || "")) {
                 
                 setFilters((filters) => {
                     return { ...filters, content: inputText }

@@ -1,26 +1,34 @@
 import { create } from "zustand"
-import { chatStore } from "./chat-store"
+import { chatStore } from "./Chat-store"
 import { socketStore } from "./socket"
 import axios from "axios"
 import { Axios } from "@/lib/axiosInstance"
 import { messageSettingsStore } from "./messageSettings-store"
 import { userStore } from "./user-store"
+import { dbMessage } from "@/indexdb/indexdb-messagesRetry"
 
+let indexDb = new dbMessage()
 export let chatMessageStore = create((set, get) => ({
     messagesProgress: {},
-    sendMessage: async (messageData, isAttempt) => {
+    sendMessage: async (messageData, isAttempt, fetchLatest) => {
 
         let socket = socketStore.getState().socket
-        let MembersIds = chatStore.getState().chatMembersIds.get(messageData.chatId)
         let selectedChat = chatStore.getState().selectedChat
         let setMessages = chatStore.getState().setMessages
         let filePreview = messageData.media
-        if (!isAttempt){
+
+
+        if (!isAttempt && !fetchLatest?.current) {
 
             setMessages((messages) => {
-                
-                return [messageData, ...messages]
+
+                return [...messages, messageData]
             })
+        } else {
+            let currentDate = new Date()
+            messageData.createdAt = currentDate
+            messageData.updatedAt = currentDate
+
         }
         try {
             if (filePreview.length) {
@@ -57,14 +65,17 @@ export let chatMessageStore = create((set, get) => ({
                     let data = results[idx].data
                     return { ...rest, url: data.secure_url, publicId: data.public_id, size: data.bytes }
                 })
-                setMessages((messages) => {
-                    return messages.map((msg) => {
-                        if (msg.id === messageData.id) {
-                            return { ...msg, media: completeMediaData }
-                        }
-                        return msg
+                if (!fetchLatest.current) {
+
+                    setMessages((messages) => {
+                        return messages.map((msg) => {
+                            if (msg.id === messageData.id) {
+                                return { ...msg, media: completeMediaData }
+                            }
+                            return msg
+                        })
                     })
-                })
+                }
 
                 messageData.media = completeMediaData
             }
@@ -75,9 +86,12 @@ export let chatMessageStore = create((set, get) => ({
                 let message = res.data.message
 
                 if (message?.id) {
-                    let updatedMessage = get().handleMessageSent(message)
+                    if (isAttempt) {
+                        await indexDb.deleteMessage(message.id)
+                    }
+                    let updatedMessage = get().handleMessageSent(message, isAttempt, fetchLatest)
 
-                    socket?.emit("send-message", MembersIds, updatedMessage)
+                    socket?.emit("send-message", updatedMessage)
                 }
                 return { status: 200 }
 
@@ -91,26 +105,37 @@ export let chatMessageStore = create((set, get) => ({
                 })
                 return { status: 429 }
             } else if (error?.message === "Network Error") {
-                if (isAttempt) return "Network Error"
+                if (isAttempt === "auto-retry") return "Network Error"
                 let RetryMessage = get().RetryMessage
                 RetryMessage(messageData)
+
+
+
+
             }
         }
     },
-    handleMessageSent: (message) => {
+    handleMessageSent: (message, retryAttempt, fetchLatest) => {
         let setMessages = chatStore.getState().setMessages
         let setChats = chatStore.getState().setChats
         let lastMessage = null
+        if (!fetchLatest?.current) {
 
-        setMessages((messages) => {
-            return messages.map((msg) => {
-                if (msg.id === message.id) {
-                    lastMessage = { ...msg, status: message.status }
-                    return lastMessage
+            setMessages((messages) => {
+                let updatedMessage = messages.map((msg) => {
+                    if (msg.id === message.id) {
+
+                        lastMessage = { ...msg, status: message.status }
+                        return lastMessage
+                    }
+                    return msg
+                })
+                if (retryAttempt === "manual-retry") {
+                    updatedMessage.sort((a, b) => b.createdAt - a.createdAt)
                 }
-                return msg
+                return updatedMessage
             })
-        })
+        }
         setChats((chats) => {
             return chats.map((chat) => {
                 if (chat.id === lastMessage.chatId) {
@@ -127,7 +152,6 @@ export let chatMessageStore = create((set, get) => ({
         let handleDeleteMessage = messageSettingsStore.getState().handleDeleteMessage
         let setMessages = chatStore.getState().setMessages
         let selectedChat = chatStore.getState().selectedChat
-        let MembersIds = chatStore.getState().chatMembersIds.get(selectedChat?.id)
         if (!content.trim() && !message.media) {
             handleDeleteMessage(message)
             return
@@ -155,7 +179,7 @@ export let chatMessageStore = create((set, get) => ({
                         return msg
                     })
                 })
-                socket.emit("send-message", MembersIds, { content, updatedAt, chatId: selectedChat.id, id: messageId })
+                socket.emit("send-message", { content, updatedAt, chatId: selectedChat.id, id: messageId })
             }
         } catch (error) {
             console.log(error?.response?.data?.message || error.message)
@@ -166,7 +190,6 @@ export let chatMessageStore = create((set, get) => ({
         let setDeleteMessage = messageSettingsStore.getState().setDeleteMessage
         let handleDeleteMessageFromUI = messageSettingsStore.getState().handleDeleteMessageFromUI
         let socket = socketStore.getState().socket
-        let MembersIds = chatStore.getState().chatMembersIds.get(deleteMessage.chatId)
 
         try {
 
@@ -175,7 +198,7 @@ export let chatMessageStore = create((set, get) => ({
             if (res.status === 200) {
                 let isLastMessage = handleDeleteMessageFromUI({ chatId: deleteMessage.chatId, id: deleteMessage.id })
 
-                socket.emit("delete-message", { chatId: deleteMessage.chatId, id: deleteMessage.id, isLastMessage }, MembersIds)
+                socket.emit("delete-message", { chatId: deleteMessage.chatId, id: deleteMessage.id, isLastMessage })
             }
             setDeleteMessage(null)
         } catch (error) {
@@ -266,32 +289,46 @@ export let chatMessageStore = create((set, get) => ({
     },
 
     RetryMessage: async (messageData) => {
-        console.log("retrying logic")
         let delay = 250
-        let sleep = ()=>{
-        delay *=2
+        let sleep = () => {
+            delay *= 2
             let jitter = Math.random() * 500
             let totalDelay = delay + jitter
-            new Promise((res)=>{
+            new Promise((res) => {
 
-                setTimeout(()=>{
+                setTimeout(() => {
                     res()
-                },totalDelay)
+                }, totalDelay)
             })
         }
-        let MAX_ATTEMPTS = 3    
+        let MAX_ATTEMPTS = 3
         let sendMessage = get().sendMessage
-        for (let attempt = 1;attempt <= MAX_ATTEMPTS;attempt++){
-            console.log("retrying")
-            let res = await sendMessage(messageData,true)
-            console.log(res)
-            if (res.status === 200){
-                return 
-            }else if (res === "Network Error"){
-                console.log("sleeping for "+ delay)
+        let setMessages = chatStore.getState().setMessages
+        for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+
+            let res = await sendMessage(messageData, "auto-retry")
+
+            if (res.status === 200) {
+                return
+            } else if (res === "Network Error") {
+
+                if (attempt === 3) {
+
+                    setMessages((messages) => {
+                        return messages.map((msg) => {
+                            if (msg.id === messageData.id) {
+                                return { ...msg, status: "FAILED", createdAt: null, updatedAt: null }
+                            }
+                            return msg
+                        })
+                    })
+                    await indexDb.addMessage({ ...messageData, status: "FAILED", createdAt: null, updatedAt: null })
+
+                    return
+                }
                 sleep()
             }
-        }   
+        }
     }
 
 }))

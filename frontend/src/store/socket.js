@@ -1,7 +1,7 @@
 
 import { create } from "zustand"
 import { io } from "socket.io-client"
-import { chatStore } from "./chat-store"
+import { chatStore } from "./Chat-store"
 import { messageSettingsStore } from "./messageSettings-store"
 import { navigationStore } from "./navigation-store"
 import { userStore } from "./user-store"
@@ -36,7 +36,7 @@ export let socketStore = create((set, get) => ({
         let handleReceiveFriendRequest =  userStore.getState().handleReceiveFriendRequest
         let handleRejectCancelRequest = userStore.getState().handleRejectCancelRequest
         let handleAcceptRequest = userStore.getState().handleAcceptRequest
-        
+        let handleGroupCreated = chatStore.getState().handleGroupCreated
         let heartbeat = null
         sok.on("connect", async () => {
             set({ connecting: false })
@@ -66,6 +66,8 @@ export let socketStore = create((set, get) => ({
         sok.on("mark-asRead", handleMarkAllAsRead)
         sok.on("updateToDelivered", handleUpdateAllToDelivered)
 
+        sok.on("group-created",handleGroupCreated)
+
         sok.on("typing",(data)=>{
 
            let setTypingIndicators = chatStore.getState().setTypingIndicators
@@ -75,13 +77,14 @@ export let socketStore = create((set, get) => ({
             if (!value){
                 value = new Set()
             }
-            value.add(data.userId)
+            value.add(data.name)
             typingIndicators.set(data.chatId , value)
             return typingIndicators
            })
 
         })
         sok.on("stop-typing",(data)=>{
+        
              let setTypingIndicators = chatStore.getState().setTypingIndicators
            setTypingIndicators((prev)=>{
             let typingIndicators = new Map(prev)
@@ -89,7 +92,7 @@ export let socketStore = create((set, get) => ({
             if (!value){
                 return prev
             }
-            value.delete(data.userId)
+            value.delete(data.name)
             typingIndicators.set(data.chatId , value)
             if (value.size=== 0){
                 typingIndicators.delete(data.chatId)
@@ -100,6 +103,7 @@ export let socketStore = create((set, get) => ({
         })
 
         sok.on("online-user", async (id) => {
+          
             let user = participants.get(id)
 
             setParticipants(id, { ...(user || {}), isOnline: 1 })
@@ -159,7 +163,7 @@ export let socketStore = create((set, get) => ({
 
     },
     handleMarkAllAsRead: (data) => {
-
+        console.log(data)
         try {
 
             let setMessages = chatStore.getState().setMessages
@@ -204,6 +208,7 @@ export let socketStore = create((set, get) => ({
 
     },
     handleReceiveMessage: (message) => {
+        let selectedChat = chatStore.getState().selectedChat
         let socket = get().socket
         let setChats = chatStore.getState().setChats
         let setMessages = chatStore.getState().setMessages
@@ -218,9 +223,10 @@ export let socketStore = create((set, get) => ({
                     return chat
                 })
             })
+        if (selectedChat.id !== message.chatId) return
 
             setMessages((msgs) => {
-                return [message, ...msgs]
+                return [...msgs,message]
             })
         } else {
             setMessages((msgs) => {
@@ -293,7 +299,6 @@ export let socketStore = create((set, get) => ({
 
     },
     handleDeliverMessage: (data) => {
-
         let setMessages = chatStore.getState().setMessages
         let setChats = chatStore.getState().setChats
         setChats((chats) => {

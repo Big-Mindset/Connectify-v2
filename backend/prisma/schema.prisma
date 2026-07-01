@@ -147,7 +147,7 @@ enum RequestStatus {
 
 model Chat {
   id                        String            @id @default(uuid())
-  lastMessageId             String?
+  lastMessageId             String? @unique
   name                      String?
   description               String?
   image                     Media?            @relation(name: "group-pfp")
@@ -157,15 +157,12 @@ model Chat {
   participants              ChatParticipant[]
   messages                  Message[]
   lastMessage               Message?          @relation(fields: [lastMessageId], references: [id], name: "lastMessage", onDelete: SetNull)
-  friendshipId              String            @unique
-  FriendShip                Friendship        @relation(fields: [friendshipId], references: [id],onDelete: Cascade)
+  friendshipId              String?            @unique
+  FriendShip                Friendship?        @relation(fields: [friendshipId], references: [id],onDelete: Cascade)
   createdAt                 DateTime          @default(now())
   updatedAt                 DateTime          @updatedAt
   pinnedAt                  DateTime?
 
-  @@unique([lastMessageId])
-  @@index([lastMessageId])
-  @@index([friendshipId])
 }
 
 enum Roles {
@@ -184,7 +181,7 @@ model ChatParticipant {
   updatedAt   DateTime  @updatedAt
   muted       Boolean   @default(false)
   mutedTil    DateTime?
-  role        Roles?
+  role        Roles? 
   clearChatAt DateTime?
 
   @@unique([userId, chatId])
@@ -277,7 +274,7 @@ model Media {
   publicId String
   filename String?
   size Int?
-  type            String
+  type            String?
   messageId       String?
   chatPfpId       String?  @unique
   chatPfp         Chat?    @relation(name: "group-pfp", fields: [chatPfpId], references: [id])

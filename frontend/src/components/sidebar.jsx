@@ -29,7 +29,7 @@ export const Sidebar = () => {
                     <UserProfile setOpenProfile={setOpenProfile} />
                 }
             </AnimatePresence>
-            <div className="sidebar hidden  md:block  max-w-[60px] p-1 bg-black w-full">
+            <div className="sidebar hidden  md:block  max-w-[60px] p-1 bg-black  w-full">
                 <div className="h-full flex flex-col justify-between  items-center pb-2">
 
                     <div className="flex  flex-col gap-10 px-1 py-2">

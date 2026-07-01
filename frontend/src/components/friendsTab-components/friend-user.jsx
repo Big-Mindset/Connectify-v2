@@ -1,16 +1,15 @@
 import {motion} from "framer-motion"
 import { useState } from "react";
 import Avatar from "../Avatar";
-import { chatStore } from "@/store/chat-store";
+import { chatStore } from "@/store/Chat-store";
 import { navigationStore } from "@/store/navigation-store";
 
 export default function FriendUser({data}) {
     const [moreOptions , setMoreOptions] = useState(false)
     let getChatById = chatStore(s=>s.getChatById)
-    let setSelectedPage = navigationStore(s=>s.setSelectedPage)
     let selectedChat = chatStore(s=>s.selectedChat)
     let handleOpenChat = ()=>{
-        getChatById(data.chatId , data.userId) 
+        getChatById({chatId : data.chatId, userId : data.id ,isGroup : false}) 
     }
     return (
         <div className="flex justify-between  p-2 items-center ">

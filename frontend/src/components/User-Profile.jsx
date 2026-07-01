@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLoading } from "@/lib/loading_hook";
 import { Axios } from "@/lib/axiosInstance";
 import { userStore } from "@/store/user-store";
-import { chatStore } from "@/store/chat-store";
+import { chatStore } from "@/store/Chat-store";
 
 const BIO_MAX = 260
 
@@ -55,7 +55,7 @@ export default function UserProfile({ setOpenProfile }) {
             formData.append("file", fileRef.current)
             formData.append("upload_preset", "profile-image")
 
-            const res = await fetch(`https://api.cloudinary.com/v1_1/dsnrck9gn/image/upload`, {
+            const res = await fetch("https://api.cloudinary.com/v1_1/dsnrck9gn/auto/upload", {
                 method: "POST",
                 body: formData
             })

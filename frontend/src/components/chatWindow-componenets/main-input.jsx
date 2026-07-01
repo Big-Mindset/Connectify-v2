@@ -1,6 +1,6 @@
 
 
-import { chatStore } from "@/store/chat-store";
+import { chatStore } from "@/store/Chat-store";
 import { Camera, Plus, Send, Trash, Upload, X, XIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion"
@@ -14,8 +14,8 @@ import { socketStore } from "@/store/socket";
 let RenderFile = dynamic(() => import("./main-input-components/renderFile"))
 let FileSizeExceeded = dynamic(() => import("./main-input-components/file-sizeExceeded"))
 const EmojiPicker = dynamic(() => import("./Emoji-Picker"), { ssr: false })
-export default function MainInput({ chatId }) {
-    const [openAttachments, setOpenAttachments] = useState(false)
+export default function MainInput({ chatId , fetchLatest }) {
+const [openAttachments, setOpenAttachments] = useState(false)
     const [inputText, setInputText] = useState("")
     const [filePreview, setFilePreview] = useState([])
     const [editFile, setEditFile] = useState(null)
@@ -33,13 +33,14 @@ export default function MainInput({ chatId }) {
     let textInputRef = useRef(null)
     
     let sendMessage = chatMessageStore(s => s.sendMessage)
-    let setInputRef = messageSettingsStore(s => s.setInputRef)
+    
     let replyMessage = messageSettingsStore(s => s.replyMessage)
     let setReplyMessage = messageSettingsStore(s => s.setReplyMessage)
     let inputRef = useRef(null)
     let debounceTimeout = useRef(null)
-    let chatMembersIds = chatStore(s => s.chatMembersIds).get(chatId)
     let socket = socketStore(s => s.socket)
+    let user = session?.user
+    const setInputRef = messageSettingsStore(s=>s.setInputRef)
     useEffect(() => {
         const handleClickOutside = (e) => {
             if (plusOptionsRef.current &&
@@ -51,22 +52,35 @@ export default function MainInput({ chatId }) {
             }
         };
 
+            const handleTypingOutside = (e)=>{
+                if (e.key.length === 1 && e.target.tagName !== "INPUT"){
 
-        window.addEventListener("mousedown", handleClickOutside)
+                
+                textInputRef.current.focus()
+            }
+        }
+        setInputRef(inputRef)
+        
+        document.addEventListener("mousedown", handleClickOutside)
+        document.addEventListener("keydown", handleTypingOutside)
         return () => {
-
-            window.removeEventListener("mousedown", handleClickOutside)
+            clearTimeout(debounceTimeout.current)
+            debounceTimeout.current = null
+            document.removeEventListener("mousedown", handleClickOutside)
+            document.removeEventListener("keydown", handleTypingOutside)
         }
     }, [])
+        
+    
+    useEffect(() => {
+        let senderId = replyMessage?.senderId
+        if (senderId === user.id) {
+        setSenderData(user)
+        }else{
 
-    useEffect(() => {
-        if (inputRef.current) {
-            setInputRef(inputRef)
+            let sender = participants.get(senderId)
+            setSenderData(sender)
         }
-    }, [inputRef])
-    useEffect(() => {
-        let sender = participants.get(replyMessage?.senderId)
-        setSenderData(sender)
         textInputRef.current.focus()
     }, [replyMessage])
 
@@ -76,7 +90,6 @@ export default function MainInput({ chatId }) {
 
 
 
-    let user = session?.user
     const attaches = [
         { name: "Upload a file", icon: <Upload size={19} />, type: "file" },
         { name: "Camera", icon: <Camera size={19} /> },
@@ -102,7 +115,7 @@ export default function MainInput({ chatId }) {
 
 
         setFilePreview([])
-        let res = await sendMessage(messageData)
+        let res = await sendMessage(messageData ,false, fetchLatest)
 
         if (res?.status === 429) {
             setSizeExceeded({ type: "message-limit" })
@@ -187,11 +200,11 @@ export default function MainInput({ chatId }) {
         if (val.length < inputText.length) return
         
         if (!isTyping) {
-            socket.emit("typing", { chatId, chatMembersIds, userId: user.id })
+            socket.emit("typing", { chatId, userId: user.id , name : user.name })
             setIsTyping(true)
         }
         debounceTimeout.current = setTimeout(() => {
-            socket.emit("stop-typing" , { chatId, chatMembersIds, userId: user.id })
+            socket.emit("stop-typing" , { chatId, name: user.name })
             setIsTyping(false)
         }, 400)
     }
@@ -208,14 +221,6 @@ export default function MainInput({ chatId }) {
         setReplyMessage(null)
     }
 
-
-    useEffect(() => {
-     
-        return () => {
-            clearTimeout(debounceTimeout.current)
-            debounceTimeout.current = null
-        }
-    }, [])
 
     return (
         <>

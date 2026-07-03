@@ -28,7 +28,7 @@ export default function Chats() {
     const session = userStore(s => s.session)
     const participants = chatStore(s=>s.participants)
     let user = session?.user
-
+    console.log("rendering the component")
     let { loading, setLoading } = useLoading()
     useLayoutEffect(() => {
         if (user?.id !== null && !chats?.length) {
@@ -84,7 +84,7 @@ export default function Chats() {
     }, [selectedChat, searchQuery, chats])
 
 
-    console.log(chatSettings)
+    console.count("chat.jsx")
     return <div className=" w-full border-r border-gray-6 h-full min-h-0 py-4  bg-gray-1  ">
         <AnimatePresence>
 
@@ -157,9 +157,9 @@ export default function Chats() {
                                 <p className="tracking-wider font-bold text-gray-300">Chats not found</p>
                             </div>
                         </div> : <div className="flex flex-col h-full p-2 overflow-y-auto gap-2">
-                            {filteredChats.map((chat) => {
+                            {/* {filteredChats.map((chat) => {
                                 return <ChatUser key={chat.id} chat={chat} isMenuOpen={chat.id === chatSettings} setChatSettings={setChatSettings} />
-                            })}
+                            })} */}
                         </div>}
 
                     </div>

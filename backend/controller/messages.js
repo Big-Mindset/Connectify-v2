@@ -507,13 +507,13 @@ export const deleteReaction = async (req, res, next) => {
 
 
 export const moreMessages = async (req, res, next) => {
-    let { messageId , chatId , order } = req.query
+    let { messageId , chatId , order , limit } = req.query
     let user = req.user
     if (!messageId) {
         throw createError(400, { message: "messageId is required to get more messages" })
     }
     try {
-      let messages = await getOlderMessages({messageId , chatId ,order , userId : user.id })
+      let messages = await getOlderMessages({messageId , chatId ,order , userId : user.id , limit : Number(limit) })
 
 
         let decryptedMessages = messages.map((msg) => {

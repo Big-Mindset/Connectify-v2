@@ -27,7 +27,7 @@ export default function ChatWindow() {
     const deleteMessage = messageSettingsStore(s => s.deleteMessage)
     const reactMessage = messageSettingsStore(s => s.reactMessage)
     const setReactMessage = messageSettingsStore(s => s.setReactMessage)
-    const session = userStore(s=>s.session)
+    const session = userStore(s => s.session)
     const handleReceiveMessage = socketStore(s => s.handleReceiveMessage)
     const handleDeliverMessage = socketStore(s => s.handleDeliverMessage)
     const handleReadMessage = socketStore(s => s.handleReadMessage)
@@ -35,6 +35,7 @@ export default function ChatWindow() {
     const stopScroll = useRef(false)
     const scrollToPresent = useRef(null)
     const [scrollPresent, setScrollPresent] = useState(false)
+    const [unseenMessagesLen, setUnseenMessagesLen] = useState(0)
     let OldloadingRef = useRef(false)
     let LatestloadingRef = useRef(false)
     let fetchLatest = useRef(false)
@@ -66,15 +67,15 @@ export default function ChatWindow() {
         LatestloadingRef.current = false
         fetchLatest.current = false
         fetchOlder.current = true
-    
+
     }, [selectedChat?.id])
     useLayoutEffect(() => {
         let container = MessagesContainerRef.current
         let scrollHeight = container.scrollHeight
         let scrollTop = container.scrollTop
         let max_height = (scrollHeight - scrollTop) > 1200
-        if (max_height && messages[messages.length - 1]?.senderId !== session.user.id){
-            // stuff to do
+        if (max_height && messages[messages.length - 1]?.senderId !== session.user.id) {
+            setUnseenMessagesLen(prev => prev + 1)
             return
         }
         if (!container || (fetchLatest.current || stopScroll.current)) return
@@ -91,11 +92,12 @@ export default function ChatWindow() {
 
                 if (entry.isIntersecting && entry.target === oldMessagesObserRef.current && fetchOlder.current && !OldloadingRef.current) {
                     OldloadingRef.current = true
-                    if (fetchOlder.current) {
+                    if (fetchOlder?.current) {
                         stopScroll.current = true
                         console.log("fetching old messages")
-                        await LoadMoreMessage("desc", fetchLatest, fetchOlder)
-
+                        let data = await LoadMoreMessage("desc")
+                       fetchLatest.current = data?.fetchLatest ?? fetchLatest.current;
+                        fetchOlder.current = data?.fetchOlder ?? fetchOlder.current;
                         OldloadingRef.current = false
 
 
@@ -107,7 +109,11 @@ export default function ChatWindow() {
                     LatestloadingRef.current = true
                     if (fetchLatest.current) {
                         stopScroll.current = true
-                        await LoadMoreMessage("asc", fetchLatest, fetchOlder)
+                        let data = await LoadMoreMessage("asc")
+                        
+                        fetchLatest.current = data?.fetchLatest ?? fetchLatest.current;
+                        stopScroll.current = data?.fetchLatest ?? stopScroll.current;
+                        fetchOlder.current = data?.fetchOlder ?? fetchOlder.current;
                         LatestloadingRef.current = false
                     }
 
@@ -128,10 +134,10 @@ export default function ChatWindow() {
 
         const handleScroll = (e) => {
 
-            let scrollTop = e.target.scrollTop  
+            let scrollTop = e.target.scrollTop
             let scrollHeight = e.target.scrollHeight
             let showButton = (scrollHeight - scrollTop) > 1800
-            
+
             if (showButton !== scrollToPresent.current) {
 
                 scrollToPresent.current = showButton
@@ -139,7 +145,7 @@ export default function ChatWindow() {
             }
         }
 
-        
+
 
         window.addEventListener("mousedown", handleopenMessageOptionId)
         container.scrollTo({
@@ -148,7 +154,7 @@ export default function ChatWindow() {
         container.addEventListener("scroll", handleScroll)
 
         return () => {
-            
+
             observer.disconnect()
             window.removeEventListener("mousedown", handleopenMessageOptionId)
             container?.removeEventListener("scroll", handleScroll)
@@ -160,7 +166,7 @@ export default function ChatWindow() {
 
 
 
-    return <div className="flex flex-col   bg-gray-2 h-dvh overflow-hidden  relative">
+    return  <div className="flex flex-col   bg-gray-2 h-dvh overflow-hidden  relative">
 
         {(reactMessage?.id) && <div onClick={() => setReactMessage(null)} className="fixed inset-0 bg-gray-200 z-[2000] opacity-0">
         </div>}
@@ -171,7 +177,7 @@ export default function ChatWindow() {
 
 
 
-        <div className="flex-1 flex flex-col  overflow-hidden">
+        <div className="min-h-0 flex-1 flex flex-col-reverse">
             {scrollPresent && <ScrollToPresent fetchOlder={fetchOlder} stopScroll={stopScroll} fetchLatest={fetchLatest} containerRef={MessagesContainerRef} />}
             {selectedMedia &&
                 <MediaShowcase mediaData={selectedMedia} />
@@ -183,11 +189,11 @@ export default function ChatWindow() {
             
             [&::-webkit-scrollbar-track]:bg-transparent
             [&::-webkit-scrollbar-thumb]:bg-zinc-700
-            [&::-webkit-scrollbar-thumb]:rounded-full      relative      main-content  overflow-y-scroll scrollbar-thin   min-h-0 flex flex-1 flex-col justify-end gap-3 ">
+            [&::-webkit-scrollbar-thumb]:rounded-full      relative      main-content  overflow-y-auto scrollbar-thin    min-h-0 flex h-full  flex-col  gap-3 ">
 
                 <div ref={oldMessagesObserRef} className="p-1"></div>
                 {messages?.map((message) => {
-                    
+
                     return <ChatMessage plusRef={plusRef} key={message.id} message={message} optionsRef={optionsRef} />
                 })}
                 <div ref={latestMessagesObserRef} className="p-1"></div>

@@ -20,7 +20,7 @@ export default function ChatUser({ chat , setChatSettings , isMenuOpen }) {
     let participants = chatStore(s => s.participants)
  
 
-
+    console.count("chat-user.jsx")
 
 
     const handleOpenSettings = (e) => {

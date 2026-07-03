@@ -12,7 +12,6 @@ import { authClient } from "@/lib/auth-client";
 import { redirect, useRouter } from "next/navigation";
 import { userStore } from "@/store/user-store";
 import { SearchMessageTab } from "@/components/chatWindow-componenets/chat-message-components/search-messagesTab";
-import { chatMessageStore } from "@/store/chatMessage-store";
 
 export default function Home() {
   let session = authClient.useSession()

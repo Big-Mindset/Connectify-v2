@@ -1,3 +1,5 @@
+"use client"
+
 import { useLoading } from "@/lib/loading_hook"
 import { chatStore } from "@/store/Chat-store"
 

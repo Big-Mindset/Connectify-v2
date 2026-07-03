@@ -122,6 +122,7 @@ export const chatStore = create((set, get) => ({
                         return data
                     }
                 })
+                console.log(updatedData)
                 set({ chats: updatedData })
             }
         } catch (error) {
@@ -228,9 +229,10 @@ export const chatStore = create((set, get) => ({
         })
         return [userData, ...ChatMemberData]
     },
-    LoadMoreMessage: async (order, fetchLatest, fetchOlder) => {
+    LoadMoreMessage: async (order) => {
         // if (!messageId) return
         let MESSAGE_WINDOW = 60
+       let data = {}
         try {
             let Messages = get().messages
             let chatId = get().selectedChat.id
@@ -240,7 +242,7 @@ export const chatStore = create((set, get) => ({
             if (Messages.length < 30) return false
             if (!msgId || !chatId) return true
             let setMessages = get().setMessages
-            let res = await Axios.get(`/message/get-moreMessages?messageId=${msgId}&chatId=${chatId}&order=${order}`)
+            let res = await Axios.get(`/message/get-moreMessages?messageId=${msgId}&chatId=${chatId}&order=${order}&limit=${order === "asc" ? 31 : 30}`)
 
             if (get().selectedChat.id !== chatId) return
            
@@ -248,37 +250,42 @@ export const chatStore = create((set, get) => ({
             let { messages } = res.data
             if (!messages.length) {
                 if (order === "desc") {
-                    fetchOlder.current = false
+                    data.fetchOlder = false
                 } else {
-                    fetchLatest.current = false
+                    data.fetchLatest = false
+
                 }
-                return
+                return data
             }
+
             if (order === "desc") {
+
                 setMessages(prev => {
                     messages.reverse()
                     let merged = [...messages, ...prev]
                     if (merged.length > MESSAGE_WINDOW) {
                         merged = merged.slice(0, MESSAGE_WINDOW)
-                        fetchLatest.current = true
+                        data.fetchLatest = true
                     }
                     return merged
                 })
             }
             else {
+                if (messages.length < 31){
+                    data.fetchLatest = false
+                }
                 setMessages(prev => {
-                    let merged = [...prev, ...messages]
+                    let merged = [...prev, ...messages.slice(0 , messages.length - 1)]
                    
                     if (merged.length > MESSAGE_WINDOW) {
                         merged = merged.slice(merged.length - MESSAGE_WINDOW)
-                   
-                        fetchOlder.current = true
+                        data.fetchOlder = true
 
                     }
                     return merged
                 })
             }
-
+            return data
         } catch (error) {
             console.log(error.message)
         }

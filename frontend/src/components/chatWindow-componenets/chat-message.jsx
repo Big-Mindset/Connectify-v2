@@ -65,7 +65,8 @@ function ChatMessage({ optionsRef, message, plusRef, messagesRef , key }) {
 
     useEffect(() => {
         if (!deleteMessage?.id || deleteMessage.id !== message.id) return
-        setDeleteMessage({ ...deleteMessage, messageRef: messagesRef.current[message.id] })
+        console.log(messagesRef.current[deleteMessage.id])
+        setDeleteMessage({ ...deleteMessage, messageRef: messagesRef.current[deleteMessage.id] })
     }, [deleteMessage?.id])
 
 
@@ -116,7 +117,7 @@ function ChatMessage({ optionsRef, message, plusRef, messagesRef , key }) {
                         <div className="flex items-center gap-2 min-w-0 flex-1 px-2 py-1 rounded-lg">
 
                             <div className="flex items-center gap-0.5 text-gray-300/90 font-bold shrink-0">
-                                <Avatar image={replyToSender?.image} size={"size-4"} content={replyToSender?.name.charAt(0)} textSize={"text-[0.8rem]"} />
+                                <Avatar image={replyToSender?.image} size={"size-4"} content={replyToSender?.name?.charAt(0)} textSize={"text-[0.8rem]"} />
                                 <h3
                                     className="max-w-[300px] truncate"
                                     style={{ fontSize: 'clamp(0.65rem, 1.2vw, 0.85rem)' }}

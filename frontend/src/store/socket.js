@@ -127,6 +127,7 @@ export let socketStore = create((set, get) => ({
 
         sok.on("offline-user", (id) => {
             let user = participants.get(id)
+            console.log(user)
             setParticipants(id, { ...(user || {}), isOnline: 0 })
 
             setOnlineUsers((prev) => {

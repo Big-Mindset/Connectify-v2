@@ -82,7 +82,7 @@ export default function FriendRequest({ data, received }) {
 
             <div className="flex items-center gap-2">
 
-                <Avatar image={user.image} content={user.name.charAt(0)} />
+                <Avatar image={user.image} content={user?.name?.charAt(0)} />
                 <div className="flex flex-col text-sm">
                     <p className="font-medium font-bold">{user.name}</p>
                     <p className="text-gray-12">{user.username}</p>

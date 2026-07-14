@@ -1,4 +1,4 @@
-"use client";
+              "use client";
 
 import { useEffect, useRef, useState } from "react";
 import { Check, Loader, X } from "lucide-react";
@@ -13,7 +13,7 @@ import { authClient } from "@/lib/auth-client";
 
 export default function ChooseUsernamePage() {
     const [userExist, setUserExist] = useState(false)
-    let {data } = authClient.useSession()
+    let {data , isPending } = authClient.useSession()
    
     let {loading , setLoading} = useLoading()
     let { register, watch, reset, handleSubmit, formState: { errors } } = useForm({
@@ -29,7 +29,7 @@ export default function ChooseUsernamePage() {
         setLoading("username-submit")
         await authClient.updateUser({
         username : data.username
-    })
+    },{onSuccess : ()=>router.push("/")})
         setLoading("")
     };
     let username = watch("username")
@@ -50,10 +50,14 @@ export default function ChooseUsernamePage() {
         }
     }, [username])
     useEffect(()=>{
-        if (data.user.username){
+        if (!isPending && !data) {
+            router.push("/login")
+            return 
+        }
+        if (data?.user?.username){
             router.push("/")
         }
-    },[data])
+    },[isPending])
 
     return (
         <div className="h-dvh w-full bg-slate-950 flex items-center justify-center px-4">

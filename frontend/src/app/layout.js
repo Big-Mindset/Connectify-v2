@@ -2,11 +2,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ContextProiver } from "@/lib/loading_hook";
 import {Toaster} from "react-hot-toast"
-import ConnectSocket from "@/components/connect-socket";
 import Script from "next/script";
-import { Sidebar } from "@/components/sidebar";
-import { Axios } from "@/lib/axiosInstance";
-import SessionConflict from "@/components/SessionConflict";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,7 +34,7 @@ export default function RootLayout({ children }) {
       >
         <ContextProiver >
       <Toaster />
-      {/* <ConnectSocket /> */}
+     
         
       <div className="h-full  w-full">
 

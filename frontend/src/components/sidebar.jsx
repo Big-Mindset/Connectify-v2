@@ -56,7 +56,7 @@ export const Sidebar = () => {
                     </div>
                     <div className="flex flex-col gap-4  items-center ">
                         <button onClick={handleOpenProfile} className="relative hover:ring-indigo-500 hover:ring-2 duration-100 cursor-pointer rounded-full">
-                            <Avatar image={user?.image} content={user?.name.charAt(0)} />
+                            <Avatar image={user?.image} content={user?.name?.charAt(0)} />
                             <OnlineStatus isOnline={true} />
                         </button>
                         <button onClick={()=>setLogoutDialog(true)} className="p-2 bg-red-400 hover:ring-2 ring ring-red-400  hover:bg-red-500 cursor-pointer rounded-lg">

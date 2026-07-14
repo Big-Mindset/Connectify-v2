@@ -5,9 +5,8 @@ import { useLoading } from "@/lib/loading_hook"
 import { signUp } from "@/zod/authValidations"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Axios } from "@/lib/axiosInstance"
-import { Cctv, Check, Loader, Loader2, X } from "lucide-react"
+import {  Check, Loader, Loader2, X } from "lucide-react"
 import toast from "react-hot-toast"
-import { authClient } from "@/lib/auth-client"
 import { OauthButtons } from "@/components/oauth-buttons"
 
 export default function SingUp({ setLoginMethod, setEmail }) {
@@ -46,50 +45,40 @@ export default function SingUp({ setLoginMethod, setEmail }) {
     }, [username])
 
     const handleSignUp = async (data) => {
-        
-        let user = await Axios.get(`/user/user-exist?username=${data.username}`)
-        if (user?.data?.userId){
-            setUserExist(true)
+        try {
+            setLoading("sign-up")
+        if (userExist) {
+            setError("username must be unique")
             return
         }
-        await authClient.signUp.email({
-            ...data
-        }, {
-            onError: (ctx) => {
-                if (ctx.error.code === "EMAIL_NOT_VERIFIED") {
-                    toast.error(ctx.error.message)
 
-                    setLoginMethod("verify-email")
-                } else {
-                    
-                    setError(ctx.error.message)
-                }
-            },
-            onSuccess: (ctx) => {
-                setError(null)
-                toast.success("Account created")
+
+            let res = await Axios.post("/user/sign-up", data)
+            console.log(res)
+            if (res.status === 409) {
+                setError(res.data.message)
+            } else if (res.status === 201 || res.data?.error === "EMAIL_NOT_VERIFIED"){
+                setEmail(data.email)
                 setLoginMethod("verify-email")
-                
             }
-        })
-        setEmail(data.email)
-        setLoading(null)
 
 
+        } catch (error) {
+            toast.error(error?.response?.data?.message || error?.messasge)
+        }finally{
+                setLoading(null)
+
+        }
 
     }
-    const handleSocialLogin = async (provider) => {
-        await authClient.signIn.social({
-            provider,
-            callbackURL: "/",
-        })
-    }
+
     return <div className=" bg-gradient-to-b  from-[#2A2A2A] to-[#191919] border-2 border-gray-4  rounded-lg p-5">
         <h1 className="text-center mt-1.5 font-bold text-2xl text-gray-300"> Create a account</h1>
 
         <div className="mt-3.5 p-2 text-center">
             <span className="text-gray-300">Already have an Account?</span><span onClick={() => setLoginMethod("sign-in")} className="hover:underline cursor-pointer text-blue-200"> Sign In</span>
         </div>
+
         <div className="text-red-300 text-center">{error}</div>
 
         <form onSubmit={handleSubmit(handleSignUp)} className="mt-1 w-[400px]   text-gray-200 flex flex-col gap-2.5 p-2">
@@ -123,21 +112,21 @@ export default function SingUp({ setLoginMethod, setEmail }) {
                     <div className="absolute right-2 top-1/2 -translate-y-1/2  ">
                         {username.length > 0 && <div>
 
-                          {  loading === "username" ? <div>
-                            <Loader className="" />
-                        </div> : <div>
-                            {userExist ? <div>
-                                <div className="p-1 bg-red-600 rounded-full">
+                            {loading === "username" ? <div>
+                                <Loader className="" />
+                            </div> : <div>
+                                {userExist ? <div>
+                                    <div className="p-1 bg-red-600 rounded-full">
 
-                                    <X className="text-red-300 size-[1rem]" />
+                                        <X className="text-red-300 size-[1rem]" />
+                                    </div>
+                                </div> : <div className="p-1 border border-indigo-500 bg-indigo-300 rounded-full">
+
+                                    <Check className="text-gray-700 size-[1rem]" />
                                 </div>
-                            </div> : <div className="p-1 border border-indigo-500 bg-indigo-300 rounded-full">
+                                }
 
-                                <Check className="text-gray-700 size-[1rem]" />
-                            </div>
-                            }
-                       
-                        </div>}
+                            </div>}
                         </div>
                         }
                     </div>

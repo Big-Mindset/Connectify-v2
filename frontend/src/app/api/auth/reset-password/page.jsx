@@ -34,7 +34,6 @@ export default function ResetPassword() {
             newPassword : data.password,
         },{
             onError : (ctx)=>{
-                console.log(ctx)
                 setError(ctx.error.message)
             },
             onSuccess : (ctx)=>{

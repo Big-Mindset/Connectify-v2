@@ -83,6 +83,7 @@ export let chatMessageStore = create((set, get) => ({
 
             let { progress, ...rest } = messageData
             let res = await Axios.post('/message/create-message', { ...rest, userId: selectedChat.userId })
+            console.log(res)
             if (res.status === 201) {
                 let message = res.data.message
 
@@ -90,10 +91,9 @@ export let chatMessageStore = create((set, get) => ({
                     if (isAttempt) {
                         await indexDb.deleteMessage(message.id)
                     }
-                    let updatedMessage = get().handleMessageSent(message, isAttempt, fetchLatest)
-                        if (updatedMessage === null) {
-                            updatedMessage = {...messageData , status : message.status}
-                        }
+                    let updatedMessage = {...messageData , status : []}
+                    get().handleMessageSent(updatedMessage, isAttempt, fetchLatest)
+                 
                     socket?.emit("send-message", updatedMessage)
                 }
                 return { status: 200 }
@@ -121,15 +121,13 @@ export let chatMessageStore = create((set, get) => ({
     handleMessageSent: (message, retryAttempt, fetchLatest) => {
         let setMessages = chatStore.getState().setMessages
         let setChats = chatStore.getState().setChats
-        let lastMessage = null
         if (!fetchLatest?.current) {
 
             setMessages((messages) => {
                 let updatedMessage = messages.map((msg) => {
                     if (msg.id === message.id) {
 
-                        lastMessage = { ...msg, status: message.status }
-                        return lastMessage
+                        return  { ...msg, status: [] }
                     }
                     return msg
                 })
@@ -139,15 +137,15 @@ export let chatMessageStore = create((set, get) => ({
                 return updatedMessage
             })
         }
+        
         setChats((chats) => {
             return chats.map((chat) => {
-                if (chat.id === lastMessage.chatId) {
-                    return { ...chat, lastMessage }
+                if (chat.id === message.chatId) {
+                    return { ...chat, lastMessage :message }
                 }
                 return chat
             })
         })
-        return lastMessage
     },
     handleEditMessage: async (content) => {
         let message = messageSettingsStore.getState().editMessage

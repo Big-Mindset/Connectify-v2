@@ -9,23 +9,10 @@ export default function ConfirmMessageDeletion() {
     let handleDeleteMessage = chatMessageStore(s=>s.handleDeleteMessage)
 
     useEffect(() => {
-        if (!deleteMessage) return
+        if (!deleteMessage || !deleteMessage?.messageRef) return
         let message = document.querySelector(".message")
-        if (deleteMessage?.messageRef?.current?.children){
-
-            let childrenArr = Array.from(deleteMessage?.messageRef?.current?.children)
-            // let subChildren = Array.from()
-            let children = childrenArr[childrenArr.length - 1].children[childrenArr[childrenArr.length - 1].children.length - 1]
-            if (children.children.length > 2){
-                children.children[0].innerHTML = null
-            }
-          
-            // if (subChildren.length === 3){
-            //    subChildren[0].innerHTML = null
-                
-            // }
-        }
-        message.innerHTML = deleteMessage.messageRef?.current?.innerHTML
+      
+        message.innerHTML = deleteMessage.messageRef?.innerHTML
     }, [deleteMessage])
     return (
         <motion.div

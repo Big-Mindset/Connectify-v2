@@ -31,7 +31,7 @@ export let SearchedMessage = ({ message }) => {
                     <div className="flex items-center gap-2 min-w-0 flex-1 px-2 py-1 rounded-lg">
 
                         <div className="flex items-center gap-0.5 text-gray-300/90 font-bold shrink-0">
-                            <Avatar image={replyToSender?.image} size={"size-4"} content={replyToSender?.name.charAt(0)} />
+                            <Avatar image={replyToSender?.image} size={"size-4"} content={replyToSender?.name?.charAt(0)} />
                             <h3
                                 className="max-w-[80px] truncate"
                                 style={{ fontSize: 'clamp(0.65rem, 1.2vw, 0.85rem)' }}

@@ -40,7 +40,7 @@ export const userStore = create((set, get) => ({
                 }
             } else {
 
-                toast.success(`${payload.name} sent you a friend request`, { style: { background: "black" } })
+                toast.success(`${payload.name} sent you a friend request`)
             }
         } catch (error) {
             console.log(error.message)

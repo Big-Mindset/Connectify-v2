@@ -37,6 +37,11 @@ export default function Home() {
 
     }
     if (session?.data) {
+      let username = session.data.user.username
+      if (!username){
+        router.push("/input-username")
+        return
+      }
       let data = session.data
         connectSocket(data.user.id)
       setSession(data)

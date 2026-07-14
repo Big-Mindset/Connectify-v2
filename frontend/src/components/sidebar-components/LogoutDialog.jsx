@@ -2,13 +2,16 @@
 import { authClient } from "@/lib/auth-client";
 import { useLoading } from "@/lib/loading_hook";
 import {  Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function LogoutDialog({setLogoutDialog}){
+  let router = useRouter()
     const {loading , setLoading} = useLoading()
     const handleLogout = async ()=>{
         setLoading("logging-out")
         await authClient.signOut()
         setLoading("")
+        router.push("/login")
 
     }
     return   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">

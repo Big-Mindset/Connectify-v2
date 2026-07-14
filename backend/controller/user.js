@@ -87,13 +87,56 @@ export async function setPassword(req, res, next) {
             body: {
                 newPassword: data.password
             },
-            
+
         })
-        console.log(response)
         return res.status(200).json(null)
 
     } catch (error) {
         console.log(error.message)
+        next(error)
+    }
+}
+
+export async function handleSignUp(req, res, next) {
+
+    try {
+        let data = req.body
+        let user = await prisma.user.findUnique({
+            where : {
+                email : data.email
+            },
+            select :{
+                id : true,
+                emailVerified : true
+            }
+        })
+        if (user?.id){
+            if (user?.emailVerified){
+
+                return res.status(409).json({message : "User already exist"})
+            }else{
+                auth.api.sendVerificationEmail({
+                    body : {
+                        email : data.email,
+                        callbackURL : "/"
+                    }
+                })
+                return res.status(200).json({message : "verify your email" , error : "EMAIL_NOT_VERIFIED"})
+
+            }
+        }
+
+         await auth.api.signUpEmail({
+            body: {
+                email: data.email,
+                name: data.name,
+                password: data.password,
+                username : data.username
+            },
+            headers : req.headers
+        })
+       res.status(201).json(null)
+    } catch (error) {
         next(error)
     }
 }

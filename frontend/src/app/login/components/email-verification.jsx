@@ -6,17 +6,15 @@ import toast from "react-hot-toast"
 
 export default function EmailVerification({ email }) {
     const handleResendVerificationEmail = async ()=>{
-        console.log(email)
+      
         let res = await authClient.sendVerificationEmail({
             email,
             callbackURL : "/"
         },{
             onSuccess : (ctx)=>{
-                console.log(ctx)
                 toast.success("Email verification has been sent!!")
             }
         })
-        console.log(res)
     }
     
     return <div className=" bg-gradient-to-b w-full max-w-[500px]  from-[#2A2A2A] to-[#191919] shadow-[0.5px_-1px_5px_0.5px_gray]  rounded-lg p-2.5">

@@ -150,7 +150,7 @@ export default function UserProfile({ setOpenProfile }) {
                                     </label>
                                     <div className="border rounded-full border-indigo-400">
 
-                                        <Avatar image={profileData.image || null} content={profileData.name.charAt(0)} size="size-24" />
+                                        <Avatar image={profileData.image || null} content={profileData?.name?.charAt(0)} size="size-24" />
                                     </div>
                                 </div>
                             </div>

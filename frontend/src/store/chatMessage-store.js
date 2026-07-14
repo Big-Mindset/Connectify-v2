@@ -1,17 +1,18 @@
 import { create } from "zustand"
-import { chatStore } from "./Chat-store"
+
 import { socketStore } from "./socket"
 import axios from "axios"
 import { Axios } from "@/lib/axiosInstance"
 import { messageSettingsStore } from "./messageSettings-store"
 import { userStore } from "./user-store"
 import { dbMessage } from "@/indexdb/indexdb-messagesRetry"
+import { chatStore } from "./Chat-store"
 
 let indexDb = new dbMessage()
 export let chatMessageStore = create((set, get) => ({
     messagesProgress: {},
     sendMessage: async (messageData, isAttempt, fetchLatest) => {
-
+   
         let socket = socketStore.getState().socket
         let selectedChat = chatStore.getState().selectedChat
         let setMessages = chatStore.getState().setMessages
@@ -90,7 +91,9 @@ export let chatMessageStore = create((set, get) => ({
                         await indexDb.deleteMessage(message.id)
                     }
                     let updatedMessage = get().handleMessageSent(message, isAttempt, fetchLatest)
-
+                        if (updatedMessage === null) {
+                            updatedMessage = {...messageData , status : message.status}
+                        }
                     socket?.emit("send-message", updatedMessage)
                 }
                 return { status: 200 }

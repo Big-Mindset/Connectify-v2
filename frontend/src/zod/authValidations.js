@@ -7,6 +7,9 @@ export let signIn = z.object({
   ),
     password : z.string().min(5 , {message : "must be greater or equal to 5 characters"}),
 })
+export let passwordValidation = z.object({
+ password : z.string().min(5 , {message : "must be greater or equal to 5 characters"})
+})
 export let signUp = z.object({
     email : z.string().trim().min(1,{message : "Enter email"}).regex(
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/,

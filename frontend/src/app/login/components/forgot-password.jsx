@@ -24,6 +24,8 @@ export default function ForgotPassword({setLoginMethod}){
         setLoading("checking-email")
            await authClient.requestPasswordReset({
             email : data.email,
+            redirectTo : "http://localhost:3000/api/auth/reset-password"
+            
            },{
             onError : (ctx)=>{
                  if (ctx?.error?.status === 429){
@@ -36,7 +38,8 @@ export default function ForgotPassword({setLoginMethod}){
             onSuccess : (ctx)=>{
                toast.success(ctx.data.message)
                reset()
-            }
+            },
+        
            })
         setLoading(null)
 

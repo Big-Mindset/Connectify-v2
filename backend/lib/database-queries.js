@@ -31,8 +31,9 @@ export async function filterOnline(friendIds) {
     return friendIds.filter((_, idx) => result[idx] === 1)
 }
 
-export async function getOlderMessages({ messageId, limit  , order="desc" , chatId , userId }) {
+export async function getOlderMessages({ messageId, limit  , order="desc" , chatId , userId , skip=1 },conditions) {
     try {
+
         let messages = await prisma.message.findMany({
             where: {
                 chatId
@@ -40,7 +41,7 @@ export async function getOlderMessages({ messageId, limit  , order="desc" , chat
             cursor: {
                 id: messageId
             },
-            skip: 1,
+            skip,
             take: limit,
             orderBy: {
                 createdAt: order

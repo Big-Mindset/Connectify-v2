@@ -5,13 +5,18 @@ import "dotenv/config"
 import { verificationEmailTemplate } from "../verifications/emailVerification.js";
 import {SendEmail} from "../verifications/sendEmail.js"
 import { passwordResetEmailTemplate } from "../verifications/passwordResetTempelate.js";
+import { createAuthMiddleware } from "better-auth/api";
 
 
 export const auth = betterAuth({
+    appName : "Connectify",
     database: prismaAdapter(prisma,{
         provider: "postgresql",
     }),
-    baseURL : "http://localhost:2525",
+    logger : {
+        level : "debug"
+    },
+    baseURL : "http://localhost:3000",
     trustedOrigins : ["http://localhost:3000"],
     emailAndPassword : {
         enabled : true,
@@ -21,6 +26,7 @@ export const auth = betterAuth({
         minPasswordLength : 6,
         maxPasswordLength : 50,
         sendResetPassword  : ({user ,token , url})=>{
+                   
               SendEmail({
                     recipient : user.name,
                     to : user.email,
@@ -30,7 +36,14 @@ export const auth = betterAuth({
         }
 
     },
-    
+    account : {
+        accountLinking : {
+            enabled : true,
+            trustedProviders : ["google" , "github"],
+            
+        },
+        
+    },
     socialProviders : {
         google : {
             clientId : process.env.GOOGLE_CLIENT_ID,
@@ -41,25 +54,40 @@ export const auth = betterAuth({
             clientSecret : process.env.GITHUB_CLIENT_SECRET
         }
     },
-    appName : "Connectify",
+    rateLimit : {
+        max : 40,
+        window : 60,
+        customRules : {
+            "/reset-password" : {
+                max : 10,
+                window : 60
+            },
+            "/verify-email" : {
+                max : 10,
+                window : 60
+            }
+        }
+    },
     emailVerification : {
         sendOnSignUp : true,
-        expiresIn : 60*20,
-            sendVerificationEmail : ({user ,token , url})=>{
-               let redirectUrl = `http://localhost:3000/api/auth/verify-email?token=${token}`
-                SendEmail({
+        
+            sendVerificationEmail : async function({token , url , user}){
+               
+                console.log(url , token)
+                await SendEmail({
                     recipient : user.name,
                     to : user.email,
-                    html : verificationEmailTemplate({email : user.email , name : user.name , verificationLink : redirectUrl}),
+                    html : verificationEmailTemplate({email : user.email , name : user.name , verificationLink : url}),
                     subject : "Is That You"
                 })
-            }
-        
+            },
+          
     },
+
     session : {
         expiresIn : 60 * 60 * 24 * 7,
         updateAge : 60 * 60 * 24 ,
-        freshAge : 60 * 5,
+        freshAge : 60 * 60 * 24 * 5,
         cookieCache : {
             enabled : true,
             maxAge : 2 * 60,
@@ -73,13 +101,13 @@ export const auth = betterAuth({
                 type : "string",
                 required : true,
                 unique : true,
-                index : true
             },
             bio : {
                 type : "string",
             }
         }
     },
+    
     
     // plugins : [
     //     username({
@@ -98,3 +126,4 @@ export const auth = betterAuth({
     //     })
     // ],
 });
+console.log(auth.options.account)

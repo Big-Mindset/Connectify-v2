@@ -4,14 +4,15 @@ dotenv.config()
 
 export const SendEmail = async ({ to, subject, html, recipient }) => {
     try {
-
+        
         let res = await transporter.sendMail({
-            from: "81dfa0001@smtp-brevo.com",
+            from: "Wad <wadoodmemon0@gmail.com>",
             to,
             subject,
             html,
 
         });
+        console.log(res)
     } catch (error) {
         console.log(error.message)
     }

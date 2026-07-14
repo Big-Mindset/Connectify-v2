@@ -10,17 +10,20 @@ import { useState } from "react"
 import { AnimatePresence } from "framer-motion"
 import { userStore } from "@/store/user-store"
 import OnlineStatus from "./OnlineStatus"
-let UserProfile = dynamic(() => import("./User-Profile"),{ssr : false})
+import { LogOut } from "lucide-react"
+import LogoutDialog from "./sidebar-components/LogoutDialog"
+let UserProfile = dynamic(() => import("./User-Profile"), { ssr: false })
 export const Sidebar = () => {
     const [openProfile, setOpenProfile] = useState(false)
     let selectedPage = navigationStore(s => s.selectedPage)
     let setSelectedPage = navigationStore(s => s.setSelectedPage)
+    const [logoutDialog , setLogoutDialog] = useState(false)
     let session = userStore(s => s.session)
     let user = session?.user
     let handleOpenProfile = () => {
         setOpenProfile(true)
     }
- 
+
     return (
         <>
             <AnimatePresence>
@@ -28,8 +31,11 @@ export const Sidebar = () => {
                 {openProfile &&
                     <UserProfile setOpenProfile={setOpenProfile} />
                 }
+                {logoutDialog &&
+                    <LogoutDialog  setLogoutDialog={setLogoutDialog}/>
+                }
             </AnimatePresence>
-            <div className="sidebar hidden  md:block  max-w-[60px] p-1 bg-black  w-full">
+            <div className="sidebar     max-w-[60px] p-1 bg-black  w-full">
                 <div className="h-full flex flex-col justify-between  items-center pb-2">
 
                     <div className="flex  flex-col gap-10 px-1 py-2">
@@ -48,10 +54,14 @@ export const Sidebar = () => {
                             )}
                         </div>
                     </div>
-                   
-                    <div onClick={handleOpenProfile} className="relative hover:ring-indigo-500 hover:ring-2 duration-100 cursor-pointer rounded-full">
-                        <Avatar image={user?.image} />
-                        <OnlineStatus isOnline={true}  />
+                    <div className="flex flex-col gap-4  items-center ">
+                        <button onClick={handleOpenProfile} className="relative hover:ring-indigo-500 hover:ring-2 duration-100 cursor-pointer rounded-full">
+                            <Avatar image={user?.image} content={user?.name.charAt(0)} />
+                            <OnlineStatus isOnline={true} />
+                        </button>
+                        <button onClick={()=>setLogoutDialog(true)} className="p-2 bg-red-400 hover:ring-2 ring ring-red-400  hover:bg-red-500 cursor-pointer rounded-lg">
+                            <LogOut  size={20} className="font-bold" />
+                        </button>
                     </div>
                 </div>
             </div>

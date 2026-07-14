@@ -94,11 +94,11 @@ export class SocketConnection extends SocketQueries {
     }
 
     async handleSendMessage(socket, message) {
-  
+
         try {
             let userId = socket.handshake.auth.userId
-            let participantIds = await this.getChatParticipants(message.chatId ,userId)
-          
+            let participantIds = await this.getChatParticipants(message.chatId, userId)
+
             socket.to(message.chatId).emit("send-message", message)
             let InActiveFriends = await this.getInActiveMembers(message.chatId, participantIds)
             if (InActiveFriends) {
@@ -115,12 +115,16 @@ export class SocketConnection extends SocketQueries {
 
     }
     async getInActiveMembers(chatId, participantIds) {
-     
+        let start = performance.now()
+
+        setImmediate(() => {
+        });
         let activeUserIds = new Set(await client.SMEMBERS(`active-chat:${chatId}`))
-     
-      
+        let end = performance.now()
+   
+
         let inActiveIds = participantIds.filter((userId) => !activeUserIds.has(userId))
-       
+
         if (inActiveIds.length > 0) {
             let inActiveChatUser = await filterOnline(inActiveIds)
             return inActiveChatUser
@@ -176,7 +180,7 @@ export class SocketConnection extends SocketQueries {
 
         if (message.isLastMessage) {
             let userId = socket.handshake.auth.userId
-            let membersIds = await this.getChatParticipants(message.chatId ,userId )
+            let membersIds = await this.getChatParticipants(message.chatId, userId)
             let inActiveIds = await this.getInActiveMembers(message.chatId, membersIds)
             if (inActiveIds) {
                 for (let userId of inActiveIds) {
@@ -202,24 +206,24 @@ export class SocketConnection extends SocketQueries {
     }
     async handleTyping(socket, data, event) {
         try {
-          
-            let membersIds = await this.getChatParticipants(data.chatId ,data.userId )
+
+            let membersIds = await this.getChatParticipants(data.chatId, data.userId)
             let InActiveFriends = await this.getInActiveMembers(data.chatId, membersIds)
-            socket.to(data.chatId).emit(event, {  chatId: data.chatId , name : data.name })
+            socket.to(data.chatId).emit(event, { chatId: data.chatId, name: data.name })
             if (InActiveFriends) {
 
                 for (let userId of InActiveFriends) {
-                    socket.to(userId).emit(event, {  chatId: data.chatId , name : data.name })
+                    socket.to(userId).emit(event, { chatId: data.chatId, name: data.name })
                 }
             }
         } catch (error) {
             console.log(error)
         }
     }
-    async handleGroupCreated(socket , data){
+    async handleGroupCreated(socket, data) {
         let onlineParticipants = await filterOnline(data.participantIds)
-        for (let id of onlineParticipants){
-            socket.to(id).emit("group-created",data.chatId)
+        for (let id of onlineParticipants) {
+            socket.to(id).emit("group-created", data.chatId)
         }
     }
 

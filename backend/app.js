@@ -42,6 +42,7 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+
 const globalRateLimiter = rateLimit({
   windowMs : 15 * 60 * 1000,
   limit : 100,
@@ -69,9 +70,13 @@ const passwordResetLimitter = rateLimit({
 
 // app.use(express.static(path.join(__dirname, 'public')));
 
+
+
 app.use("/api/auth/sign-in/email",loginRateLimiter)
 app.use("/api/auth/request-password-reset",passwordResetLimitter)
-app.all("/api/auth/*", toNodeHandler(auth));
+app.all("/api/auth/*", (req , res)=>{
+  return toNodeHandler(auth)(req,res)
+});
 app.use('/friendship',globalRateLimiter, friendRequest);
 app.use('/chat',globalRateLimiter,chatRouter)
 app.use("/message",messageRouter)
@@ -161,8 +166,8 @@ io.on("connection",async (socket)=>{
 
 
 app.use(function(err, req, res, next) {
-  
-  res.status(err.status || 500).json({
+ 
+  res.status(err?.statusCode || err.status || 500).json({
     success: false,
     message: err.message || "Server Error",
     ...(req.app.get('env') === 'development' && { stack: err.stack })

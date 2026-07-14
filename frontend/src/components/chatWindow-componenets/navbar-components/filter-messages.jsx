@@ -1,25 +1,27 @@
+import Avatar from "@/components/Avatar";
 import { chatStore } from "@/store/Chat-store";
 import { navigationStore } from "@/store/navigation-store";
 import { Search, RotateCcw, Plus, X, Check } from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 
-export default function MessageFilter({ref ,setFilterTab}) {
+export default function MessageFilter({ ref, setFilterTab }) {
   const getParticipants = chatStore((s) => s.getParticipants);
 
   const [participants, setParticipants] = useState([]);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [participantQuery, setParticipantQuery] = useState("");
   const [selectedParticipants, setSelectedParticipants] = useState([]);
-  let [order , setOrder] = useState("")
-  const [dates , setDates] = useState({})
-  const filters  = navigationStore(s=>s.filters)
-  const setFilters = navigationStore(s=>s.setFilters)
+  let [order, setOrder] = useState("")
+  const [dates, setDates] = useState({})
+  const filters = navigationStore(s => s.filters)
+  const setFilters = navigationStore(s => s.setFilters)
   const today = useMemo(() => {
     const d = new Date();
     return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, "0"), String(d.getDate()).padStart(2, "0")].join("-");
   }, []);
   const openParticipantPicker = () => {
-    const users = getParticipants?.() || [];
+    const users = getParticipants() || [];
+
     setParticipants(users);
     setIsPickerOpen(true);
   };
@@ -50,25 +52,25 @@ export default function MessageFilter({ref ,setFilterTab}) {
       String(user.id).toLowerCase().includes(participantQuery.toLowerCase())
     );
   });
-  let handleSearch = ()=>{
+  let handleSearch = () => {
     let usersSet = new Set(selectedParticipants)
-    let newSender = filters?.senders?.find((sender)=>!usersSet.has(sender.id))
-    
+    let newSender = filters?.senders?.find((sender) => !usersSet.has(sender.id))
+
     if (filters.from === dates.from && filters.to === dates.to && filters.order === order && !newSender) return
-    setFilters((filters)=>{
-      return {...filters , from :dates.from, to : dates.to , order : order , senders : selectedParticipants.map((user)=>user , order )}
+    setFilters((filters) => {
+      return { ...filters, from: dates.from, to: dates.to, order: order, senders: selectedParticipants.map((user) => user, order) }
     })
     setFilterTab(false)
   }
-  useLayoutEffect(()=>{
-    let {content , ...rest} = filters 
-    if (Object.keys(rest).length > 0){
+  useLayoutEffect(() => {
+    let { content, ...rest } = filters
+    if (Object.keys(rest).length > 0) {
 
       setSelectedParticipants(filters?.senders || [])
       setOrder(filters?.order || "desc")
-      setDates({from : filters?.from || "" , to  : filters?.to || ""})
+      setDates({ from: filters?.from || "", to: filters?.to || "" })
     }
-    },[])
+  }, [])
 
   return (
     <div ref={ref} className="absolute right-0 top-14 z-[200] w-[350px]  rounded-2xl border border-indigo-400/30 bg-zinc-950/95 p-4 shadow-2xl backdrop-blur-md">
@@ -85,9 +87,9 @@ export default function MessageFilter({ref ,setFilterTab}) {
             From created at
           </label>
           <input
-          onChange={(e)=>setDates(prev=>({...prev , from :e.target.value }))}
+            onChange={(e) => setDates(prev => ({ ...prev, from: e.target.value }))}
             type="date"
-          value={dates.from || ""}
+            value={dates.from || ""}
 
             max={today}
             className="w-full   [&::-webkit-calendar-picker-indicator]:invert
@@ -100,8 +102,8 @@ export default function MessageFilter({ref ,setFilterTab}) {
             To created at
           </label>
           <input
-          onChange={(e)=>setDates(prev=>({...prev , to :e.target.value }))}
-          value={dates.to || ""}
+            onChange={(e) => setDates(prev => ({ ...prev, to: e.target.value }))}
+            value={dates.to || ""}
             type="date"
             max={today}
             className="w-full  [&::-webkit-calendar-picker-indicator]:invert
@@ -182,15 +184,19 @@ export default function MessageFilter({ref ,setFilterTab}) {
                           type="button"
                           onClick={() => toggleParticipant(user)}
                           className={`flex w-full items-center justify-between rounded-xl border px-3 py-2 text-left transition ${selected
-                              ? "border-indigo-500 bg-indigo-500/10"
-                              : "border-zinc-800 bg-zinc-900 hover:border-zinc-600"
+                            ? "border-indigo-500 bg-indigo-500/10"
+                            : "border-zinc-800 bg-zinc-900 hover:border-zinc-600"
                             }`}
                         >
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-medium text-white">
-                              {user.name || user.username || user.fullName || "Unknown user"}
-                            </p>
-                            <p className="truncate text-xs text-zinc-400">{user.username}</p>
+                          <div className="flex items-center gap-2">
+
+                            <Avatar image={user.iamge} size={"size-10"} content={user?.name[0]}  />
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium text-white">
+                                {user.name || user.username || user.fullName || "Unknown user"}
+                              </p>
+                              <p className="truncate text-xs text-zinc-400">{user.username}</p>
+                            </div>
                           </div>
 
                           <div className="ml-3 flex h-5 w-5 items-center justify-center rounded-full border border-zinc-600">
@@ -232,15 +238,15 @@ export default function MessageFilter({ref ,setFilterTab}) {
           <label className="mb-1 block text-sm font-medium text-zinc-300">
             Order
           </label>
-          <select  onChange={(e)=>setOrder(e.target.value)} className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white outline-none focus:border-indigo-500">
-            <option  value="desc">Newest first</option>
+          <select onChange={(e) => setOrder(e.target.value)} className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white outline-none focus:border-indigo-500">
+            <option value="desc">Newest first</option>
             <option value="asc">Oldest first</option>
           </select>
         </div>
 
         <div className="flex gap-3 pt-2">
           <button
-          onClick={handleSearch}
+            onClick={handleSearch}
             type="button"
             className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-500"
           >

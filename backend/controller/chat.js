@@ -282,7 +282,7 @@ export let get_chat = async (req, res, next) => {
 
             throw createError(404, { message: "Chat not found" })
         }
-        let lastMessage = chat.lastMessage
+        let lastMessage = chat?.lastMessage
 
         if (lastMessage && lastMessage.encryptedContent) {
 
@@ -301,7 +301,7 @@ export let get_chat = async (req, res, next) => {
 
      
 
-        let returnResopnse = { id: chat.id, lastMessagse, unread_messageCount: 0, userData: { ...user, isOnline } }
+        let returnResopnse = { id: chat.id, lastMessage, unread_messageCount: 0, userData: { ...user, isOnline } }
 
         return res.status(200).json({ chat: returnResopnse })
     } catch (error) {

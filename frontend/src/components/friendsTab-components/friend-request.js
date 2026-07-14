@@ -11,7 +11,6 @@ export default function FriendRequest({ data, received }) {
     let setPendingRequest = userStore(s => s.setPendingRequest)
     let setChats = chatStore(s => s.setChats)
     let socket = socketStore(s => s.socket)
-    let chatMembersIds = chatStore(s => s.chatMembersIds)
     let participants = chatStore(s => s.participants)
     let {loading , setLoading} = useLoading()
     const handleRejectRequest = async () => {
@@ -49,7 +48,6 @@ export default function FriendRequest({ data, received }) {
                 let chat = res.data.chat
 
 
-                chatMembersIds.set(chat.id, chat.userData.userId)
 
 
                 let dmUser = chat.userData
@@ -73,7 +71,8 @@ export default function FriendRequest({ data, received }) {
 
             }
         } catch (error) {
-            toast.error(error?.response?.data?.message)
+            console.log(error?.message)
+            toast.error(error?.response?.data?.message || error.message)
         }finally{
             setLoading("")
         }
@@ -83,7 +82,7 @@ export default function FriendRequest({ data, received }) {
 
             <div className="flex items-center gap-2">
 
-                <Avatar image={user.image} />
+                <Avatar image={user.image} content={user.name.charAt(0)} />
                 <div className="flex flex-col text-sm">
                     <p className="font-medium font-bold">{user.name}</p>
                     <p className="text-gray-12">{user.username}</p>

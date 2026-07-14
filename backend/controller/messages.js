@@ -9,7 +9,7 @@ export const createMessage = async (req, res, next) => {
         let messageData  = req.body
         let content = messageData.content
         let media = messageData.media
-        if (!content.trim() && !media) {
+        if (!(content?.trim()) && !media) {
            throw createError(400, { message: "media or content is required" })
         }
         let message = null
@@ -26,11 +26,9 @@ export const createMessage = async (req, res, next) => {
                         },
                         encryptedContent: encrypteContent,
                         chatId: messageData.chatId,
-                        replyToId: messageData.replyToId,
+                        replyToId: messageData.replyToId || messageData?.replyTo?.id,
                         senderId: messageData.senderId,
                         search_index: letters_search,
-                       
-                        replyToId : messageData?.replyTo?.id
                     },
                     
                     select: {
@@ -92,7 +90,7 @@ export const createMessage = async (req, res, next) => {
                     id : messageData.chatId,
                 },
                 data : {
-                    lastMessageId : messageData.id
+                    lastMessageId : message.id
                 }
             })
             }
@@ -196,7 +194,7 @@ export const searchMessages = async (req , res , next )=>{
                 orderBy :{
                     createdAt : order || "desc"
                 },
-                take : 30,
+                take : 40,
                     select: {
                        id : true,
                         chatId: true,
@@ -371,49 +369,44 @@ export const deleteMessage = async (req, res, next) => {
 
     let {messageId , senderId , chatId} = req.body
     if (senderId !== req.user.id){
-        throw Error(400,{message : "you don't have permission to delete this message"})
-      
+        throw createError(403, { message: "you don't have permission to delete this message" })
     }
     try {
-        let deletedmessage = await prisma.message.delete({
+        let deletedMessage = await prisma.message.deleteMany({
             where: {
                 id: messageId,
                 senderId: req.user.id
-            },
-            select: {
-                id: true
             }
         })
         
-        if (!deletedmessage.id) {
+        if (deletedMessage.count === 0) {
             throw createError(500, { message: "Error deleting message try again" })
         }
         setImmediate(async ()=>{
         try {
-            
             let lastMessage = await prisma.message.findFirst({
                 where : {
-               chatId 
-            },
-           orderBy : {
-               createdAt : "desc"
-           },
-           take : 1,
-           select : {
-               id : true
-           }
-        })
-        await prisma.chat.update({
-           where : {
-               id : chatId
-           },
-           data : {
-               lastMessageId : lastMessage.id
-            }
-        })
-    } catch (error) {
-        console.log(error?.message)
-    }
+                    chatId
+                },
+               orderBy : {
+                   createdAt : "desc"
+               },
+               take : 1,
+               select : {
+                   id : true
+               }
+            })
+            await prisma.chat.update({
+               where : {
+                   id : chatId
+               },
+               data : {
+                   lastMessageId : lastMessage?.id || null
+                }
+            })
+        } catch (error) {
+            console.log(error?.message)
+        }
         })
         res.status(200).json({ message: "Message deleted" })
     
@@ -515,7 +508,6 @@ export const moreMessages = async (req, res, next) => {
     try {
       let messages = await getOlderMessages({messageId , chatId ,order , userId : user.id , limit : Number(limit) })
 
-
         let decryptedMessages = messages.map((msg) => {
             if (msg?.replyTo?.id) {
 
@@ -533,7 +525,32 @@ export const moreMessages = async (req, res, next) => {
         next(error)
     }
 }
+export const jumpToMessage= async (req , res , next)=>{
+    try{
+        let userId = req.user.id
+        let {messageId , chatId , limit,createdAt} = req.query
+        if (!chatId || !messageId) throw createError(400,{message : "chatId and messageId are required"})
+        let prevMessages = await getOlderMessages({messageId , chatId , userId , limit : Number(limit) , order : "desc",skip : 0 })
+       
+        let latestMessages = await getOlderMessages({messageId , chatId , userId , limit : Number(limit) , order : "asc" , skip : 1 })
+      
+        let mergedMessages = [...prevMessages.reverse() , ...latestMessages]
+          let decryptedMessages = mergedMessages.map((msg) => {
+            
+            if (msg?.replyTo?.id) {
 
+                let decryptedReplyTo = secureMessage.transformDecryptData(msg.replyTo.encryptedContent, msg.replyTo.message_security,msg.replyTo)
+                msg.replyTo = decryptedReplyTo
+            }
+           return secureMessage.transformDecryptData(msg.encryptedContent, msg.message_security , msg)
+           
+        })
+        res.status(200).json({ messages: decryptedMessages })
+       
+    }catch(err){
+        console.log(err.message)
+    }
+}
 export let clearMessages = async (req, res, next) => {
     let { clearedAt } = req.body
 

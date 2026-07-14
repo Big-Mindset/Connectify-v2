@@ -38,7 +38,7 @@ export default function RootLayout({ children }) {
       >
         <ContextProiver >
       <Toaster />
-      <ConnectSocket />
+      {/* <ConnectSocket /> */}
         
       <div className="h-full  w-full">
 

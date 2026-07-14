@@ -50,7 +50,7 @@ export default function ChooseUsernamePage() {
         }
     }, [username])
     useEffect(()=>{
-        if (!data || !data.user.username){
+        if (data.user.username){
             router.push("/")
         }
     },[data])

@@ -41,6 +41,8 @@ export const chatStore = create((set, get) => ({
     inviteComp: false,
     setInviteComp: (inviteComp) => set({ inviteComp }),
     messages: [],
+    messagesRef: {},
+    setMessagesRef: (messagesRef) => set({ messagesRef }),
     setMessages: (func) => {
         set(prev => ({
             messages: func(prev.messages)
@@ -50,10 +52,12 @@ export const chatStore = create((set, get) => ({
     setTypingIndicators: (func) => {
         set((state) => ({ typingIndicators: func(state.typingIndicators) }))
     },
-     loading: false,
+    loading: false,
     setLoading: (loading) => set({ loading }),
     typingUsersInfo: "",
-    setTypingUsersInfo: (typingUsersInfo) =>  set({ typingUsersInfo }) ,
+    setTypingUsersInfo: (typingUsersInfo) => set({ typingUsersInfo }),
+    jumpingToMessageId: null,
+    setJumpingToMessageId : (jumpingToMessageId) =>set({ jumpingToMessageId }),
     handleCreateGroup: async (data) => {
         let socket = socketStore.getState().socket
         let media = data.media
@@ -96,11 +100,12 @@ export const chatStore = create((set, get) => ({
     },
     getChats: async () => {
         try {
+            let setSearchTab = navigationStore.getState().setSearchTab
             let res = await Axios.get("/chat/chats")
             let participants = get().participants
 
             if (res.status === 200) {
-
+                setSearchTab(false)
                 let AllChats = res.data.chats
                 let updatedData = AllChats.map((chat) => {
 
@@ -122,7 +127,6 @@ export const chatStore = create((set, get) => ({
                         return data
                     }
                 })
-                console.log(updatedData)
                 set({ chats: updatedData })
             }
         } catch (error) {
@@ -132,9 +136,11 @@ export const chatStore = create((set, get) => ({
     getChatById: async (chatInfo) => {
 
         try {
-            set({loading : true})
-            let { chatId, userId, isGroup, fetchAgain , containerRef } = chatInfo
+            let { chatId, userId, isGroup, fetchAgain, containerRef } = chatInfo
+            if (!fetchAgain) {
 
+                set({ loading: true })
+            }
             let socket = socketStore.getState().socket
             let setChats = get().setChats
             let selectedPage = navigationStore.getState().selectedPage
@@ -149,41 +155,43 @@ export const chatStore = create((set, get) => ({
 
 
 
-            if (!fetchAgain){
+            if (!fetchAgain) {
 
                 set({ messages: [] })
             }
+
             let res = await Axios.get(`/chat/${chatId}`)
 
             if (res.status === 200) {
 
                 let { messages, participants: Participants } = res.data.chat
+
                 if (!fetchAgain) {
 
                     if (isGroup) {
-
-
-                        set({ selectedChat: { id: chatId, name: chatInfo.name, image: chatInfo?.image?.url, isGroup, total_members: Participants.length + 1 } })
-
-
-                        Participants.forEach(({ user }) => {
+                        let updatedData = Participants.map(({ user }) => {
                             if (!participants.has(user.id)) {
 
                                 participants.set(user.id, user)
                             }
-
+                            return user
                         })
+
+                        set({ selectedChat: { id: chatId, name: chatInfo.name, image: chatInfo?.image?.url, isGroup, total_members: Participants.length + 1, Participants: updatedData } })
+
+
+
                     } else {
                         set({ selectedChat: { id: chatId, isGroup, userId } })
                     }
                     socket.emit("join-chat", chatId)
                 }
 
-                
+
                 let failedMessages = await indexDb.getAllMessages(chatId)
                 messages.reverse()
                 set({ messages: [...messages, ...failedMessages] })
-                
+
                 let updateStatus = await Axios.put(`/message/mark-asread?chatId=${chatId}`)
 
                 if (updateStatus.status === 200) {
@@ -205,89 +213,78 @@ export const chatStore = create((set, get) => ({
             }
         } catch (error) {
             console.log(error?.message || error?.response?.data?.message)
-        }finally{
-            set({loading : false})
+        } finally {
+            set({ loading: false })
         }
     },
     getParticipants: () => {
-        let selectedChat = get().selectedChat
-        let MembersIds = get().chatMembersIds
-        let participants = get().participants
-        let session = userStore.getState().session
-        let ChatMemberIds = MembersIds.get(selectedChat.id)
-        let user = session.user
-        let userData = {
+        const selectedChat = get().selectedChat
+        const participants = get().participants
+        const session = userStore.getState().session
+        const user = session.user
+        const userData = {
             id: user.id,
             image: user.image,
             lastseen: user.lastseen,
             name: user.name,
             username: user.username
         }
-        let ChatMemberData = ChatMemberIds.map((memberId) => {
-            return participants.get(memberId)
-
-        })
-        return [userData, ...ChatMemberData]
+        let chatParticipants = []
+        if (selectedChat.isGroup) {
+            chatParticipants = selectedChat.Participants
+        } else {
+            chatParticipants.push(participants.get(selectedChat.userId))
+        }
+        return [userData, ...chatParticipants]
     },
-    LoadMoreMessage: async (order) => {
-        // if (!messageId) return
-        let MESSAGE_WINDOW = 60
-       let data = {}
+   
+    LoadMoreMessage : async (type , order , messageId)=>{
         try {
-            let Messages = get().messages
             let chatId = get().selectedChat.id
 
-            let msgId = order === "desc" ? Messages[0]?.id : Messages[Messages.length - 1]?.id
-
-            if (Messages.length < 30) return false
+            let msgId;
+            if (type === "chat-messages"){
+                let messages = get().messages
+                msgId = order === "asc" ? messages[messages.length - 1].id : messages[0].id
+            }else if (type === "chat-messages-search"){
+                msgId = messageId
+              
+            }
             if (!msgId || !chatId) return true
-            let setMessages = get().setMessages
             let res = await Axios.get(`/message/get-moreMessages?messageId=${msgId}&chatId=${chatId}&order=${order}&limit=${order === "asc" ? 31 : 30}`)
 
             if (get().selectedChat.id !== chatId) return
-           
+
             if (res.status !== 200) return
             let { messages } = res.data
-            if (!messages.length) {
-                if (order === "desc") {
-                    data.fetchOlder = false
-                } else {
-                    data.fetchLatest = false
-
-                }
-                return data
-            }
-
-            if (order === "desc") {
-
-                setMessages(prev => {
-                    messages.reverse()
-                    let merged = [...messages, ...prev]
-                    if (merged.length > MESSAGE_WINDOW) {
-                        merged = merged.slice(0, MESSAGE_WINDOW)
-                        data.fetchLatest = true
-                    }
-                    return merged
-                })
-            }
-            else {
-                if (messages.length < 31){
-                    data.fetchLatest = false
-                }
-                setMessages(prev => {
-                    let merged = [...prev, ...messages.slice(0 , messages.length - 1)]
-                   
-                    if (merged.length > MESSAGE_WINDOW) {
-                        merged = merged.slice(merged.length - MESSAGE_WINDOW)
-                        data.fetchOlder = true
-
-                    }
-                    return merged
-                })
-            }
-            return data
+            return messages
         } catch (error) {
             console.log(error.message)
+        }
+    }
+    ,
+    JumpToMessage: async (data) => {
+        
+        try {
+            const messages = get().messages
+            let firstMessage = messages[0]
+            let lastMessage = messages[messages.length - 1]
+          
+            if (data.createdAt >= firstMessage.createdAt && data.createdAt <= lastMessage.createdAt) {
+                set({jumpingToMessageId :data.id })
+                return
+            }
+            let res = await Axios.get(`/message/jump-message?chatId=${data.chatId}&messageId=${data.id}&limit=${20}`)
+          
+            if (res.status === 200) {
+                let fetchedMessages = res.data.messages
+                    set({messages : fetchedMessages})
+                
+                set({jumpingToMessageId :data.id })
+
+            }
+        } catch (error) {
+            console.log(error?.response.data.message || error?.message)
         }
     },
     handleCloseChat: () => {

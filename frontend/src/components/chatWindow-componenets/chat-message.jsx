@@ -21,7 +21,7 @@ import { chatMessageStore } from "@/store/chatMessage-store"
 import { messageStatus } from "@/lib/calculateStatus"
 import ResendMessage from "./chat-message-components/resend-message"
 
-function ChatMessage({ optionsRef, message, plusRef, key }) {
+function ChatMessage({ optionsRef, message, plusRef, messagesRef , key }) {
 
     const [messageHover, setMessageHover] = useState(false)
     const participants = chatStore(s => s.participants)
@@ -31,7 +31,6 @@ function ChatMessage({ optionsRef, message, plusRef, key }) {
     const setOpenMessageOptionId = messageSettingsStore(s => s.setOpenMessageOptionId)
     const openMessageOptionId = messageSettingsStore(s => s.openMessageOptionId)
     const deleteMessage = messageSettingsStore(s => s.deleteMessage)
-    const MessageRef = useRef(null)
     const setDeleteMessage = messageSettingsStore(s => s.setDeleteMessage)
     const reactMessage = messageSettingsStore(s => s.reactMessage)
     const setReactMessage = messageSettingsStore(s => s.setReactMessage)
@@ -66,8 +65,10 @@ function ChatMessage({ optionsRef, message, plusRef, key }) {
 
     useEffect(() => {
         if (!deleteMessage?.id || deleteMessage.id !== message.id) return
-        setDeleteMessage({ ...deleteMessage, messageRef: MessageRef })
+        setDeleteMessage({ ...deleteMessage, messageRef: messagesRef.current[message.id] })
     }, [deleteMessage?.id])
+
+
 
     let currentUserId = session?.user?.id
 
@@ -83,7 +84,8 @@ function ChatMessage({ optionsRef, message, plusRef, key }) {
     }
   
     return (
-        <div ref={MessageRef} key={key} className=" relative"  >
+        <div key={key} ref={(e)=>messagesRef.current[message.id] = e}  className=" relative">
+           <div  className="absolute invisible [animation-duration:1s]  message-pointer inset-0 bg-indigo-400/30"></div>
             {message.id === reactMessage?.id &&
                 <div ref={(e) => {
 
@@ -105,7 +107,7 @@ function ChatMessage({ optionsRef, message, plusRef, key }) {
             <div
                 onMouseEnter={() => setMessageHover(true)}
                 onMouseLeave={() => setMessageHover(false)}
-                className={`py-2 px-3.5 flex flex-col overflow-hidden ${replyMessage?.id === message.id ? "bg-blue-800/30 before:content-[''] before:w-0.5 before:bg-blue-600 before:bottom-0 before:top-0 before:absolute relative before:left-0 " : (openMessageOptionId === message.id || editMessage?.id === message.id || reactMessage?.id === message.id) ? "bg-gray-5" : "hover:bg-gray-3"}  relative group rounded-r-sm duration-150  max-w-[97%] w-full cursor-pointer `}>
+                className={`py-2 px-3.5 flex flex-col overflow-hidden ${replyMessage?.id === message.id ? "bg-blue-800/30 before:content-[''] before:w-0.5 before:bg-blue-600 before:bottom-0 before:top-0 before:absolute relative before:left-0 " : (openMessageOptionId === message.id || editMessage?.id === message.id || reactMessage?.id === message.id) ? "bg-gray-5" : "hover:bg-gray-3"}  relative group rounded-r-sm duration-150  lg:max-w-[99%] w-full cursor-pointer `}>
                 {
                     message?.replyTo !== null &&
                     <div className="flex items-center w-full ">
@@ -114,9 +116,9 @@ function ChatMessage({ optionsRef, message, plusRef, key }) {
                         <div className="flex items-center gap-2 min-w-0 flex-1 px-2 py-1 rounded-lg">
 
                             <div className="flex items-center gap-0.5 text-gray-300/90 font-bold shrink-0">
-                                <Avatar image={replyToSender?.image} size={"size-4"} textSize={"text-[0.8rem]"} />
+                                <Avatar image={replyToSender?.image} size={"size-4"} content={replyToSender?.name.charAt(0)} textSize={"text-[0.8rem]"} />
                                 <h3
-                                    className="max-w-[80px] truncate"
+                                    className="max-w-[300px] truncate"
                                     style={{ fontSize: 'clamp(0.65rem, 1.2vw, 0.85rem)' }}
                                 >
                                     {replyToSender?.name}
@@ -133,27 +135,11 @@ function ChatMessage({ optionsRef, message, plusRef, key }) {
                             </p>
 
                         </div>
-                        {/* <div className="ml-4 relative bh-red- duration-200 group/reply1 hover:border-indigo-200 w-10 h-3 border-l-2 border-t-2 border-gray-500 rounded-tl-lg">
-
-                        <div className="absolute -top-4 left-[55%] w-full ml-2 mb-1  px-3 py-1.5 rounded-lg text-[0.8rem] " />
-                        
-                            <div className="flex items-center gap-2 min-w-0 text-sm">
-
-                                <div className="flex items-center gap-0.5 text-gray-300/90 font-bold ">
-                                    <Avatar image={replyToSender?.image} size={"size-4"} />
-                                    <h3>{replyToSender?.name}</h3>
-                                </div>
-                                <div className="p-0.5 rounded-full bg-gray-300">
-
-                                </div>
-                                <p className="text-gray-300 group-hover/reply1:text-gray-200">{message?.replyTo?.content}</p>
-                            </div>
-
-                    </div> */}
+                    
                     </div>
                 }
 
-                <div className={`flex   w-full gap-4`}>
+                <div className={`flex flex-1  gap-4`}>
                     {((messageHover || message.id === openMessageOptionId || reactMessage?.id === message.id) && (status && status !== "failed")) &&
                         <MessageSettings userId={session.user.id} handleMoreOptions={handleMoreOptions} plusRef={plusRef} message={message} />
                     }
@@ -165,7 +151,7 @@ function ChatMessage({ optionsRef, message, plusRef, key }) {
                         <Avatar size={"size-11"} textSize={"text-[1.5rem]"} image={sender?.image} />
                     </div>
 
-                    <div className="w-full   pt-1 ">
+                    <div className="flex-1 min-w-0   pt-1 ">
 
                         <div className="flex items-baseline   gap-2 w-full">
                             <h1 className="font-medium text-gray-300 font-semibold text-md min-w-0">
@@ -221,6 +207,7 @@ function ChatMessage({ optionsRef, message, plusRef, key }) {
                             </div>
                         }
 
+                        <div className=" min-w-[0]">
 
                         {(editMessage?.id === message.id) ? <EditMessage /> :
                             <div className={` ${!status ?  "text-gray-300/60  font-semibold" : status === "failed" ? "text-red-300" :  "text-gray-300/90 "}   break-words  text-[0.95em]`}>
@@ -231,6 +218,7 @@ function ChatMessage({ optionsRef, message, plusRef, key }) {
                             </div>
                         }
 
+                        </div>
 
                     </div>
 

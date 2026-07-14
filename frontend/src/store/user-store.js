@@ -93,6 +93,7 @@ export const userStore = create((set, get) => ({
                     return prev.filter((request) => request.id !== data.requestId)
                 })
             }
+            
             toast(`${dmUser.name} accepted your friend-request`)
         }
 

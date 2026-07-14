@@ -2,7 +2,7 @@
 
 import { chatStore } from "@/store/Chat-store";
 import { Camera, Plus, Send, Trash, Upload, X, XIcon } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion"
 import { sizeText } from "@/lib/formateSize";
 import dynamic from "next/dynamic";
@@ -41,6 +41,7 @@ const [openAttachments, setOpenAttachments] = useState(false)
     let socket = socketStore(s => s.socket)
     let user = session?.user
     const setInputRef = messageSettingsStore(s=>s.setInputRef)
+    const [isPending, startTransition] = useTransition()  
     useEffect(() => {
         const handleClickOutside = (e) => {
             if (plusOptionsRef.current &&
@@ -115,14 +116,18 @@ const [openAttachments, setOpenAttachments] = useState(false)
 
 
         setFilePreview([])
-        let res = await sendMessage(messageData ,false, fetchLatest)
+        setInputText("")
+        setReplyMessage(null)
+        startTransition(async ()=>{
 
-        if (res?.status === 429) {
+            let res = await sendMessage(messageData ,false, fetchLatest)
+              if (res?.status === 429) {
             setSizeExceeded({ type: "message-limit" })
 
         }
-        setInputText("")
-        setReplyMessage(null)
+        })
+
+      
     }
 
     const handleUploadFile = async (e) => {
@@ -346,7 +351,7 @@ const [openAttachments, setOpenAttachments] = useState(false)
                                                         return <label htmlFor="upload-file" key={data.name} className="flex whitespace-nowrap cursor-pointer items-center text-gray-300 hover:bg-indigo-500/50 text-[0.8rem] rounded-4xl p-2 gap-2.5">
                                                             <span>{data.icon}</span>
                                                             <span>{data.name}</span>
-                                                            <input onChange={handleUploadFile} multiple={true} type="file" id="upload-file" className="hidden" />
+                                                            <input onChange={handleUploadFile} multiple={true} type="file" id="upload-file" accept="image/*,video/*,.pdf" className="hidden" />
                                                         </label>
                                                     } else {
                                                         return <div id="upload-file" key={data.name} className="flex whitespace-nowrap cursor-pointer items-center text-gray-300 hover:bg-indigo-500/50 text-[0.8rem] rounded-4xl p-2 gap-2.5">

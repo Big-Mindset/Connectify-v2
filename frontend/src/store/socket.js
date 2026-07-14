@@ -163,7 +163,6 @@ export let socketStore = create((set, get) => ({
 
     },
     handleMarkAllAsRead: (data) => {
-        console.log(data)
         try {
 
             let setMessages = chatStore.getState().setMessages

@@ -53,7 +53,9 @@ export class SocketQueries {
                             }
                         }
                     },
-                   
+                    senderId : {
+                        not : userId
+                    },
                         status: {
                             none : {
                                 userId 
@@ -68,9 +70,10 @@ export class SocketQueries {
                 select: {
                     id: true,
                     senderId: true,
-                    chatId: true
+                    chatId: true,
                 }
             })
+         
           if (!messages.length) return null
 
 

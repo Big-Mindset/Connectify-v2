@@ -18,6 +18,7 @@ export default function ChatWindow() {
     const setOpenMessageOptionId = messageSettingsStore(s => s.setOpenMessageOptionId)
     const selectedChat = chatStore(state => state.selectedChat);
     const messages = chatStore(s => s.messages)
+    const setMessages = chatStore(s=>s.setMessages)
     const socket = socketStore(s => s.socket)
     const LoadMoreMessage = chatStore(s => s.LoadMoreMessage)
     const selectedMedia = mediaStore(s => s.selectedMedia)
@@ -32,16 +33,20 @@ export default function ChatWindow() {
     const handleDeliverMessage = socketStore(s => s.handleDeliverMessage)
     const handleReadMessage = socketStore(s => s.handleReadMessage)
     const handleReactionUpdates = socketStore(s => s.handleReactionUpdates)
+    const jumpingToMessageId = chatStore(s => s.jumpingToMessageId)
+    const setJumpingToMessageId = chatStore(s => s.setJumpingToMessageId)
     const stopScroll = useRef(false)
     const scrollToPresent = useRef(null)
     const [scrollPresent, setScrollPresent] = useState(false)
     const [unseenMessagesLen, setUnseenMessagesLen] = useState(0)
-    let OldloadingRef = useRef(false)
-    let LatestloadingRef = useRef(false)
-    let fetchLatest = useRef(false)
-    let fetchOlder = useRef(true)
-    let oldMessagesObserRef = useRef(null)
-    let latestMessagesObserRef = useRef(null)
+    const OldloadingRef = useRef(false)
+    const LatestloadingRef = useRef(false)
+    const fetchLatest = useRef(false)
+    const fetchOlder = useRef(true)
+    const oldMessagesObserRef = useRef(null)
+    const latestMessagesObserRef = useRef(null)
+    const messagesRef = useRef({})
+    const animationTimeout = useRef(null)
 
     useEffect(() => {
         if (!socket) return
@@ -78,44 +83,76 @@ export default function ChatWindow() {
             setUnseenMessagesLen(prev => prev + 1)
             return
         }
-        if (!container || (fetchLatest.current || stopScroll.current)) return
+        if (!container || (stopScroll.current)) return
         container.scrollTo({
             top: container.scrollHeight
         })
     }, [messages])
 
     useEffect(() => {
+        if (!jumpingToMessageId) return
+        fetchLatest.current = true
+        fetchOlder.current = true
+        stopScroll.current = true
+        clearTimeout(animationTimeout.current)
+        let selectedMessage = messagesRef.current[jumpingToMessageId]
+        if (!selectedMessage) return
+        selectedMessage?.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+        })
+        let childDiv = selectedMessage.querySelector(".message-pointer")
+        if (!childDiv) return
+        childDiv.classList.remove("invisible")
+        childDiv.classList.add("visible", "animate-pulse")
+        animationTimeout.current = setTimeout(() => {
+       
+            childDiv.classList.remove("animate-pulse", "visible")
+            childDiv.classList.add("invisible")
+
+            setJumpingToMessageId(null)
+        }, 1500);
+
+        return () => {
+            clearTimeout(animationTimeout.current)
+            childDiv.classList.remove("animate-pulse", "visible")
+            childDiv.classList.add("invisible")
+            animationTimeout.current = null
+        }
+    }, [jumpingToMessageId])
+
+    useEffect(() => {
         let container = MessagesContainerRef.current
         if (!container) return
+        const type = "chat-messages"
         let observer = new IntersectionObserver(async (entries) => {
             entries.forEach(async (entry) => {
 
                 if (entry.isIntersecting && entry.target === oldMessagesObserRef.current && fetchOlder.current && !OldloadingRef.current) {
-                    OldloadingRef.current = true
+
                     if (fetchOlder?.current) {
-                        stopScroll.current = true
-                        console.log("fetching old messages")
-                        let data = await LoadMoreMessage("desc")
-                       fetchLatest.current = data?.fetchLatest ?? fetchLatest.current;
-                        fetchOlder.current = data?.fetchOlder ?? fetchOlder.current;
-                        OldloadingRef.current = false
+                        OldloadingRef.current = true
+                        const order = "desc"
+                        let fetchedMessages = await LoadMoreMessage(type , order)
+                        handleFetchedMessages(fetchedMessages , order)
+                        
+
 
 
                     }
+                    OldloadingRef.current = false
                 }
                 else if (entry.isIntersecting && entry.target === latestMessagesObserRef.current && fetchLatest.current && !LatestloadingRef.current) {
 
 
-                    LatestloadingRef.current = true
+
                     if (fetchLatest.current) {
-                        stopScroll.current = true
-                        let data = await LoadMoreMessage("asc")
-                        
-                        fetchLatest.current = data?.fetchLatest ?? fetchLatest.current;
-                        stopScroll.current = data?.fetchLatest ?? stopScroll.current;
-                        fetchOlder.current = data?.fetchOlder ?? fetchOlder.current;
-                        LatestloadingRef.current = false
+                        LatestloadingRef.current = true
+                        let order = "asc"
+                        let fetchedMessages = await LoadMoreMessage(type , order)
+                        handleFetchedMessages(fetchedMessages , order)
                     }
+                    LatestloadingRef.current = false
 
                 }
             })
@@ -136,12 +173,22 @@ export default function ChatWindow() {
 
             let scrollTop = e.target.scrollTop
             let scrollHeight = e.target.scrollHeight
-            let showButton = (scrollHeight - scrollTop) > 1800
+            let awayFromBottom = (scrollHeight - scrollTop) > 2000
 
-            if (showButton !== scrollToPresent.current) {
+            if (awayFromBottom) {
+                stopScroll.current = true
+            } else if (!awayFromBottom && !fetchLatest.current) {
+                stopScroll.current = false
 
-                scrollToPresent.current = showButton
-                setScrollPresent(showButton)
+            }
+            if (fetchLatest.current) {
+                scrollToPresent.current = true
+                setScrollPresent(true)
+                return
+            }
+            if (awayFromBottom !== scrollToPresent.current) {
+                scrollToPresent.current = awayFromBottom
+                setScrollPresent(awayFromBottom)
             }
         }
 
@@ -163,10 +210,50 @@ export default function ChatWindow() {
         }
     }, [selectedChat?.id])
 
+    const handleFetchedMessages = (fetchedMessages , order) => {
+        console.log(fetchedMessages)
+        let MESSAGE_WINDOW = 60
+        if (!fetchedMessages?.length) {
+            if (order === "desc") {
+                fetchOlder.current = false
+            } else {
+                fetchLatest.current = false
+
+            }
+            return
+        }
+
+        if (order === "desc") {
+
+            setMessages(prev => {
+                fetchedMessages.reverse()
+                let merged = [...fetchedMessages, ...prev]
+                if (merged.length > MESSAGE_WINDOW) {
+                    merged = merged.slice(0, MESSAGE_WINDOW)
+                    fetchLatest.current = true
+                }
+                return merged
+            })
+        }
+        else {
+            if (fetchedMessages.length < 31) {
+                fetchLatest.current = false
+            }
+            setMessages(prev => {
+                let merged = [...prev, ...fetchedMessages.slice(0, messages.length - 1)]
+
+                if (merged.length > MESSAGE_WINDOW) {
+                    merged = merged.slice(merged.length - MESSAGE_WINDOW)
+                    fetchOlder.current = true
+
+                }
+                return merged
+            })
+        }
+    }
 
 
-
-    return  <div className="flex flex-col   bg-gray-2 h-dvh overflow-hidden  relative">
+    return <div className="flex flex-col   bg-gray-2 h-dvh overflow-hidden  relative">
 
         {(reactMessage?.id) && <div onClick={() => setReactMessage(null)} className="fixed inset-0 bg-gray-200 z-[2000] opacity-0">
         </div>}
@@ -177,7 +264,11 @@ export default function ChatWindow() {
 
 
 
-        <div className="min-h-0 flex-1 flex flex-col-reverse">
+        <div ref={MessagesContainerRef} className="min-h-0 h-full overflow-y-auto [&::-webkit-scrollbar]:w-1.5
+            
+            [&::-webkit-scrollbar-track]:bg-transparent
+            [&::-webkit-scrollbar-thumb]:bg-zinc-700
+            [&::-webkit-scrollbar-thumb]:rounded-full">
             {scrollPresent && <ScrollToPresent fetchOlder={fetchOlder} stopScroll={stopScroll} fetchLatest={fetchLatest} containerRef={MessagesContainerRef} />}
             {selectedMedia &&
                 <MediaShowcase mediaData={selectedMedia} />
@@ -185,16 +276,12 @@ export default function ChatWindow() {
             <AnimatePresence>
                 {deleteMessage?.id && <ConfirmMessageDeletion />}
             </AnimatePresence>
-            <div ref={MessagesContainerRef} className="[&::-webkit-scrollbar]:w-1.5
-            
-            [&::-webkit-scrollbar-track]:bg-transparent
-            [&::-webkit-scrollbar-thumb]:bg-zinc-700
-            [&::-webkit-scrollbar-thumb]:rounded-full      relative      main-content  overflow-y-auto scrollbar-thin    min-h-0 flex h-full  flex-col  gap-3 ">
+            <div className="relative      main-content   scrollbar-thin  justify-end  min-h-full flex flex-col   gap-3 ">
 
                 <div ref={oldMessagesObserRef} className="p-1"></div>
                 {messages?.map((message) => {
 
-                    return <ChatMessage plusRef={plusRef} key={message.id} message={message} optionsRef={optionsRef} />
+                    return <ChatMessage messagesRef={messagesRef} plusRef={plusRef} key={message.id} message={message} optionsRef={optionsRef} />
                 })}
                 <div ref={latestMessagesObserRef} className="p-1"></div>
                 {/* <div className="bg-gradient-to-r from-red-400 to-red-300 text-center absolute bottom-0 left-0 right-0  font-bold text-gray-300 w-full ">new messages 1</div> */}

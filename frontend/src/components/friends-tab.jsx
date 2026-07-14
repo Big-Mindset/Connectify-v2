@@ -1,6 +1,5 @@
 "use client"
 
-import { chatStore } from "@/store/Chat-store";
 import { Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -9,6 +8,7 @@ import FriendRequest from "./friendsTab-components/friend-request";
 import { Axios } from "@/lib/axiosInstance";
 import toast from "react-hot-toast";
 import { userStore } from "@/store/user-store";
+import { chatStore } from "@/store/Chat-store";
 
 export default function FriendsTab() {
     let allFriends = userStore(s => s.allFriends)
@@ -26,7 +26,6 @@ export default function FriendsTab() {
 
     useEffect(() => {
         let getAllFriends = async () => {
-            if (allFriends?.length > 0) return
             try {
 
                 let { data } = await Axios.get("/friendship/all-friends")
@@ -58,7 +57,7 @@ export default function FriendsTab() {
 
     }, [])
     let filteredRequests = useMemo(()=>{
-        let sent = []
+        let sent = [] 
         let received = []
          pendingRequest.forEach((req)=>{
                if (req.sender.id === userId) {

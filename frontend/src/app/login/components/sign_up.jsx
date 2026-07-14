@@ -46,6 +46,7 @@ export default function SingUp({ setLoginMethod, setEmail }) {
     }, [username])
 
     const handleSignUp = async (data) => {
+        
         let user = await Axios.get(`/user/user-exist?username=${data.username}`)
         if (user?.data?.userId){
             setUserExist(true)

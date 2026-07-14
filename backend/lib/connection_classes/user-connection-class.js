@@ -28,12 +28,10 @@ export class UserConnection {
         pipeline.del(`socket-user:${socketId}`)
         let isLastSocket = currentSocketId === socketId
     
-        if (isLastSocket) {
-      
 
             pipeline.del(`user-socket:${userId}`)
             pipeline.sRem("online-users", userId)
-        }
+        
         await pipeline.exec()
         return isLastSocket
     }
@@ -43,7 +41,11 @@ export class UserConnection {
     }
     async refreshHeartbeat(socketId, userId) {
         let currSocketId = await client.get(`user-socket:${userId}`)
-        if (currSocketId !== socketId) return
+        if (!currSocketId || currSocketId !== socketId){
+            await this.setOnline(socketId , userId)
+            return 
+        }
+        
         let pipeline = client.multi()
         pipeline.expire(`user-socket:${userId}`, HEARTBEAT_TTL)
         pipeline.expire(`socket-user:${socketId}`, HEARTBEAT_TTL)

@@ -20,7 +20,6 @@ export default function ChatUser({ chat , setChatSettings , isMenuOpen }) {
     let participants = chatStore(s => s.participants)
  
 
-    console.count("chat-user.jsx")
 
 
     const handleOpenSettings = (e) => {
@@ -81,11 +80,17 @@ export default function ChatUser({ chat , setChatSettings , isMenuOpen }) {
     let url = chat.isGroup ? chat?.image?.url : userData?.image
 
     return (
-        <div className=" relative">
+        <>
+        {isMenuOpen && <div onClick={() => setChatSettings(null)} className="fixed inset-0  z-[19] "></div>}
+        <div className="relative">
            <AnimatePresence>
                 {
                     isMenuOpen &&
+                   <div className="relative z-[20]">
+
                     <ChatSettings  />
+                   </div>
+                    
                 }
             </AnimatePresence>
         <div onClick={handleGetChat} className={` shrink-0 relative  overflow-hidden ${selectedChat?.id === chat?.id ? "ring-2 ring-indigo-500 bg-gray-600/10" : "ring hover:ring-indigo-500"}  flex px-2.5   group cursor-pointer duration-100 ring-gray-2 py-2 bg-[#00000094] rounded-lg items-center gap-2`}>
@@ -100,7 +105,7 @@ export default function ChatUser({ chat , setChatSettings , isMenuOpen }) {
                     </div> */}
             <div className="relative shrink-0">
 
-                <Avatar size={"size-10"} image={url} content={(chat.name || userData.name)[0]} />
+                <Avatar size={"size-10"} image={url} content={(chat.name || userData.name).charAt(0)} />
                 {userData?.isOnline === 1 &&
                     <div className="size-2.5 border border-indigo-300 rounded-full bg-green-400 absolute right-0 bottom-0" />
                 }
@@ -117,7 +122,7 @@ export default function ChatUser({ chat , setChatSettings , isMenuOpen }) {
                     {typingUsers}
                 </div>
                     : chat.lastMessage ?
-                        <div className="flex items-center  justify-between">
+                    <div className="flex items-center  justify-between">
                             <div className="flex items-center  min-w-[0] flex-1 gap-0.5">
 
                                 {
@@ -149,5 +154,6 @@ export default function ChatUser({ chat , setChatSettings , isMenuOpen }) {
 
         </div>
             </div>
+                    </>
     )
 }

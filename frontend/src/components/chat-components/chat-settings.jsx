@@ -4,7 +4,6 @@ import {  CheckCheck,  Heart, Pin, Trash } from "lucide-react";
 import { Archive } from "lucide-react";
 import {motion} from "framer-motion"
 import OptionButton from "../option-button";
-import { chatStore } from "@/store/Chat-store";
 export default function ChatSettings(){
    
     let options = [{text : "Archive Chat" , icon :<Archive size={16} /> } , {text : "Pin Chat" , icon :<Pin size={16} /> } , {text : "Mark as favourite" , icon : <Heart size={16} />} , {text : "Mark as Read" ,  icon : <CheckCheck size={16} />} , {text : "Delete" , icon : <Trash size={16} /> } ]

@@ -1,10 +1,9 @@
 "use client"
 
-import { Search, X, Users } from "lucide-react";
+import { Search, X, Users, Loader } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import GroupUser from "./create-group-components/group-user";
 import GroupDetailsForm from "./create-group-components/group-details-form";
-import { motion, AnimatePresence } from "framer-motion";
 import { Axios } from "@/lib/axiosInstance";
 import { chatStore } from "@/store/Chat-store";
 import { useLoading } from "@/lib/loading_hook";
@@ -16,9 +15,13 @@ export default function CreateGroup({ createGroup, setCreateGroup }) {
     const [participantIds, setParticipantIds] = useState(null);
     const [users , setUsers] = useState([])
     const {loading , setLoading} = useLoading()
+    const [loadingUsers , setLoadingUsers] = useState(true)
     const handleCreateGroup = chatStore(s=>s.handleCreateGroup)
 
+   useEffect(() => {
+        handleGetAllFriends()
 
+    }, [])
     const filteredUsers = useMemo(() => {
         if (!searchTerm.trim()) return users;
         const q = searchTerm.toLowerCase();
@@ -54,19 +57,20 @@ export default function CreateGroup({ createGroup, setCreateGroup }) {
     const selectedCount = participantIds?.length ?? 0;
 
 
-       useEffect(() => {
-        handleGetAllFriends()
-
-    }, [])
+    
 
     let handleGetAllFriends = async () => {
         try {
+            setLoading("fetching-friends")
             let res = await Axios.get("/friendship/all-friends")
             if (res.status === 200){
                setUsers(res.data.allFriends)
             }
         } catch (error) {
             console.log(error.message)
+        }finally{
+            setLoadingUsers(false)
+
         }
     }
     return (
@@ -134,7 +138,10 @@ export default function CreateGroup({ createGroup, setCreateGroup }) {
                                         </div>
 
                                         <div className="mt-2 max-h-[300px] overflow-y-auto users-section space-y-1.5 pr-1">
-                                            {filteredUsers.length === 0 ? (
+
+                                            {loadingUsers ? <div className="flex justify-center  py-6">
+                                                <p className="tracking-wider font-bold animate-pulse">Wait a moment...</p>
+                                            </div> : filteredUsers.length === 0 ? (
                                                 <div className="flex flex-col items-center gap-2 py-10 text-gray-500">
                                                     <Users className="size-8" />
                                                     <span className="text-sm">No users found</span>

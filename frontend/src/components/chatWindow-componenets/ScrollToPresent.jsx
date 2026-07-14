@@ -4,8 +4,8 @@ import { useLoading } from "@/lib/loading_hook"
 import { chatStore } from "@/store/Chat-store"
 
 export default function ScrollToPresent({fetchLatest , containerRef , stopScroll , fetchOlder}){
-    let getChatById = chatStore.getState().getChatById
-    let selectedChat = chatStore.getState().selectedChat
+    let getChatById = chatStore(s=>s.getChatById)
+    let selectedChat = chatStore(s=>s.selectedChat)
     let {loading , setLoading} = useLoading()
     const handleScrollBack = async ()=>{
         stopScroll.current = false

@@ -8,7 +8,7 @@ export default function GroupUser({ user, isSelected, onToggle }) {
             className={`relative group ${isSelected ? "border-indigo-400 ring-indigo-500/30" : "border-gray-800 ring-gray-800 hover:bg-gray-800/60"
                 } duration-200 border overflow-hidden flex px-2.5 ring-2 cursor-pointer py-2 bg-gray-900/60 rounded-lg items-center gap-2`}
         >
-            <Avatar size={"size-10"} src={user.avatarUrl} />
+            <Avatar size={"size-10"} image={user.image} content={user.name.charAt(0)} />
             <div className="flex w-full justify-between px-2.5 items-center">
                 <div className="min-w-0">
                     <p className="font-bold text-gray-200 truncate">{user.name}</p>

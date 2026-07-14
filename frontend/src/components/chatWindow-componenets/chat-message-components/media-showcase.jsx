@@ -29,7 +29,7 @@ const Header = () => {
     return <div className="m-10 px-10">
         <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 ">
-                <Avatar size={"size-12"} />
+                <Avatar size={"size-12"}  />
                 <div className="">
                     <h1 className="text-lg">Wadood</h1>
                     <p className="text-sm">5:45PM</p>

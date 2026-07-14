@@ -1,14 +1,15 @@
 
 import createError from "http-errors"
 
-import {prisma} from "../lib/services/prismaClient.js"
+import { prisma } from "../lib/services/prismaClient.js"
 import { filterOnline, getFriendIds } from "../lib/database-queries.js"
+import { auth } from "../lib/services/auth.js"
 
 export default async function searchUser(req, res, next) {
     let { username } = req.query
 
     if (!username || !username.trim()) {
-        throw createError(400 , {message : "username is required"})
+        throw createError(400, { message: "username is required" })
     }
     try {
         let user = await prisma.user.findUnique({
@@ -26,8 +27,8 @@ export default async function searchUser(req, res, next) {
 }
 
 export async function isAuthenticated(req, res) {
-    if (req.user === null){
-        throw createError(401,{message : "Unauthenticated"})
+    if (req.user === null) {
+        throw createError(401, { message: "Unauthenticated" })
     }
     return res.status(200).json({ user: req?.user || null })
 
@@ -36,8 +37,8 @@ export async function isAuthenticated(req, res) {
 export async function addUsername(req, res, next) {
     let user = req.user
     let { username } = req.body
-    if (!username){
-        throw createError(400,{message : "username is required"})
+    if (!username) {
+        throw createError(400, { message: "username is required" })
     }
     try {
         await prisma.user.update({
@@ -63,13 +64,36 @@ export async function getOnlineUsers(req, res, next) {
     try {
         let user = req.user
         let friendIds = await getFriendIds(user.id)
-        if (friendIds.length === 0) return res.status(200).json({onlineUsers : []})
+        if (friendIds.length === 0) return res.status(200).json({ onlineUsers: [] })
         let onlineUsers = await filterOnline(friendIds)
-        
-        return res.status(200).json({onlineUsers })
-        
-        
+
+        return res.status(200).json({ onlineUsers })
+
+
     } catch (error) {
+        next(error)
+    }
+}
+
+export async function setPassword(req, res, next) {
+    try {
+        console.log(req.headers)
+        let data = req.body
+        if (!data?.password) {
+            throw createError(400, { message: "password is required" })
+        }
+        let response = await auth.api.setPassword({
+            headers: req.headers,
+            body: {
+                newPassword: data.password
+            },
+            
+        })
+        console.log(response)
+        return res.status(200).json(null)
+
+    } catch (error) {
+        console.log(error.message)
         next(error)
     }
 }

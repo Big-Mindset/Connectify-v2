@@ -81,11 +81,11 @@ export default function Navbar() {
     return (
         <>
     
-            <div className="relative shrink-0 z-50 bg-gray-1 border-b border-r border-gray-6 ">
+            <div className="relative shrink-0 z-50 bg-gray-1 border-b border-r border-gray-6  bg-gray-1">
                 <div className="py-2 px-5">
                     <div className="flex justify-between items-center">
                         <div className="flex items-center gap-2">
-                            <Avatar image={chatdata.image} content={chatdata?.name[0]}  size={"size-12"} />
+                            <Avatar image={chatdata.image} content={chatdata?.name.charAt(0)}  size={"size-12"} />
                             <div className="">
                                 <p className="font-bold text-[0.96rem]">{chatdata?.name}</p>
                                 {selectedChat.isGroup ? <p className="text-[0.8rem] text-gray-400 text-sm  tracking-wider font-bold">{selectedChat.total_members} Members </p> :  

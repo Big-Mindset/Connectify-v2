@@ -147,7 +147,7 @@ enum RequestStatus {
 
 model Chat {
   id                        String            @id @default(uuid())
-  lastMessageId             String? @unique
+  lastMessageId             String?           @unique
   name                      String?
   description               String?
   image                     Media?            @relation(name: "group-pfp")
@@ -157,8 +157,8 @@ model Chat {
   participants              ChatParticipant[]
   messages                  Message[]
   lastMessage               Message?          @relation(fields: [lastMessageId], references: [id], name: "lastMessage", onDelete: SetNull)
-  friendshipId              String?            @unique
-  FriendShip                Friendship?        @relation(fields: [friendshipId], references: [id],onDelete: Cascade)
+  friendshipId              String?           @unique
+  FriendShip                Friendship?       @relation(fields: [friendshipId], references: [id], onDelete: Cascade)
   createdAt                 DateTime          @default(now())
   updatedAt                 DateTime          @updatedAt
   pinnedAt                  DateTime?
@@ -181,7 +181,7 @@ model ChatParticipant {
   updatedAt   DateTime  @updatedAt
   muted       Boolean   @default(false)
   mutedTil    DateTime?
-  role        Roles? 
+  role        Roles?
   clearChatAt DateTime?
 
   @@unique([userId, chatId])
@@ -190,25 +190,25 @@ model ChatParticipant {
 }
 
 model Message {
-  id                 String                @id @default(uuid())
-  senderId           String
-  chatId             String
-  lastMessage        Chat?                 @relation("lastMessage")
-  encryptedContent   String?
-  search_index       String[]
-  reactions          reaction[]
-  replyToId          String?
-  createdAt          DateTime              @default(now())
-  updatedAt          DateTime              @updatedAt
-  forwarded          Boolean               @default(false)
-  expiredAt          DateTime?
-  replyTo            Message?              @relation(references: [id], fields: [replyToId], name: "replyToMessage", onDelete: SetNull)
-  sender             User                  @relation(references: [id], fields: [senderId])
-  chat               Chat                  @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  replies            Message[]             @relation("replyToMessage")
-  media              Media[]
-  message_security   message_securityKeys?
-  status             Status[]
+  id               String                @id @default(uuid())
+  senderId         String
+  chatId           String
+  lastMessage      Chat?                 @relation("lastMessage")
+  encryptedContent String?
+  search_index     String[]
+  reactions        reaction[]
+  replyToId        String?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  forwarded        Boolean               @default(false)
+  expiredAt        DateTime?
+  replyTo          Message?              @relation(references: [id], fields: [replyToId], name: "replyToMessage", onDelete: SetNull)
+  sender           User                  @relation(references: [id], fields: [senderId])
+  chat             Chat                  @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  replies          Message[]             @relation("replyToMessage")
+  media            Media[]
+  message_security message_securityKeys?
+  status           Status[]
 
   @@index([chatId, senderId, createdAt])
   @@index([senderId])
@@ -218,21 +218,24 @@ model Message {
 }
 
 model reaction {
-  id        String  @id @default(uuid())
-  emoji String
-  name String?
-  reactors reactionUsers[]
+  id        String          @id @default(uuid())
+  emoji     String
+  name      String?
+  reactors  reactionUsers[]
   messageId String
-  message   Message @relation(fields: [messageId], references: [id] , onDelete: Cascade)
-  @@unique([messageId , emoji])
+  message   Message         @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, emoji])
 }
+
 model reactionUsers {
-  id String @id @default(uuid())
+  id         String   @id @default(uuid())
   reactionId String
-  reaction reaction @relation(fields: [reactionId],references: [id] , onDelete: Cascade)
-  userId String
-  user User @relation(fields: [userId],references: [id])
-  @@unique([reactionId,userId])
+  reaction   reaction @relation(fields: [reactionId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@unique([reactionId, userId])
 }
 
 model message_securityKeys {
@@ -269,20 +272,20 @@ enum status {
 }
 
 model Media {
-  id              String   @id @default(uuid())
-  url String
-  publicId String
-  filename String?
-  size Int?
-  type            String?
-  messageId       String?
-  chatPfpId       String?  @unique
-  chatPfp         Chat?    @relation(name: "group-pfp", fields: [chatPfpId], references: [id])
-  chatId          String?
-  chat            Chat?    @relation(name: "message-media", fields: [chatId], references: [id])
-  message         Message? @relation(references: [id], fields: [messageId], onDelete: Cascade)
-  groupMessageId  String?
-  createdAt       DateTime @default(now())
+  id             String   @id @default(uuid())
+  url            String
+  publicId       String
+  filename       String?
+  size           Int?
+  type           String?
+  messageId      String?
+  chatPfpId      String?  @unique
+  chatPfp        Chat?    @relation(name: "group-pfp", fields: [chatPfpId], references: [id])
+  chatId         String?
+  chat           Chat?    @relation(name: "message-media", fields: [chatId], references: [id])
+  message        Message? @relation(references: [id], fields: [messageId], onDelete: Cascade)
+  groupMessageId String?
+  createdAt      DateTime @default(now())
 
   @@index([messageId])
   @@index([chatId])

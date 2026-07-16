@@ -8,7 +8,7 @@ export class SocketQueries {
 
 
     async updateToDelivered(statusData) {
-    
+        console.log(statusData)
         try {
             let status = await prisma.status.create({
                 data: {
@@ -19,8 +19,10 @@ export class SocketQueries {
                     readAt : null
                 }
             })
+            console.log(status)
             return status || null
         } catch (error) {
+            console.log(error.message)
             return error
         }
     }

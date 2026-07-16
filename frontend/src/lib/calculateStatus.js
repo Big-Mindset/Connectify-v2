@@ -1,4 +1,4 @@
-export let messageStatus = (status)=>{
+export let messageStatus = (status , totalMembers)=>{
         let delivered = 0
         let read = 0
         
@@ -16,11 +16,11 @@ export let messageStatus = (status)=>{
                 delivered+=1
             }else if (st.status === "READ"){
                 read+=1
+                delivered+=1
+
             }
         })
-         if (delivered > read){
-            return "delivered"
-        }else if (read > delivered){
-            return "read"
-        }
+        if (read === totalMembers) return "read"
+        if (delivered === totalMembers) return "delivered"
+        return "sent"
     }

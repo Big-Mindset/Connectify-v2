@@ -79,7 +79,7 @@ export const SearchMessageTab = () => {
     return (
         <>
             {filterTab && <MessageFilter setFilterTab={setFilterTab} />}
-            <div ref={containerRef} className="flex-[0.35] flex flex-col gap-2  min-h-[0]  text-sm border-blue-500 p-2">
+            <div ref={containerRef} className="flex-[0.35] overflow-y-auto  flex flex-col gap-2  min-h-[0] text-sm border-blue-500 p-2">
 
                 <div className="flex items-center relative z-[200]  focus-within:border-indigo-500  gap-2 border-2 border-gray-7 rounded-lg px-2 py-1">
                     <input onChange={(e) => setInputText(e.target.value)} value={inputText} type="text" className="outline-none w-full placeholder:text-gray-300" placeholder="Search messages here" />

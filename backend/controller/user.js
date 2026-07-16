@@ -77,7 +77,6 @@ export async function getOnlineUsers(req, res, next) {
 
 export async function setPassword(req, res, next) {
     try {
-        console.log(req.headers)
         let data = req.body
         if (!data?.password) {
             throw createError(400, { message: "password is required" })

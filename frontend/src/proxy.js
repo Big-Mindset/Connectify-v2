@@ -7,7 +7,7 @@ export default function proxy(request) {
     return NextResponse.redirect(new URL("/",request.url))
 
   }
-  if (!session && (path === "/")){
+  if (!session && path === "/"){
     return NextResponse.redirect(new URL("/login",request.url))
   }
   if (session && path !== "/"){

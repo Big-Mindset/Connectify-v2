@@ -15,7 +15,7 @@ export default function FriendUser({data}) {
 
             <div className="flex items-center gap-2">
 
-                <Avatar image={data.image} content={data.name.charAt(0)} />
+                <Avatar image={data.image} content={data?.name?.charAt(0)} />
                 <div className="flex flex-col text-sm">
                     <p className="font-medium font-bold">{data.name}</p>
                     <p className="text-gray-12">{data.bio || data.username}</p>

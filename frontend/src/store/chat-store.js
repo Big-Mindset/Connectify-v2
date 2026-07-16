@@ -40,7 +40,7 @@ export const chatStore = create((set, get) => ({
     },
     inviteComp: false,
     setInviteComp: (inviteComp) => set({ inviteComp }),
-    messages: [],
+    messages: [1],
     messagesRef: {},
     setMessagesRef: (messagesRef) => set({ messagesRef }),
     setMessages: (func) => {
@@ -114,8 +114,6 @@ export const chatStore = create((set, get) => ({
                     } else {
                         let dmUser = chat.userData
 
-                        dmUser.isOnline = chat.isOnline
-
                         participants.set(dmUser.id, dmUser)
                         let data = {
                             id: chat.id,
@@ -136,12 +134,13 @@ export const chatStore = create((set, get) => ({
     getChatById: async (chatInfo) => {
 
         try {
-            let { chatId, userId, isGroup, fetchAgain, containerRef } = chatInfo
+            let { chatId, userId, isGroup, fetchAgain } = chatInfo
             if (!fetchAgain) {
 
                 set({ loading: true })
             }
             let socket = socketStore.getState().socket
+            let messages = get().messages
             let setChats = get().setChats
             let selectedPage = navigationStore.getState().selectedPage
             let setSelectedPage = navigationStore.getState().setSelectedPage
@@ -155,7 +154,7 @@ export const chatStore = create((set, get) => ({
 
 
 
-            if (!fetchAgain) {
+            if (!fetchAgain && messages.length > 0) {
 
                 set({ messages: [] })
             }

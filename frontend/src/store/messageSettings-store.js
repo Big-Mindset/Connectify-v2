@@ -35,7 +35,6 @@ export let messageSettingsStore = create((set, get) => ({
         set({ replyMessage: { id: message.id, senderId: message.senderId, content: message.content || "" } })
     },
     handleDeleteMessage: (message) => {
-        console.log(message)
         let deleteMessage = get().deleteMessage
         if (deleteMessage?.id === message?.id) return
         set({ deleteMessage: { id: message.id, senderId: message.senderId, content: message.content || "", chatId: message.chatId } })

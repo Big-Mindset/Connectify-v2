@@ -257,7 +257,7 @@ model Status {
   userId      String?
   user        User?     @relation(fields: [userId], references: [id])
   status      status    @default(PENDING)
-  messageId   String    @unique
+  messageId   String    
   message     Message   @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
   @@index([readAt])

@@ -74,7 +74,8 @@ export default function Chats() {
         }
         if (searchQuery && result.length > 0) {
             result = result?.filter((chat) => {
-                let name = chat?.name || participants.get(chat.userId)
+                
+                let name = chat?.name || participants.get(chat.userId).name
 
                 return name.toLowerCase().includes(searchQuery.toLowerCase())
             })

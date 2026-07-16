@@ -3,7 +3,7 @@
 import MainInput from "./chatWindow-componenets/main-input";
 import Navbar from "./chatWindow-componenets/navbar";
 import dynamic from "next/dynamic";
-import { useEffect, useLayoutEffect, useRef, useState, } from "react";
+import { use, useEffect, useLayoutEffect, useRef, useState, } from "react";
 import { chatStore } from "@/store/Chat-store";
 let MediaShowcase = dynamic(() => import("./chatWindow-componenets/chat-message-components/media-showcase"))
 import { socketStore } from "@/store/socket";
@@ -13,12 +13,14 @@ import { messageSettingsStore } from "@/store/messageSettings-store";
 import { AnimatePresence } from "framer-motion";
 import ScrollToPresent from "./chatWindow-componenets/ScrollToPresent";
 import { userStore } from "@/store/user-store";
+import ChatPlaceholder from "./chat-placeholder";
+import { navigationStore } from "@/store/navigation-store";
+import { SearchMessageTab } from "./chatWindow-componenets/chat-message-components/search-messagesTab";
 let ChatMessage = dynamic(() => import("./chatWindow-componenets/chat-message"))
 export default function ChatWindow() {
     const setOpenMessageOptionId = messageSettingsStore(s => s.setOpenMessageOptionId)
-    const selectedChat = chatStore(state => state.selectedChat);
     const messages = chatStore(s => s.messages)
-    const setMessages = chatStore(s=>s.setMessages)
+    const setMessages = chatStore(s => s.setMessages)
     const socket = socketStore(s => s.socket)
     const LoadMoreMessage = chatStore(s => s.LoadMoreMessage)
     const selectedMedia = mediaStore(s => s.selectedMedia)
@@ -46,8 +48,11 @@ export default function ChatWindow() {
     const oldMessagesObserRef = useRef(null)
     const latestMessagesObserRef = useRef(null)
     const messagesRef = useRef({})
+    const selectedChat = chatStore(s => s.selectedChat)
     const animationTimeout = useRef(null)
-
+    const loading = chatStore(s => s.loading)
+    const isInitialized = useRef(true)
+    const searchTab = navigationStore(s => s.searchTab)
     useEffect(() => {
         if (!socket) return
 
@@ -66,28 +71,35 @@ export default function ChatWindow() {
 
         }
     }, [socket])
+
     useLayoutEffect(() => {
         stopScroll.current = false
         OldloadingRef.current = false
         LatestloadingRef.current = false
         fetchLatest.current = false
         fetchOlder.current = true
-
+        isInitialized.current = true
     }, [selectedChat?.id])
+
     useLayoutEffect(() => {
+        console.log("running")
         let container = MessagesContainerRef.current
+        if (!container) return
         let scrollHeight = container.scrollHeight
         let scrollTop = container.scrollTop
-        let max_height = (scrollHeight - scrollTop) > 1200
-        if (max_height && messages[messages.length - 1]?.senderId !== session.user.id) {
-            setUnseenMessagesLen(prev => prev + 1)
+        if (isInitialized.current) {
+            console.log("updating the height")
+            console.log(container.scrollTop, container.scrollHeight)
+            container.scrollTop = container.scrollHeight;
+            if (messages.length) isInitialized.current = false
+
             return
         }
-        if (!container || (stopScroll.current)) return
-        container.scrollTo({
-            top: container.scrollHeight
-        })
-    }, [messages])
+        console.log(stopScroll.current)
+        if (stopScroll.current) return
+        container.scrollTop = container.scrollHeight;
+
+    }, [messages?.length])
 
     useEffect(() => {
         if (!jumpingToMessageId) return
@@ -106,7 +118,7 @@ export default function ChatWindow() {
         childDiv.classList.remove("invisible")
         childDiv.classList.add("visible", "animate-pulse")
         animationTimeout.current = setTimeout(() => {
-       
+
             childDiv.classList.remove("animate-pulse", "visible")
             childDiv.classList.add("invisible")
 
@@ -133,9 +145,9 @@ export default function ChatWindow() {
                     if (fetchOlder?.current) {
                         OldloadingRef.current = true
                         const order = "desc"
-                        let fetchedMessages = await LoadMoreMessage(type , order)
-                        handleFetchedMessages(fetchedMessages , order)
-                        
+                        let fetchedMessages = await LoadMoreMessage(type, order)
+                        handleFetchedMessages(fetchedMessages, order)
+
 
 
 
@@ -149,8 +161,8 @@ export default function ChatWindow() {
                     if (fetchLatest.current) {
                         LatestloadingRef.current = true
                         let order = "asc"
-                        let fetchedMessages = await LoadMoreMessage(type , order)
-                        handleFetchedMessages(fetchedMessages , order)
+                        let fetchedMessages = await LoadMoreMessage(type, order)
+                        handleFetchedMessages(fetchedMessages, order)
                     }
                     LatestloadingRef.current = false
 
@@ -210,8 +222,7 @@ export default function ChatWindow() {
         }
     }, [selectedChat?.id])
 
-    const handleFetchedMessages = (fetchedMessages , order) => {
-        console.log(fetchedMessages)
+    const handleFetchedMessages = (fetchedMessages, order) => {
         let MESSAGE_WINDOW = 60
         if (!fetchedMessages?.length) {
             if (order === "desc") {
@@ -240,7 +251,7 @@ export default function ChatWindow() {
                 fetchLatest.current = false
             }
             setMessages(prev => {
-                let merged = [...prev, ...fetchedMessages.slice(0, messages.length - 1)]
+                let merged = [...prev, ...fetchedMessages.slice(0, prev.length - 1)]
 
                 if (merged.length > MESSAGE_WINDOW) {
                     merged = merged.slice(merged.length - MESSAGE_WINDOW)
@@ -253,40 +264,52 @@ export default function ChatWindow() {
     }
 
 
-    return <div className="flex flex-col   bg-gray-2 h-dvh overflow-hidden  relative">
+    if (!selectedChat?.id) {
+        return <ChatPlaceholder />
+    }
+    return <div className="flex h-full  min-h-0">
 
-        {(reactMessage?.id) && <div onClick={() => setReactMessage(null)} className="fixed inset-0 bg-gray-200 z-[2000] opacity-0">
-        </div>}
-        {selectedChat?.id &&
-            <Navbar />
-        }
+        <div className="flex flex-col flex-1 bg-gray-2 h-dvh overflow-hidden  relative">
+
+            {(reactMessage?.id) && <div onClick={() => setReactMessage(null)} className="fixed inset-0 bg-gray-200 z-[2000] opacity-0">
+            </div>}
+            {selectedChat?.id &&
+                <Navbar />
+            }
 
 
 
 
-        <div ref={MessagesContainerRef} className="min-h-0 h-full overflow-y-auto [&::-webkit-scrollbar]:w-1.5
+            <div ref={MessagesContainerRef} className="min-h-0 h-full overflow-y-auto [&::-webkit-scrollbar]:w-1.5
             
             [&::-webkit-scrollbar-track]:bg-transparent
             [&::-webkit-scrollbar-thumb]:bg-zinc-700
             [&::-webkit-scrollbar-thumb]:rounded-full">
-            {scrollPresent && <ScrollToPresent fetchOlder={fetchOlder} stopScroll={stopScroll} fetchLatest={fetchLatest} containerRef={MessagesContainerRef} />}
-            {selectedMedia &&
-                <MediaShowcase mediaData={selectedMedia} />
-            }
-            <AnimatePresence>
-                {deleteMessage?.id && <ConfirmMessageDeletion />}
-            </AnimatePresence>
-            <div className="relative      main-content   scrollbar-thin  justify-end  min-h-full flex flex-col   gap-3 ">
+                {loading && "Loading Messages wait a moment"}
+                {scrollPresent && <ScrollToPresent fetchOlder={fetchOlder} stopScroll={stopScroll} fetchLatest={fetchLatest} containerRef={MessagesContainerRef} />}
+                {selectedMedia &&
+                    <MediaShowcase mediaData={selectedMedia} />
+                }
+                <AnimatePresence>
+                    {deleteMessage?.id && <ConfirmMessageDeletion />}
+                </AnimatePresence>
+                <div className="relative      main-content   scrollbar-thin  justify-end  min-h-full flex flex-col   gap-3 ">
 
-                <div ref={oldMessagesObserRef} className="p-1"></div>
-                {messages?.map((message) => {
+                    <div ref={oldMessagesObserRef} className="p-1"></div>
+                    {messages?.map((message) => {
 
-                    return <ChatMessage messagesRef={messagesRef} plusRef={plusRef} key={message.id} message={message} optionsRef={optionsRef} />
-                })}
-                <div ref={latestMessagesObserRef} className="p-1"></div>
-                {/* <div className="bg-gradient-to-r from-red-400 to-red-300 text-center absolute bottom-0 left-0 right-0  font-bold text-gray-300 w-full ">new messages 1</div> */}
+                        return <ChatMessage messagesRef={messagesRef} plusRef={plusRef} key={message.id} message={message} optionsRef={optionsRef} />
+                    })}
+                    <div ref={latestMessagesObserRef} className="p-1"></div>
+                    {/* <div className="bg-gradient-to-r from-red-400 to-red-300 text-center absolute bottom-0 left-0 right-0  font-bold text-gray-300 w-full ">new messages 1</div> */}
+                </div>
             </div>
+            <MainInput fetchLatest={fetchLatest} />
         </div>
-        <MainInput fetchLatest={fetchLatest} chatId={selectedChat.id} />
+        {searchTab &&
+     
+        <SearchMessageTab />
+       
+        }
     </div>
 }

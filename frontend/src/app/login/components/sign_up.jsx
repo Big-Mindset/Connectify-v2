@@ -54,7 +54,6 @@ export default function SingUp({ setLoginMethod, setEmail }) {
 
 
             let res = await Axios.post("/user/sign-up", data)
-            console.log(res)
             if (res.status === 409) {
                 setError(res.data.message)
             } else if (res.status === 201 || res.data?.error === "EMAIL_NOT_VERIFIED"){

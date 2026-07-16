@@ -83,8 +83,7 @@ export let chatMessageStore = create((set, get) => ({
 
             let { progress, ...rest } = messageData
             let res = await Axios.post('/message/create-message', { ...rest, userId: selectedChat.userId })
-            console.log(res)
-            if (res.status === 201) {
+           if (res.status === 201) {
                 let message = res.data.message
 
                 if (message?.id) {

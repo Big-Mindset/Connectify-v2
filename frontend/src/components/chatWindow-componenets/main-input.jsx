@@ -14,7 +14,7 @@ import { socketStore } from "@/store/socket";
 let RenderFile = dynamic(() => import("./main-input-components/renderFile"))
 let FileSizeExceeded = dynamic(() => import("./main-input-components/file-sizeExceeded"))
 const EmojiPicker = dynamic(() => import("./Emoji-Picker"), { ssr: false })
-export default function MainInput({ chatId , fetchLatest }) {
+export default function MainInput({  fetchLatest }) {
 const [openAttachments, setOpenAttachments] = useState(false)
     const [inputText, setInputText] = useState("")
     const [filePreview, setFilePreview] = useState([])
@@ -24,6 +24,7 @@ const [openAttachments, setOpenAttachments] = useState(false)
     const [sizeExceeded, setSizeExceeded] = useState({})
     const [thumbnailsUrl, setThumbnailsUrl] = useState({})
     const [isTyping, setIsTyping] = useState(false)
+    const selectedChat = chatStore(s=>s.selectedChat)
     const participants = chatStore(s => s.participants)
     const [senderData, setSenderData] = useState(null)
     let typingUsersInfo = chatStore(s => s.typingUsersInfo)
@@ -40,6 +41,7 @@ const [openAttachments, setOpenAttachments] = useState(false)
     let debounceTimeout = useRef(null)
     let socket = socketStore(s => s.socket)
     let user = session?.user
+    let chatId = selectedChat.id
     const setInputRef = messageSettingsStore(s=>s.setInputRef)
     const [isPending, startTransition] = useTransition()  
     useEffect(() => {

@@ -9,7 +9,6 @@ export default function VerifyEmail() {
     let params = useSearchParams()
     let token = params.get("token")
     let router = useRouter()
-    // console.log(data ,isPending)
     useEffect(() => {
             verifyEmail()
     }, [])
@@ -24,7 +23,6 @@ export default function VerifyEmail() {
                 router.push("/login")
             },
             onSuccess : (ctx)=>{
-                console.log(ctx)
              router.push("/")
             }
          })

@@ -21,7 +21,7 @@ import { chatMessageStore } from "@/store/chatMessage-store"
 import { messageStatus } from "@/lib/calculateStatus"
 import ResendMessage from "./chat-message-components/resend-message"
 
-function ChatMessage({ optionsRef, message, plusRef, messagesRef , key }) {
+function ChatMessage({ optionsRef, message, plusRef, messagesRef, key }) {
 
     const [messageHover, setMessageHover] = useState(false)
     const participants = chatStore(s => s.participants)
@@ -38,6 +38,7 @@ function ChatMessage({ optionsRef, message, plusRef, messagesRef , key }) {
     const handleReaction = messageSettingsStore(s => s.handleReaction)
     const handleReactionFunc = messageSettingsStore(s => s.handleReactionFunc)
     const session = userStore(s => s.session)
+    const selectedChat = chatStore(s => s.selectedChat)
     let twoFiles = message.media.filter(m => {
         if (m.type.startsWith("video") || m.type.startsWith("image")) return true
         return false
@@ -73,20 +74,23 @@ function ChatMessage({ optionsRef, message, plusRef, messagesRef , key }) {
 
     let currentUserId = session?.user?.id
 
-    let status = messageStatus(message.status)
-    
-    let sender = useMemo(()=>{
+    let status = useMemo(() => {
+        if (message.senderId !== session.user.id) return []
+        return messageStatus(message.status, (selectedChat?.total_members - 1) || 1)
+    }, [message?.status])
+
+    let sender = useMemo(() => {
         return currentUserId === message.senderId ? session.user : participants.get(message.senderId)
-        
-    },[])
+
+    }, [])
     let replyToSender;
     if (message.replyTo !== null) {
         replyToSender = currentUserId === message.replyTo.senderId ? session.user : participants.get(message.replyTo.senderId)
     }
-  
+
     return (
-        <div key={key} ref={(e)=>messagesRef.current[message.id] = e}  className=" relative">
-           <div  className="absolute invisible [animation-duration:1s]  message-pointer inset-0 bg-indigo-400/30"></div>
+        <div key={key} ref={(e) => messagesRef.current[message.id] = e} className=" relative">
+            <div className="absolute invisible [animation-duration:1s]  message-pointer inset-0 bg-indigo-400/30"></div>
             {message.id === reactMessage?.id &&
                 <div ref={(e) => {
 
@@ -136,7 +140,7 @@ function ChatMessage({ optionsRef, message, plusRef, messagesRef , key }) {
                             </p>
 
                         </div>
-                    
+
                     </div>
                 }
 
@@ -149,7 +153,7 @@ function ChatMessage({ optionsRef, message, plusRef, messagesRef , key }) {
 
                     <div className="relative">
 
-                        <Avatar size={"size-11"} textSize={"text-[1.5rem]"} image={sender?.image} />
+                        <Avatar size={"size-11"} textSize={"text-[1.5rem]"} content={sender.name[0]} image={sender?.image} />
                     </div>
 
                     <div className="flex-1 min-w-0   pt-1 ">
@@ -173,7 +177,7 @@ function ChatMessage({ optionsRef, message, plusRef, messagesRef , key }) {
                         {message.media.length > 0 &&
                             <div className="flex flex-col gap-1 ">
                                 {
-                                    !status  ?
+                                    !status ?
                                         <div className="w-[300px] rounded-xl bg-zinc-900 p-3 shadow-lg">
                                             <div className="w-full h-2 bg-zinc-700 rounded-full overflow-hidden">
                                                 <div
@@ -210,14 +214,14 @@ function ChatMessage({ optionsRef, message, plusRef, messagesRef , key }) {
 
                         <div className=" min-w-[0]">
 
-                        {(editMessage?.id === message.id) ? <EditMessage /> :
-                            <div className={` ${!status ?  "text-gray-300/60  font-semibold" : status === "failed" ? "text-red-300" :  "text-gray-300/90 "}   break-words  text-[0.95em]`}>
-                                {message.content}
-                                {message.createdAt !== message.updatedAt &&
-                                    <span className="text-[0.75rem] text-gray-400 ml-1">(edited)</span>
-                                }
-                            </div>
-                        }
+                            {(editMessage?.id === message.id) ? <EditMessage /> :
+                                <div className={` ${!status ? "text-gray-300/60  font-semibold" : status === "failed" ? "text-red-300" : "text-gray-300/90 "}   break-words  text-[0.95em]`}>
+                                    {message.content}
+                                    {message.createdAt !== message.updatedAt &&
+                                        <span className="text-[0.75rem] text-gray-400 ml-1">(edited)</span>
+                                    }
+                                </div>
+                            }
 
                         </div>
 

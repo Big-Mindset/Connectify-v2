@@ -6,8 +6,8 @@ import rateLimit from "express-rate-limit"
 let router = express.Router()
 router.use(protectRoute)
 let messageRateLimiter = rateLimit({
-    windowMs : 10 * 1000,
-    limit : 10,
+    windowMs : 2 * 1000,
+    limit : 5,
     message :{
         error : "Too many messages sent. Try again in a moment."
     }

@@ -93,9 +93,10 @@ export const getChatbyId = async (req, res, next) => {
                         },
                         status: {
                             where: {
-                                userId: {
-                                    not: user.id
-                                }
+                                message : {
+                                senderId : user.id
+                               },
+                               
                             }
                         },
                         message_security: true,
@@ -248,14 +249,14 @@ export let get_chats = async (req, res, next) => {
 
                 }
                 if (chat.isGroup) return { ...chat, lastMessage }
-                let { user } = chat.participants.find(({ user }) => user.id !== userId)
-
+                let {participants , ...rest} = chat
+                let { user } = participants.find(({ user }) => user.id !== userId)
 
 
 
                 let isOnline = await client.SISMEMBER("online-users", user.id)
 
-                return { ...chat, isOnline, lastMessage, userData: user }
+                return { ...rest,  lastMessage, userData: {...user , isOnline} }
             })
         )
 
